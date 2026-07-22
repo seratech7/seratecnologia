@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const { initDb } = require('./database/db');
+const { backupDatabase } = require('./backup-db');
+const { autoSave } = require('./auto-save');
 const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -122,6 +124,12 @@ async function start() {
     console.log(`🚀 SeraTecnologia rodando em http://localhost:${PORT}`);
     console.log(`📊 Painel Admin: http://localhost:${PORT}/admin/login`);
     console.log(`🛒 Painel Vendedor: http://localhost:${PORT}/seller/login`);
+
+    backupDatabase();
+    setInterval(backupDatabase, 3600000);
+
+    setTimeout(autoSave, 120000);
+    setInterval(autoSave, 7200000);
   });
 }
 
