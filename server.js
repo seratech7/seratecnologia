@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const { initDb } = require('./database/db');
+const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/seller');
@@ -60,7 +61,8 @@ const upload = multer({
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
 
-// Session segura
+app.set('trust proxy', 1);
+
 app.use(session({
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
   resave: false,
@@ -91,7 +93,7 @@ app.use((err, req, res, next) => {
   if (err.message?.includes('Formato de imagem')) {
     return res.status(400).send(err.message);
   }
-  res.status(500).render('404', { title: 'Erro interno' });
+  res.status(500).send('Erro interno do servidor');
 });
 
 app.use((req, res, next) => {
@@ -112,6 +114,9 @@ app.use((req, res) => {
 });
 
 async function start() {
+  const uploadsDir = path.join(__dirname, 'public', 'uploads');
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
   await initDb();
   app.listen(PORT, () => {
     console.log(`🚀 SeraTecnologia rodando em http://localhost:${PORT}`);
@@ -120,4 +125,4 @@ async function start() {
   });
 }
 
-start();
+start().catch(e => { console.error('Fatal:', e); process.exit(1); });

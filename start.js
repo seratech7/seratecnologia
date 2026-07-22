@@ -51,4 +51,4 @@ async function start() {
   }
   require('./server');
 }
-start();
+start().catch(e => { console.error('Fatal:', e); process.exit(1); });
