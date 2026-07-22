@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | MarketPlace</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <i class="fas fa-microchip"></i>
+        <h1>SeraTecnologia</h1>
+        <p>Painel Administrativo</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-error">
+          <i class="fas fa-exclamation-circle"></i>
+          <%= error %>
+        </div>
+      <% } %>
+
+      <form action="/admin/login" method="POST" class="login-form">
+        <div class="form-group">
+          <label for="username">
+            <i class="fas fa-user"></i> Usuário
+          </label>
+          <input type="text" id="username" name="username" placeholder="Digite seu usuário" required>
+        </div>
+        <div class="form-group">
+          <label for="password">
+            <i class="fas fa-lock"></i> Senha
+          </label>
+          <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+        </div>
+        <button type="submit" class="btn-login">
+          <i class="fas fa-sign-in-alt"></i> Entrar
+        </button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

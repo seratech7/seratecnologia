@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | MarketPlace</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-container">
+    <div class="header-left">
+      <a href="/" class="logo">
+        <i class="fas fa-microchip"></i>
+        <span>SeraTecnologia</span>
+      </a>
+    </div>
+    <div class="header-center">
+      <form action="/" method="GET" class="search-form">
+        <i class="fas fa-search"></i>
+        <input type="text" name="search" placeholder="Buscar HD, SSD, notebook..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+        <button type="submit">Buscar</button>
+      </form>
+    </div>
+    <div class="header-right">
+      <% if (admin) { %>
+        <a href="/admin/dashboard" class="btn-admin-header">
+          <i class="fas fa-cog"></i>
+          <span>Admin</span>
+        </a>
+      <% } else if (seller) { %>
+        <a href="/seller/dashboard" class="btn-admin-header">
+          <i class="fas fa-store-alt"></i>
+          <span>Vendedor</span>
+        </a>
+      <% } else { %>
+        <a href="/seller/login" class="btn-admin-header">
+          <i class="fas fa-store-alt"></i>
+          <span>Vender</span>
+        </a>
+      <% } %>
+    </div>
+  </div>
+</header>
+
+<main class="main-content">

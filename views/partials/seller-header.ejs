@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | MarketPlace</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="admin-page">
+
+<div class="admin-layout">
+  <aside class="admin-sidebar seller-sidebar">
+    <div class="sidebar-brand">
+      <a href="/seller/dashboard">
+        <i class="fas fa-microchip"></i>
+        <span>SeraTecnologia</span>
+      </a>
+      <span class="sidebar-subtitle">Painel do Vendedor</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="/seller/dashboard" class="<%= currentPath === '/seller/dashboard' ? 'active' : '' %>">
+        <i class="fas fa-tachometer-alt"></i> Dashboard
+      </a>
+      <a href="/seller/products" class="<%= currentPath.startsWith('/seller/products') ? 'active' : '' %>">
+        <i class="fas fa-box"></i> Meus Produtos
+      </a>
+      <a href="/seller/products/new" class="<%= currentPath === '/seller/products/new' ? 'active' : '' %>">
+        <i class="fas fa-plus-circle"></i> Novo Produto
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="/" target="_blank" class="sidebar-link">
+        <i class="fas fa-external-link-alt"></i> Ver Site
+      </a>
+      <a href="/seller/logout" class="sidebar-link logout">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </a>
+    </div>
+  </aside>
+
+  <div class="admin-main">

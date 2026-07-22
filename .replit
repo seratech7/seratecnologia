@@ -1,0 +1,11 @@
+entrypoint = "node start.js"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "node start.js"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80

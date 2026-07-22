@@ -1,0 +1,108 @@
+<%- include('partials/header') %>
+
+<div class="product-detail-container">
+  <div class="breadcrumb">
+    <a href="/"><i class="fas fa-home"></i> Início</a>
+    <% if (product.category_name) { %>
+      <span><i class="fas fa-chevron-right"></i></span>
+      <a href="/?category=<%= product.category_name.toLowerCase().replace(/ /g, '-') %>"><%= product.category_icon %> <%= product.category_name %></a>
+    <% } %>
+    <span><i class="fas fa-chevron-right"></i></span>
+    <span><%= product.name %></span>
+  </div>
+
+  <div class="product-detail-content">
+    <div class="product-gallery">
+      <% if (product.image) { %>
+        <div class="main-image">
+          <img src="<%= product.image %>" alt="<%= product.name %>">
+        </div>
+      <% } else { %>
+        <div class="main-image no-image-big">
+          <i class="fas fa-image"></i>
+          <p>Sem imagem</p>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="product-detail-info">
+      <div class="product-header-info">
+        <h1><%= product.name %></h1>
+        <p class="product-price-large">
+          <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %>
+        </p>
+      </div>
+
+      <div class="product-badges">
+        <% if (product.featured) { %>
+          <span class="badge badge-featured"><i class="fas fa-star"></i> Destaque</span>
+        <% } %>
+        <span class="badge <%= product.condition === 'new' ? 'badge-new' : product.condition === 'semi-new' ? 'badge-semi' : 'badge-used' %>">
+          <%= product.condition === 'new' ? 'Novo' : product.condition === 'semi-new' ? 'Semi-novo' : 'Usado' %>
+        </span>
+      </div>
+
+      <div class="product-attributes">
+        <div class="attribute">
+          <i class="fas fa-map-marker-alt"></i>
+          <div>
+            <span class="attr-label">Localização</span>
+            <span class="attr-value"><%= product.location || 'Brasil' %></span>
+          </div>
+        </div>
+        <div class="attribute">
+          <i class="fas fa-tag"></i>
+          <div>
+            <span class="attr-label">Categoria</span>
+            <span class="attr-value"><%= product.category_icon || '' %> <%= product.category_name || 'Sem categoria' %></span>
+          </div>
+        </div>
+        <div class="attribute">
+          <i class="fas fa-calendar"></i>
+          <div>
+            <span class="attr-label">Anunciado em</span>
+            <span class="attr-value"><%= new Date(product.created_at).toLocaleDateString('pt-BR') %></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-description">
+        <h3>Descrição</h3>
+        <p><%= product.description || 'Nenhuma descrição fornecida.' %></p>
+      </div>
+
+      <div class="contact-seller">
+        <h3><i class="fas fa-comment"></i> Entrar em contato</h3>
+        <p>Interessado neste produto? Entre em contato com o vendedor.</p>
+        <button class="btn-contact" onclick="alert('Funcionalidade de chat em desenvolvimento')">
+          <i class="fas fa-envelope"></i> Enviar mensagem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <% if (related.length > 0) { %>
+    <div class="related-products">
+      <h3><i class="fas fa-tags"></i> Produtos Relacionados</h3>
+      <div class="products-grid related-grid">
+        <% related.forEach(product => { %>
+          <a href="/produto/<%= product.id %>" class="product-card">
+            <div class="product-image">
+              <% if (product.image) { %>
+                <img src="<%= product.image %>" alt="<%= product.name %>">
+              <% } else { %>
+                <div class="no-image"><i class="fas fa-image"></i></div>
+              <% } %>
+            </div>
+            <div class="product-info">
+              <h3 class="product-name"><%= product.name %></h3>
+              <p class="product-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %></p>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

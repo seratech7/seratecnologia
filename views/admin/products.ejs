@@ -1,0 +1,98 @@
+<%- include('../partials/admin-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-box"></i> Produtos</h1>
+    <a href="/admin/products/new" class="btn-primary"><i class="fas fa-plus"></i> Novo Produto</a>
+  </div>
+
+  <div class="filter-tabs">
+    <a href="/admin/products" class="<%= filter === 'all' || !filter ? 'active' : '' %>">Todos</a>
+    <a href="/admin/products?filter=featured" class="<%= filter === 'featured' ? 'active' : '' %>"><i class="fas fa-star"></i> Destaques</a>
+    <a href="/admin/products?filter=pending" class="<%= filter === 'pending' ? 'active' : '' %>">Pendentes</a>
+    <a href="/admin/products?filter=active" class="<%= filter === 'active' ? 'active' : '' %>">Ativos</a>
+    <a href="/admin/products?filter=rejected" class="<%= filter === 'rejected' ? 'active' : '' %>">Rejeitados</a>
+  </div>
+
+  <div class="search-bar">
+    <form action="/admin/products" method="GET">
+      <input type="hidden" name="filter" value="<%= filter %>">
+      <i class="fas fa-search"></i>
+      <input type="text" name="search" placeholder="Buscar produtos..." value="<%= search %>">
+      <button type="submit">Buscar</button>
+      <% if (search) { %><a href="/admin/products?filter=<%= filter %>" class="clear-search"><i class="fas fa-times"></i></a><% } %>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Preço</th>
+          <th>Vendedor</th>
+          <th>Categoria</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (products.length === 0) { %>
+          <tr><td colspan="7" class="empty-row">Nenhum produto encontrado</td></tr>
+        <% } else { %>
+          <% products.forEach(p => { %>
+            <tr>
+              <td class="product-cell">
+                <div class="product-cell-info">
+                  <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } else { %><div class="thumb thumb-placeholder"><i class="fas fa-image"></i></div><% } %>
+                  <div>
+                    <span class="product-name-cell"><%= p.name %></span>
+                    <% if (p.featured) { %><span class="featured-tag"><i class="fas fa-star"></i></span><% } %>
+                  </div>
+                </div>
+              </td>
+              <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
+              <td><%= p.seller_name || 'Admin' %></td>
+              <td><%= p.category_name || '-' %></td>
+              <td>
+                <% if (p.status === 'active') { %><span class="status-badge active">Ativo</span>
+                <% } else if (p.status === 'pending') { %><span class="status-badge" style="background:#fff3cd;color:#856404;">Pendente</span>
+                <% } else if (p.status === 'rejected') { %><span class="status-badge" style="background:#fdecea;color:#e74c3c;">Rejeitado</span>
+                <% } else { %><span class="status-badge inactive">Inativo</span><% } %>
+              </td>
+              <td><%= new Date(p.created_at).toLocaleDateString('pt-BR') %></td>
+              <td class="actions-cell">
+                <% if (p.status === 'pending') { %>
+                  <form action="/admin/products/approve/<%= p.id %>" method="POST" class="inline-form">
+                    <button type="submit" class="btn-icon" style="background:#e8f5e9;color:#2e7d32;" title="Aprovar"><i class="fas fa-check"></i></button>
+                  </form>
+                  <form action="/admin/products/reject/<%= p.id %>" method="POST" class="inline-form">
+                    <button type="submit" class="btn-icon" style="background:#fdecea;color:#e74c3c;" title="Rejeitar"><i class="fas fa-times"></i></button>
+                  </form>
+                <% } %>
+                <form action="/admin/products/feature/<%= p.id %>" method="POST" class="inline-form">
+                  <button type="submit" class="btn-icon" style="<%= p.featured ? 'background:#fff3cd;color:#f9a825;' : '' %>" title="<%= p.featured ? 'Remover destaque' : 'Destacar' %>"><i class="fas fa-star"></i></button>
+                </form>
+                <a href="/admin/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+                <form action="/admin/products/delete/<%= p.id %>" method="POST" class="inline-form" onsubmit="return confirm('Excluir este produto?')">
+                  <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalPages > 1) { %>
+    <div class="pagination">
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <a href="/admin/products?page=<%= i %>&filter=<%= filter %>" class="page-link <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/admin-footer') %>

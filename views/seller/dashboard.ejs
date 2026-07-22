@@ -1,0 +1,79 @@
+<%- include('../partials/seller-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-tachometer-alt"></i> Meu Painel</h1>
+    <p>Bem-vindo, <%= session.sellerName %>!</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon products-icon"><i class="fas fa-box"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.total %></span>
+        <span class="stat-label">Total de Produtos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active-icon"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.active %></span>
+        <span class="stat-label">Aprovados</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c);"><i class="fas fa-clock"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.pending %></span>
+        <span class="stat-label">Pendentes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-clock"></i> Meus Últimos Produtos</h2>
+      <a href="/seller/products" class="btn-small">Ver todos</a>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Status</th>
+            <th>Data</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (recent.length === 0) { %>
+            <tr><td colspan="5" class="empty-row">Nenhum produto cadastrado. <a href="/seller/products/new">Criar primeiro produto</a></td></tr>
+          <% } else { %>
+            <% recent.forEach(p => { %>
+              <tr>
+                <td class="product-cell">
+                  <div class="product-cell-info">
+                    <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } %>
+                    <span><%= p.name %></span>
+                  </div>
+                </td>
+                <td><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
+                <td>
+                  <% if (p.status === 'active') { %><span class="status-badge active">Aprovado</span>
+                  <% } else if (p.status === 'pending') { %><span class="status-badge" style="background:#fff3cd;color:#856404;">Pendente</span>
+                  <% } else if (p.status === 'rejected') { %><span class="status-badge" style="background:#fdecea;color:#e74c3c;">Rejeitado</span>
+                  <% } else { %><span class="status-badge inactive">Inativo</span><% } %>
+                </td>
+                <td><%= new Date(p.created_at).toLocaleDateString('pt-BR') %></td>
+                <td><a href="/seller/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a></td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/seller-footer') %>
