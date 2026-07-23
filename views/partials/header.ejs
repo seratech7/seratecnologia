@@ -12,12 +12,15 @@
 <header class="main-header">
   <div class="header-container">
     <div class="header-left">
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
       <a href="/" class="logo">
         <i class="fas fa-microchip"></i>
         <span>SeraTecnologia</span>
       </a>
     </div>
-    <div class="header-center">
+    <div class="header-center" id="searchContainer">
       <form action="/" method="GET" class="search-form">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar HD, SSD, notebook..." value="<%= typeof search !== 'undefined' ? search : '' %>">
@@ -25,6 +28,9 @@
       </form>
     </div>
     <div class="header-right">
+      <button class="search-toggle-mobile" id="searchToggle" aria-label="Buscar">
+        <i class="fas fa-search"></i>
+      </button>
       <% if (admin) { %>
         <a href="/admin/dashboard" class="btn-admin-header">
           <i class="fas fa-cog"></i>
@@ -45,4 +51,87 @@
   </div>
 </header>
 
-<main class="main-content">
+<div class="mobile-overlay" id="mobileOverlay"></div>
+<nav class="mobile-menu" id="mobileMenu">
+  <div class="mobile-menu-header">
+    <a href="/" class="mobile-logo"><i class="fas fa-microchip"></i> SeraTecnologia</a>
+    <button class="mobile-close" id="mobileClose">&times;</button>
+  </div>
+  <div class="mobile-menu-body">
+    <form action="/" method="GET" class="mobile-search-form">
+      <input type="text" name="search" placeholder="Buscar produtos..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+      <button type="submit"><i class="fas fa-search"></i></button>
+    </form>
+    <div class="mobile-nav-links">
+      <a href="/"><i class="fas fa-home"></i> Início</a>
+      <a href="#" class="mobile-sub-toggle" id="catToggle"><i class="fas fa-th-large"></i> Categorias <i class="fas fa-chevron-down"></i></a>
+      <div class="mobile-submenu" id="catSubmenu">
+        <a href="/">Todas</a>
+        <a href="/?category=ssds">⚡ SSDs</a>
+        <a href="/?category=hds-armazenamento">💾 HDs</a>
+        <a href="/?category=memoria-ram">🧠 Memória RAM</a>
+        <a href="/?category=processadores">🔲 Processadores</a>
+        <a href="/?category=placas-video">🎮 Placas de Vídeo</a>
+        <a href="/?category=placas-mae">🔧 Placas-mãe</a>
+      </div>
+      <% if (admin) { %>
+        <a href="/admin/dashboard"><i class="fas fa-cog"></i> Painel Admin</a>
+      <% } else if (seller) { %>
+        <a href="/seller/dashboard"><i class="fas fa-store-alt"></i> Painel Vendedor</a>
+      <% } else { %>
+        <a href="/seller/login"><i class="fas fa-store-alt"></i> Quero Vender</a>
+      <% } %>
+    </div>
+  </div>
+</nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var hamburger = document.getElementById('hamburgerBtn');
+  var mobileMenu = document.getElementById('mobileMenu');
+  var overlay = document.getElementById('mobileOverlay');
+  var closeBtn = document.getElementById('mobileClose');
+  var searchToggle = document.getElementById('searchToggle');
+  var searchContainer = document.getElementById('searchContainer');
+  var catToggle = document.getElementById('catToggle');
+  var catSubmenu = document.getElementById('catSubmenu');
+
+  if (hamburger && mobileMenu && overlay) {
+    function openMenu() {
+      hamburger.classList.add('active');
+      mobileMenu.classList.add('active');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeMenu() {
+      hamburger.classList.remove('active');
+      mobileMenu.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    hamburger.addEventListener('click', openMenu);
+    closeBtn.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
+  }
+
+  if (searchToggle && searchContainer) {
+    searchToggle.addEventListener('click', function() {
+      searchContainer.classList.toggle('active');
+      if (searchContainer.classList.contains('active')) {
+        var input = searchContainer.querySelector('input');
+        if (input) input.focus();
+      }
+    });
+  }
+
+  if (catToggle && catSubmenu) {
+    catToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      catSubmenu.classList.toggle('active');
+      catToggle.querySelector('.fa-chevron-down').classList.toggle('rotated');
+    });
+  }
+});
+</script>
+
+<main class="main-content" style="padding-top: 72px; min-height: 100vh;">

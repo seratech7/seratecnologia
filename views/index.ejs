@@ -1,7 +1,8 @@
 <%- include('partials/header') %>
 
 <div class="marketplace-container">
-  <aside class="sidebar-filters">
+  <button class="filter-toggle" id="filterToggle"><i class="fas fa-filter"></i> Filtros</button>
+  <aside class="sidebar-filters" id="sidebarFilters">
     <div class="filter-section">
       <h3><i class="fas fa-filter"></i> Filtros</h3>
     </div>
@@ -115,5 +116,17 @@
     <% } %>
   </section>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var toggle = document.getElementById('filterToggle');
+  var sidebar = document.getElementById('sidebarFilters');
+  if (toggle && sidebar) {
+    toggle.addEventListener('click', function() {
+      sidebar.classList.toggle('active');
+    });
+  }
+});
+</script>
 
 <%- include('partials/footer') %>
