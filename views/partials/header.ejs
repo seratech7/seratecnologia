@@ -157,8 +157,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var mc = document.querySelector('.main-content');
 
-  if (adText && !localStorage.getItem('adClosed')) {
-    adText.innerHTML = ads[Math.floor(Math.random() * ads.length)];
+  if (localStorage.getItem('adClosed')) {
+    if (topAd) topAd.style.display = 'none';
+  } else {
+    if (adText) adText.innerHTML = ads[Math.floor(Math.random() * ads.length)];
     if (mc) mc.style.paddingTop = '32px';
   }
 
@@ -166,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
     adClose.addEventListener('click', function() {
       topAd.style.display = 'none';
       localStorage.setItem('adClosed', '1');
-      if (mc) mc.style.paddingTop = '0';
+      if (mc) { mc.style.paddingTop = '0'; }
     });
   }
 });
