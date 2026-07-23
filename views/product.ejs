@@ -71,6 +71,26 @@
         <p><%= product.description || 'Nenhuma descrição fornecida.' %></p>
       </div>
 
+      <% if (seller) { %>
+        <div class="seller-card">
+          <h3><i class="fas fa-store"></i> Vendedor</h3>
+          <a href="/vendedor/<%= seller.id %>" class="seller-card-content">
+            <div class="seller-avatar-mini">
+              <% if (seller.avatar) { %>
+                <img src="<%= seller.avatar %>" alt="<%= seller.name %>">
+              <% } else { %>
+                <div class="avatar-placeholder-mini"><i class="fas fa-store"></i></div>
+              <% } %>
+            </div>
+            <div class="seller-card-info">
+              <strong><%= seller.name %></strong>
+              <span><i class="fas fa-shopping-cart"></i> <%= seller.sales_count || 0 %> vendas</span>
+            </div>
+            <i class="fas fa-chevron-right seller-card-arrow"></i>
+          </a>
+        </div>
+      <% } %>
+
       <div class="contact-seller">
         <h3><i class="fas fa-comment"></i> Entrar em contato</h3>
         <p>Interessado neste produto? Entre em contato com o vendedor.</p>

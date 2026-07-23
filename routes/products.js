@@ -46,12 +46,20 @@ router.get('/produto/:id', (req, res) => {
 
   if (!product) return res.status(404).render('404', { title: 'Produto não encontrado' });
 
+  let seller = null;
+  if (product.seller_id) {
+    seller = db.get(
+      'SELECT id, name, avatar, sales_count FROM sellers WHERE id = ? AND status = ?',
+      [product.seller_id, 'active']
+    );
+  }
+
   const related = db.query(
     'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.id != ? AND p.status = ? LIMIT 4',
     [product.category_id, product.id, 'active']
   );
 
-  res.render('product', { title: product.name, product, related });
+  res.render('product', { title: product.name, product, seller, related });
 });
 
 module.exports = router;

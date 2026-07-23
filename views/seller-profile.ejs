@@ -1,0 +1,105 @@
+<%- include('partials/header') %>
+
+<div class="seller-profile-container">
+  <div class="breadcrumb">
+    <a href="/"><i class="fas fa-home"></i> Início</a>
+    <span><i class="fas fa-chevron-right"></i></span>
+    <span>Perfil do Vendedor</span>
+  </div>
+
+  <div class="seller-profile-header">
+    <div class="seller-avatar">
+      <% if (seller.avatar) { %>
+        <img src="<%= seller.avatar %>" alt="<%= seller.name %>">
+      <% } else { %>
+        <div class="avatar-placeholder">
+          <i class="fas fa-store"></i>
+        </div>
+      <% } %>
+    </div>
+    <div class="seller-info-main">
+      <h1><%= seller.name %></h1>
+      <div class="seller-meta">
+        <span><i class="fas fa-calendar-alt"></i> <%= daysOnPlatform %> dias na plataforma</span>
+        <span><i class="fas fa-box"></i> <%= totalProducts %> produtos ativos</span>
+        <span><i class="fas fa-shopping-cart"></i> <%= seller.sales_count || 0 %> vendas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="seller-profile-body">
+    <div class="seller-profile-sidebar">
+      <% if (seller.bio) { %>
+        <div class="seller-section">
+          <h3><i class="fas fa-info-circle"></i> Sobre</h3>
+          <p><%= seller.bio %></p>
+        </div>
+      <% } %>
+
+      <div class="seller-section">
+        <h3><i class="fas fa-address-card"></i> Contato</h3>
+        <div class="contact-list">
+          <% if (seller.email) { %>
+            <a href="mailto:<%= seller.email %>" class="contact-item">
+              <i class="fas fa-envelope"></i> <%= seller.email %>
+            </a>
+          <% } %>
+          <% if (seller.phone) { %>
+            <a href="tel:<%= seller.phone %>" class="contact-item">
+              <i class="fas fa-phone"></i> <%= seller.phone %>
+            </a>
+          <% } %>
+          <% if (seller.whatsapp) { %>
+            <a href="https://wa.me/<%= seller.whatsapp.replace(/[^0-9]/g, '') %>" target="_blank" class="contact-item whatsapp">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+            </a>
+          <% } %>
+          <% if (seller.website) { %>
+            <a href="<%= seller.website.startsWith('http') ? seller.website : 'https://' + seller.website %>" target="_blank" class="contact-item">
+              <i class="fas fa-globe"></i> <%= seller.website %>
+            </a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="seller-profile-products">
+      <h2><i class="fas fa-box"></i> Produtos deste vendedor</h2>
+
+      <% if (products.length === 0) { %>
+        <div class="empty-state">
+          <i class="fas fa-box-open"></i>
+          <h3>Nenhum produto ativo no momento</h3>
+        </div>
+      <% } else { %>
+        <div class="products-grid">
+          <% products.forEach(product => { %>
+            <a href="/produto/<%= product.id %>" class="product-card">
+              <div class="product-image">
+                <% if (product.image) { %>
+                  <img src="<%= product.image %>" alt="<%= product.name %>">
+                <% } else { %>
+                  <div class="no-image"><i class="fas fa-image"></i></div>
+                <% } %>
+              </div>
+              <div class="product-info">
+                <h3 class="product-name"><%= product.name %></h3>
+                <p class="product-price">
+                  <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %>
+                </p>
+                <div class="product-meta">
+                  <span><i class="fas fa-map-marker-alt"></i> <%= product.location || 'Brasil' %></span>
+                  <% if (product.category_name) { %>
+                    <span><%= product.category_name %></span>
+                  <% } %>
+                </div>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

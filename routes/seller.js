@@ -6,6 +6,38 @@ const { requireSeller, redirectIfSeller } = require('../middleware/auth');
 module.exports = function(upload) {
 const router = express.Router();
 
+router.get('/profile', requireSeller, (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
+  if (!seller) return res.redirect('/seller/logout');
+  res.render('seller/profile', { title: 'Meu Perfil', seller, error: null, success: null });
+});
+
+router.post('/profile', upload.single('avatar'), requireSeller, (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
+  if (!seller) return res.redirect('/seller/logout');
+
+  const { name, phone, bio, website, whatsapp, email } = req.body;
+
+  if (!name || !email) {
+    return res.render('seller/profile', { title: 'Meu Perfil', seller, error: 'Nome e email são obrigatórios', success: null });
+  }
+
+  let avatar = seller.avatar;
+  if (req.file) {
+    avatar = '/uploads/' + req.file.filename;
+  }
+
+  db.run(
+    'UPDATE sellers SET name = ?, email = ?, phone = ?, bio = ?, website = ?, whatsapp = ?, avatar = ? WHERE id = ?',
+    [name, email, phone || '', bio || '', website || '', whatsapp || '', avatar, req.session.sellerId]
+  );
+
+  req.session.sellerName = name;
+
+  const updated = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
+  res.render('seller/profile', { title: 'Meu Perfil', seller: updated, error: null, success: 'Perfil atualizado com sucesso!' });
+});
+
 router.get('/login', redirectIfSeller, (req, res) => {
   res.render('seller/login', { title: 'Login Vendedor', error: null });
 });

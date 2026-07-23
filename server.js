@@ -14,6 +14,7 @@ const fs = require('fs');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/seller');
+const sellerProfileRoutes = require('./routes/seller-profile');
 const productRoutes = require('./routes/products');
 
 const app = express();
@@ -109,6 +110,7 @@ app.use((req, res, next) => {
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
 app.use('/seller', sellerRoutes(upload));
+app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);
 
 app.use((req, res) => {

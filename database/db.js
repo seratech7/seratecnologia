@@ -50,6 +50,11 @@ async function initDb() {
       email TEXT UNIQUE NOT NULL,
       phone TEXT,
       password_hash TEXT NOT NULL,
+      bio TEXT DEFAULT '',
+      avatar TEXT,
+      sales_count INTEGER DEFAULT 0,
+      website TEXT DEFAULT '',
+      whatsapp TEXT DEFAULT '',
       status TEXT DEFAULT 'active',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -64,6 +69,16 @@ async function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  const sellerInfo = db.exec("PRAGMA table_info(sellers)");
+  if (sellerInfo.length > 0) {
+    const cols = sellerInfo[0].values.map(r => r[1]);
+    if (!cols.includes('bio')) db.run("ALTER TABLE sellers ADD COLUMN bio TEXT DEFAULT ''");
+    if (!cols.includes('avatar')) db.run("ALTER TABLE sellers ADD COLUMN avatar TEXT");
+    if (!cols.includes('sales_count')) db.run("ALTER TABLE sellers ADD COLUMN sales_count INTEGER DEFAULT 0");
+    if (!cols.includes('website')) db.run("ALTER TABLE sellers ADD COLUMN website TEXT DEFAULT ''");
+    if (!cols.includes('whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN whatsapp TEXT DEFAULT ''");
+  }
 
   const tableInfo = db.exec("PRAGMA table_info(products)");
   const hasSellerId = tableInfo.length > 0 && tableInfo[0].values.some(row => row[1] === 'seller_id');
@@ -122,6 +137,17 @@ async function initDb() {
     ];
     for (const [name, slug, icon] of cats) {
       db.run('INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)', [name, slug, icon]);
+    }
+  }
+
+  const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
+  const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
+  if (orphanCount > 0) {
+    const firstSeller = db.exec('SELECT id FROM sellers ORDER BY id ASC LIMIT 1');
+    if (firstSeller.length > 0 && firstSeller[0].values.length > 0) {
+      const firstId = firstSeller[0].values[0][0];
+      db.run('UPDATE products SET seller_id = ? WHERE seller_id IS NULL', [firstId]);
+      console.log(`[db] ${orphanCount} produtos vinculados ao vendedor #${firstId}`);
     }
   }
 

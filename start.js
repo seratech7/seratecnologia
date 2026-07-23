@@ -35,6 +35,21 @@ const locations = ["São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","C
 
 async function start() {
   await initDb();
+  const sellerCount = get('SELECT COUNT(*) as count FROM sellers');
+  let sellerId = null;
+  if (!sellerCount || sellerCount.count === 0) {
+    const bcrypt = require('bcryptjs');
+    const hash = bcrypt.hashSync('vendedor123', 12);
+    run("INSERT INTO sellers (name, email, phone, password_hash, bio, sales_count, whatsapp, status) VALUES (?,?,?,?,?,?,?,?)",
+      ['SeraTecnologia Store', 'vendas@seratecnologia.com', '(11) 99999-8888', hash,
+       'Loja oficial SeraTecnologia — especializada em hardware, componentes e periféricos. Qualidade e confiança desde 2026.',
+       45, '5511999998888', 'active']);
+    sellerId = get('SELECT id FROM sellers ORDER BY id DESC LIMIT 1').id;
+    console.log('👤 Vendedor padrão criado!');
+  } else {
+    sellerId = get('SELECT id FROM sellers ORDER BY id ASC LIMIT 1').id;
+  }
+
   const existing = get('SELECT COUNT(*) as count FROM products');
   if (!existing || existing.count === 0) {
     console.log('🌱 Primeira execução — semeando produtos...');
@@ -43,8 +58,8 @@ async function start() {
       const cat = get('SELECT id FROM categories WHERE slug = ?', [p.cat]);
       const catId = cat ? cat.id : 12;
       const loc = locations[Math.floor(Math.random() * locations.length)];
-      run('INSERT INTO products (name,description,price,category_id,image,status,featured,condition,location) VALUES (?,?,?,?,?,?,?,?,?)',
-        [p.name, p.desc, p.price, catId, '/uploads/' + imageFiles[i], 'active', i < 4 ? 1 : 0, p.cond, loc]);
+      run('INSERT INTO products (name,description,price,category_id,seller_id,image,status,featured,condition,location) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [p.name, p.desc, p.price, catId, sellerId, '/uploads/' + imageFiles[i], 'active', i < 4 ? 1 : 0, p.cond, loc]);
       console.log(`  ${i+1}. ${p.name}`);
     }
     console.log(`✅ ${products.length} produtos inseridos!`);
