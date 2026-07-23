@@ -155,17 +155,21 @@ document.addEventListener('DOMContentLoaded', function() {
   var adClose = document.getElementById('adClose');
   var topAd = document.getElementById('topAd');
 
+  var mc = document.querySelector('.main-content');
+
   if (adText && !localStorage.getItem('adClosed')) {
     adText.innerHTML = ads[Math.floor(Math.random() * ads.length)];
+    if (mc) mc.style.paddingTop = '32px';
   }
 
   if (adClose && topAd) {
     adClose.addEventListener('click', function() {
       topAd.style.display = 'none';
       localStorage.setItem('adClosed', '1');
+      if (mc) mc.style.paddingTop = '0';
     });
   }
 });
 </script>
 
-<main class="main-content" style="padding-top: 72px; min-height: 100vh;">
+<main class="main-content">
