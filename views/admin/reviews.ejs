@@ -1,0 +1,125 @@
+<%- include('../partials/admin-header') %>
+
+<div class="dashboard-header">
+  <h1><i class="fas fa-star"></i> Avaliações</h1>
+  <p>Gerencie as avaliações dos produtos</p>
+</div>
+
+<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+  <a href="/admin/reviews" class="btn-small" style="<%= filter === 'all' ? 'background:var(--primary);color:#fff;' : '' %>">Todas</a>
+  <a href="/admin/reviews?filter=high" class="btn-small" style="<%= filter === 'high' ? 'background:var(--primary);color:#fff;' : '' %>">Melhores (4+)</a>
+  <a href="/admin/reviews?filter=low" class="btn-small" style="<%= filter === 'low' ? 'background:var(--primary);color:#fff;' : '' %>">Piores (2 ou menos)</a>
+</div>
+
+<% if (reviews.length === 0) { %>
+<div style="text-align:center;padding:60px 20px;color:#999;">
+  <i class="fas fa-star" style="font-size:48px;opacity:0.3;margin-bottom:16px;"></i>
+  <p>Nenhuma avaliação encontrada</p>
+</div>
+<% } else { %>
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Produto</th>
+      <th>Vendedor</th>
+      <th>Nota</th>
+      <th>Comentário</th>
+      <th>IP</th>
+      <th>Data</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% reviews.forEach(function(r) { %>
+    <tr>
+      <td><%= r.id %></td>
+      <td><a href="/produto/<%= r.product_id %>" target="_blank" style="text-decoration:none;color:inherit;"><%= r.product_name || '#'+r.product_id %></a></td>
+      <td><%= r.seller_name || '#'+r.seller_id %></td>
+      <td style="white-space:nowrap;">
+        <% for(var i=1;i<=5;i++){ %>
+          <i class="fas fa-star" style="color:<%= i<=r.rating?'#ffc107':'#e0e0e0' %>;font-size:13px;"></i>
+        <% } %>
+      </td>
+      <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= r.comment || '-' %></td>
+      <td style="font-size:12px;color:#999;"><%= r.reviewer_ip || '-' %></td>
+      <td style="font-size:12px;color:#666;white-space:nowrap;"><%= r.created_at %></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-small" onclick='editReview(<%= r.id %>,<%= r.rating %>,"<%= ((r.comment||'').replace(/"/g,"&quot;").replace(/[\n\r]/g," ")) %>")' style="margin-right:4px;">
+          <i class="fas fa-edit"></i>
+        </button>
+        <form method="POST" action="/admin/reviews/delete/<%= r.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta avaliação?')">
+          <button class="btn-small" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;"><i class="fas fa-trash"></i></button>
+        </form>
+      </td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+</div>
+
+<% if (totalPages > 1) { %>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
+  <% for(var p=1;p<=totalPages;p++){ %>
+    <a href="/admin/reviews?filter=<%= filter %>&page=<%= p %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;"><%= p %></a>
+  <% } %>
+</div>
+<% } %>
+<% } %>
+
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:480px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <h3 style="margin-top:0;margin-bottom:16px;">Editar Avaliação</h3>
+    <form method="POST" id="editForm">
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Avaliação</label>
+        <div id="starPicker" style="font-size:32px;cursor:pointer;">
+          <% for(var i=1;i<=5;i++){ %>
+            <i class="fas fa-star" data-val="<%= i %>" style="color:#e0e0e0;"></i>
+          <% } %>
+        </div>
+        <input type="hidden" name="rating" id="editRating" value="5">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label for="editComment" style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Comentário</label>
+        <textarea name="comment" id="editComment" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;resize:vertical;font-family:inherit;font-size:14px;"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editReview(id, rating, comment) {
+  document.getElementById('editForm').action = '/admin/reviews/edit/' + id;
+  document.getElementById('editRating').value = rating;
+  document.getElementById('editComment').value = comment;
+  var stars = document.querySelectorAll('#starPicker i');
+  stars.forEach(function(s) {
+    s.style.color = parseInt(s.dataset.val) <= parseInt(rating) ? '#ffc107' : '#e0e0e0';
+  });
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+document.getElementById('starPicker').addEventListener('click', function(e) {
+  if (e.target.tagName === 'I') {
+    var val = parseInt(e.target.dataset.val);
+    document.getElementById('editRating').value = val;
+    var stars = document.querySelectorAll('#starPicker i');
+    stars.forEach(function(s) {
+      s.style.color = parseInt(s.dataset.val) <= val ? '#ffc107' : '#e0e0e0';
+    });
+  }
+});
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+
+<%- include('../partials/admin-footer') %>

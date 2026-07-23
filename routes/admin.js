@@ -386,5 +386,49 @@ router.post('/ads/delete/:id', (req, res) => {
   res.redirect('/admin/ads');
 });
 
+// ============ REVIEWS ============
+
+router.get('/reviews', (req, res) => {
+  const filter = req.query.filter || 'all';
+  const page = parseInt(req.query.page) || 1;
+  const limit = 30;
+  const offset = (page - 1) * limit;
+
+  let where = '';
+  if (filter === 'low') where = 'WHERE r.rating <= 2';
+  else if (filter === 'high') where = 'WHERE r.rating >= 4';
+
+  const count = db.get('SELECT COUNT(*) as c FROM reviews r ' + where);
+  const reviews = db.query(`
+    SELECT r.*, p.name as product_name, s.name as seller_name
+    FROM reviews r
+    LEFT JOIN products p ON r.product_id = p.id
+    LEFT JOIN sellers s ON r.seller_id = s.id
+    ${where} ORDER BY r.created_at DESC LIMIT ? OFFSET ?
+  `, [limit, offset]);
+
+  const totalPages = Math.ceil((count ? count.c : 0) / limit);
+
+  res.render('admin/reviews', {
+    title: 'Avaliações - Painel Admin',
+    reviews, filter, page, totalPages, error: null
+  });
+});
+
+router.post('/reviews/edit/:id', (req, res) => {
+  const review = db.get('SELECT * FROM reviews WHERE id = ?', [req.params.id]);
+  if (!review) return res.redirect('/admin/reviews');
+  const rating = parseInt(req.body.rating);
+  const comment = (req.body.comment || '').trim().slice(0, 500);
+  if (rating < 1 || rating > 5) return res.redirect('/admin/reviews');
+  db.run('UPDATE reviews SET rating = ?, comment = ? WHERE id = ?', [rating, comment, req.params.id]);
+  res.redirect('/admin/reviews');
+});
+
+router.post('/reviews/delete/:id', (req, res) => {
+  db.run('DELETE FROM reviews WHERE id = ?', [req.params.id]);
+  res.redirect('/admin/reviews');
+});
+
 return router;
 };
