@@ -107,14 +107,15 @@ async function initDb() {
     )
   `);
 
-  const adminResult = db.exec('SELECT COUNT(*) as count FROM admins');
-  const adminCount = adminResult.length > 0 && adminResult[0].values.length > 0 ? adminResult[0].values[0][0] : 0;
+  const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+  if (adminPass === 'admin123') {
+    console.warn('⚠️  AVISO: Use ADMIN_PASSWORD no .env para definir uma senha forte!');
+  }
+  const hash = bcrypt.hashSync(adminPass, 12);
+  db.run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
+  const adminCheck = db.exec("SELECT COUNT(*) as c FROM admins WHERE username = 'admin'");
+  const adminCount = adminCheck.length > 0 && adminCheck[0].values.length > 0 ? adminCheck[0].values[0][0] : 0;
   if (adminCount === 0) {
-    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
-    if (adminPass === 'admin123') {
-      console.warn('⚠️  AVISO: Use ADMIN_PASSWORD no .env para definir uma senha forte!');
-    }
-    const hash = bcrypt.hashSync(adminPass, 12);
     db.run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', ['admin', hash, 'Administrador']);
   }
 
