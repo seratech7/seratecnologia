@@ -182,12 +182,11 @@ async function initDb() {
       ['SSD Samsung 990 Pro', '<i class="fas fa-star"></i> SSD Samsung 990 Pro 2TB — R$ 1.299,90', '/produto/15', '', 15, 86400],
       ['Promoção SSDs', '<i class="fas fa-tags"></i> Aproveite nossas ofertas em SSDs!', '/?category=ssds', '', 20, 43200],
     ];
-    const insert = db.prepare('INSERT INTO ads (title, text, link, image, display_duration, cooldown, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
-    defaultAds.forEach((ad, i) => {
-      insert.bind(ad);
-      insert.step();
-      insert.free();
-      insert.reset();
+    defaultAds.forEach(function(ad) {
+      var s = db.prepare('INSERT INTO ads (title, text, link, image, display_duration, cooldown, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
+      s.bind(ad);
+      s.step();
+      s.free();
     });
     console.log('[db] Anúncios padrão criados');
     saveDb();
