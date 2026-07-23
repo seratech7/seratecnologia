@@ -272,29 +272,34 @@ function run(sql, params = []) {
 }
 
 function addNotification(ip, type, message, icon, link) {
-  run('INSERT INTO notifications (ip, type, message, icon, link) VALUES (?, ?, ?, ?, ?)',
-    [ip || '', type || 'info', message, icon || 'bell', link || '']);
+  if (ip === 'all') {
+    run('INSERT INTO notifications (ip, type, message, icon, link) VALUES (?, ?, ?, ?, ?)',
+      ['', type || 'info', message, icon || 'bell', link || '']);
+  } else {
+    run('INSERT INTO notifications (ip, type, message, icon, link) VALUES (?, ?, ?, ?, ?)',
+      [ip || '', type || 'info', message, icon || 'bell', link || '']);
+  }
 }
 
 function getUnreadNotifications(ip) {
-  return query("SELECT * FROM notifications WHERE ip = ? AND read = 0 ORDER BY created_at DESC LIMIT 20", [ip || '']);
+  return query("SELECT * FROM notifications WHERE (ip = ? OR ip = '') AND read = 0 ORDER BY created_at DESC LIMIT 20", [ip || '']);
 }
 
 function getNotifications(ip, limit, offset) {
-  return query("SELECT * FROM notifications WHERE ip = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+  return query("SELECT * FROM notifications WHERE (ip = ? OR ip = '') ORDER BY created_at DESC LIMIT ? OFFSET ?",
     [ip || '', limit || 50, offset || 0]);
 }
 
 function markNotificationRead(id, ip) {
-  run("UPDATE notifications SET read = 1 WHERE id = ? AND ip = ?", [id, ip]);
+  run("UPDATE notifications SET read = 1 WHERE id = ? AND (ip = ? OR ip = '')", [id, ip]);
 }
 
 function markAllNotificationsRead(ip) {
-  run("UPDATE notifications SET read = 1 WHERE ip = ? AND read = 0", [ip || '']);
+  run("UPDATE notifications SET read = 1 WHERE (ip = ? OR ip = '') AND read = 0", [ip || '']);
 }
 
 function getNotificationCount(ip) {
-  var r = get("SELECT COUNT(*) as c FROM notifications WHERE ip = ? AND read = 0", [ip || '']);
+  var r = get("SELECT COUNT(*) as c FROM notifications WHERE (ip = ? OR ip = '') AND read = 0", [ip || '']);
   return r ? r.c : 0;
 }
 
