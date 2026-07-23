@@ -112,11 +112,11 @@ async function initDb() {
     console.warn('⚠️  AVISO: Use ADMIN_PASSWORD no .env para definir uma senha forte!');
   }
   const hash = bcrypt.hashSync(adminPass, 12);
-  db.run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
+  run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
   const adminCheck = db.exec("SELECT COUNT(*) as c FROM admins WHERE username = 'admin'");
   const adminCount = adminCheck.length > 0 && adminCheck[0].values.length > 0 ? adminCheck[0].values[0][0] : 0;
   if (adminCount === 0) {
-    db.run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', ['admin', hash, 'Administrador']);
+    run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', ['admin', hash, 'Administrador']);
   }
 
   const catResult = db.exec('SELECT COUNT(*) as count FROM categories');
