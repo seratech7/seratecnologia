@@ -14,14 +14,104 @@ function q(urlParams) {
 %>
 
 <div class="marketplace-container">
-  <button class="filter-toggle" id="filterToggle"><i class="fas fa-filter"></i> Filtros</button>
+  <button class="filter-toggle" id="filterToggle">
+    <i class="fas fa-filter"></i>
+    <span>Filtros</span>
+    <% var activeFilters = (selectedCategory ? 1 : 0) + (selectedCondition ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (selectedSort ? 1 : 0); %>
+    <% if (activeFilters > 0) { %><span class="filter-badge"><%= activeFilters %></span><% } %>
+  </button>
+
+  <div class="filter-overlay" id="filterOverlay"></div>
+
+  <div class="filter-sheet" id="filterSheet">
+    <div class="filter-sheet-header">
+      <span class="filter-sheet-title"><i class="fas fa-filter"></i> Filtros</span>
+      <button class="filter-sheet-close" id="filterSheetClose">&times;</button>
+    </div>
+    <div class="filter-sheet-body" id="filterSheetBody">
+      <form method="GET" action="/" class="filter-form" id="filterFormMobile">
+        <% if (search) { %><input type="hidden" name="search" value="<%= search %>"><% } %>
+
+        <div class="filter-section">
+          <h4>Categorias</h4>
+          <div class="filter-options-grid">
+            <label class="filter-chip <%= !selectedCategory ? 'active' : '' %>">
+              <input type="radio" name="category" value="" <%= !selectedCategory ? 'checked' : '' %>>
+              <i class="fas fa-th-large"></i> Todas
+            </label>
+            <% categories.forEach(cat => { %>
+              <label class="filter-chip <%= selectedCategory === cat.slug ? 'active' : '' %>">
+                <input type="radio" name="category" value="<%= cat.slug %>" <%= selectedCategory === cat.slug ? 'checked' : '' %>>
+                <%= cat.icon || '📦' %> <%= cat.name %>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Condição</h4>
+          <div class="filter-options-grid">
+            <label class="filter-chip <%= !selectedCondition ? 'active' : '' %>">
+              <input type="radio" name="condition" value="" <%= !selectedCondition ? 'checked' : '' %>>
+              Todas
+            </label>
+            <label class="filter-chip <%= selectedCondition === 'new' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="new" <%= selectedCondition === 'new' ? 'checked' : '' %>>
+              <span class="cond-dot new"></span> Novo
+            </label>
+            <label class="filter-chip <%= selectedCondition === 'open-box' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="open-box" <%= selectedCondition === 'open-box' ? 'checked' : '' %>>
+              <span class="cond-dot open-box"></span> Aberto
+            </label>
+            <label class="filter-chip <%= selectedCondition === 'semi-new' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="semi-new" <%= selectedCondition === 'semi-new' ? 'checked' : '' %>>
+              <span class="cond-dot semi-new"></span> Semi-novo
+            </label>
+            <label class="filter-chip <%= selectedCondition === 'used' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="used" <%= selectedCondition === 'used' ? 'checked' : '' %>>
+              <span class="cond-dot used"></span> Usado
+            </label>
+            <label class="filter-chip <%= selectedCondition === 'refurbished' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="refurbished" <%= selectedCondition === 'refurbished' ? 'checked' : '' %>>
+              <span class="cond-dot refurbished"></span> Recondicionado
+            </label>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Faixa de Preço</h4>
+          <div class="price-range-horizontal">
+            <input type="number" name="price_min" placeholder="R$ min" value="<%= priceMin %>" class="price-field" min="0" step="0.01">
+            <span class="price-sep">—</span>
+            <input type="number" name="price_max" placeholder="R$ max" value="<%= priceMax %>" class="price-field" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Ordenar</h4>
+          <select name="sort" class="sort-select">
+            <option value="" <%= !selectedSort ? 'selected' : '' %>>Mais recentes</option>
+            <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
+            <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
+            <option value="oldest" <%= selectedSort === 'oldest' ? 'selected' : '' %>>Mais antigos</option>
+          </select>
+        </div>
+
+        <div class="filter-sheet-actions">
+          <a href="/" class="btn-clear-filters"><i class="fas fa-times-circle"></i> Limpar tudo</a>
+          <button type="submit" class="btn-apply-filters"><i class="fas fa-check"></i> Aplicar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <aside class="sidebar-filters" id="sidebarFilters">
-    <form method="GET" action="/" class="filter-form" id="filterForm">
+    <form method="GET" action="/" class="filter-form" id="filterFormDesktop">
       <% if (search) { %><input type="hidden" name="search" value="<%= search %>"><% } %>
 
       <div class="filter-section">
         <h3><i class="fas fa-filter"></i> Filtros</h3>
-        <a href="/" class="clear-filters"><i class="fas fa-times-circle"></i> Limpar filtros</a>
+        <a href="/" class="clear-filters"><i class="fas fa-times-circle"></i> Limpar</a>
       </div>
 
       <div class="filter-section">
@@ -29,14 +119,14 @@ function q(urlParams) {
         <ul class="category-list">
           <li>
             <label class="filter-label <%= !selectedCategory ? 'active' : '' %>">
-              <input type="radio" name="category" value="" <%= !selectedCategory ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="category" value="" <%= !selectedCategory ? 'checked' : '' %>>
               <i class="fas fa-th-large"></i> Todas
             </label>
           </li>
           <% categories.forEach(cat => { %>
             <li>
               <label class="filter-label <%= selectedCategory === cat.slug ? 'active' : '' %>">
-                <input type="radio" name="category" value="<%= cat.slug %>" <%= selectedCategory === cat.slug ? 'checked' : '' %> onchange="this.form.submit()">
+                <input type="radio" name="category" value="<%= cat.slug %>" <%= selectedCategory === cat.slug ? 'checked' : '' %>>
                 <%= cat.icon || '📦' %> <%= cat.name %>
               </label>
             </li>
@@ -49,37 +139,37 @@ function q(urlParams) {
         <ul class="condition-list">
           <li>
             <label class="filter-label <%= !selectedCondition ? 'active' : '' %>">
-              <input type="radio" name="condition" value="" <%= !selectedCondition ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="" <%= !selectedCondition ? 'checked' : '' %>>
               Todas
             </label>
           </li>
           <li>
             <label class="filter-label <%= selectedCondition === 'new' ? 'active' : '' %>">
-              <input type="radio" name="condition" value="new" <%= selectedCondition === 'new' ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="new" <%= selectedCondition === 'new' ? 'checked' : '' %>>
               <span class="cond-dot new"></span> Novo
             </label>
           </li>
           <li>
             <label class="filter-label <%= selectedCondition === 'open-box' ? 'active' : '' %>">
-              <input type="radio" name="condition" value="open-box" <%= selectedCondition === 'open-box' ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="open-box" <%= selectedCondition === 'open-box' ? 'checked' : '' %>>
               <span class="cond-dot open-box"></span> Aberto
             </label>
           </li>
           <li>
             <label class="filter-label <%= selectedCondition === 'semi-new' ? 'active' : '' %>">
-              <input type="radio" name="condition" value="semi-new" <%= selectedCondition === 'semi-new' ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="semi-new" <%= selectedCondition === 'semi-new' ? 'checked' : '' %>>
               <span class="cond-dot semi-new"></span> Semi-novo
             </label>
           </li>
           <li>
             <label class="filter-label <%= selectedCondition === 'used' ? 'active' : '' %>">
-              <input type="radio" name="condition" value="used" <%= selectedCondition === 'used' ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="used" <%= selectedCondition === 'used' ? 'checked' : '' %>>
               <span class="cond-dot used"></span> Usado
             </label>
           </li>
           <li>
             <label class="filter-label <%= selectedCondition === 'refurbished' ? 'active' : '' %>">
-              <input type="radio" name="condition" value="refurbished" <%= selectedCondition === 'refurbished' ? 'checked' : '' %> onchange="this.form.submit()">
+              <input type="radio" name="condition" value="refurbished" <%= selectedCondition === 'refurbished' ? 'checked' : '' %>>
               <span class="cond-dot refurbished"></span> Recondicionado
             </label>
           </li>
@@ -191,10 +281,43 @@ function q(urlParams) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   var toggle = document.getElementById('filterToggle');
-  var sidebar = document.getElementById('sidebarFilters');
-  if (toggle && sidebar) {
+  var sheet = document.getElementById('filterSheet');
+  var overlay = document.getElementById('filterOverlay');
+  var closeBtn = document.getElementById('filterSheetClose');
+
+  function openSheet() {
+    sheet.classList.add('active');
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    sheet.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (toggle) {
     toggle.addEventListener('click', function() {
-      sidebar.classList.toggle('active');
+      if (window.innerWidth <= 768) openSheet();
+    });
+  }
+  if (closeBtn) closeBtn.addEventListener('click', closeSheet);
+  if (overlay) overlay.addEventListener('click', closeSheet);
+
+  // Desktop: auto-submit nos radios
+  var desktopForm = document.getElementById('filterFormDesktop');
+  if (desktopForm && window.innerWidth > 768) {
+    desktopForm.querySelectorAll('input[type="radio"]').forEach(function(r) {
+      r.addEventListener('change', function() { desktopForm.submit(); });
+    });
+  }
+
+  // Fecha sheet ao submeter
+  var mobileForm = document.getElementById('filterFormMobile');
+  if (mobileForm) {
+    mobileForm.addEventListener('submit', function() {
+      setTimeout(closeSheet, 150);
     });
   }
 });
