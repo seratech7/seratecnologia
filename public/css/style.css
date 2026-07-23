@@ -1967,3 +1967,157 @@ img { max-width: 100%; height: auto; display: block; }
 .alert-success i {
   font-size: 18px;
 }
+
+/* =========================================
+   STAR RATINGS
+   ========================================= */
+
+.product-ratings {
+  padding: 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+}
+
+.product-ratings h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: var(--dark);
+}
+
+.rating-summary {
+  margin-bottom: 16px;
+}
+
+.rating-stars-large {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-stars-large i {
+  font-size: 20px;
+}
+
+.star-filled {
+  color: #f9a825;
+}
+
+.star-half {
+  color: #f9a825;
+}
+
+.star-empty {
+  color: #ddd;
+}
+
+.rating-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark);
+  margin-left: 8px;
+}
+
+.rating-count {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-left: 4px;
+}
+
+.rating-form {
+  padding: 16px;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 12px;
+}
+
+.rating-form h4 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--dark);
+}
+
+.star-rating-form .star-input {
+  margin-bottom: 8px;
+}
+
+.star-rating-form select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 14px;
+  background: var(--white);
+}
+
+.star-rating-form textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: 6px;
+  font-size: 14px;
+  resize: vertical;
+  margin-bottom: 8px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.star-rating-form textarea:focus,
+.star-rating-form select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-item {
+  padding: 12px;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-100);
+}
+
+.review-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.review-stars i {
+  font-size: 14px;
+}
+
+.review-date {
+  font-size: 12px;
+  color: var(--gray-400);
+  margin-left: 8px;
+}
+
+.review-comment {
+  font-size: 14px;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.seller-rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.seller-rating-stars i {
+  font-size: 18px;
+}
+
+.seller-rating-stars span {
+  font-size: 14px;
+  color: var(--gray-500);
+  margin-left: 4px;
+}

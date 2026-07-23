@@ -54,12 +54,64 @@ router.get('/produto/:id', (req, res) => {
     );
   }
 
+  const rating = db.get(
+    'SELECT COUNT(*) as count, AVG(rating) as avg FROM reviews WHERE product_id = ?',
+    [product.id]
+  );
+
+  const reviews = db.query(
+    'SELECT rating, comment, created_at FROM reviews WHERE product_id = ? ORDER BY created_at DESC LIMIT 10',
+    [product.id]
+  );
+
   const related = db.query(
     'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.id != ? AND p.status = ? LIMIT 4',
     [product.category_id, product.id, 'active']
   );
 
-  res.render('product', { title: product.name, product, seller, related });
+  res.render('product', {
+    title: product.name,
+    product,
+    seller,
+    rating,
+    reviews,
+    related,
+    userRating: null
+  });
+});
+
+router.post('/produto/:id/avaliar', (req, res) => {
+  const { rating, comment } = req.body;
+  const productId = req.params.id;
+
+  const product = db.get('SELECT p.*, s.id as sid FROM products p LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.id = ?', [productId]);
+  if (!product || !product.sid) {
+    return res.status(404).json({ error: 'Produto ou vendedor não encontrado' });
+  }
+
+  const stars = parseInt(rating);
+  if (!stars || stars < 1 || stars > 5) {
+    return res.status(400).json({ error: 'Avaliação deve ser entre 1 e 5 estrelas' });
+  }
+
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+
+  const existing = db.get(
+    'SELECT id FROM reviews WHERE product_id = ? AND reviewer_ip = ?',
+    [productId, ip]
+  );
+
+  if (existing) {
+    db.run('UPDATE reviews SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [stars, (comment || '').toString().trim().slice(0, 500), existing.id]);
+  } else {
+    db.run(
+      'INSERT INTO reviews (product_id, seller_id, rating, comment, reviewer_ip) VALUES (?, ?, ?, ?, ?)',
+      [productId, product.sid, stars, (comment || '').toString().trim().slice(0, 500), ip]
+    );
+  }
+
+  res.redirect('/produto/' + productId);
 });
 
 module.exports = router;

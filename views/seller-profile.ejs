@@ -24,6 +24,13 @@
         <span><i class="fas fa-box"></i> <%= totalProducts %> produtos ativos</span>
         <span><i class="fas fa-shopping-cart"></i> <%= seller.sales_count || 0 %> vendas</span>
       </div>
+      <div class="seller-rating-stars">
+        <% const avg = rating && rating.count > 0 ? Math.round(rating.avg * 2) / 2 : 0; %>
+        <% for (let i = 1; i <= 5; i++) { %>
+          <i class="fas fa-star <%= i <= avg ? 'star-filled' : 'star-empty' %>"></i>
+        <% } %>
+        <span>(<%= rating ? rating.count : 0 %>)</span>
+      </div>
     </div>
   </div>
 

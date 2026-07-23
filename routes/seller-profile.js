@@ -12,6 +12,11 @@ router.get('/:id', (req, res) => {
 
   const daysOnPlatform = Math.floor((Date.now() - new Date(seller.created_at).getTime()) / (1000 * 60 * 60 * 24));
 
+  const rating = db.get(
+    'SELECT COUNT(*) as count, AVG(rating) as avg FROM reviews WHERE seller_id = ?',
+    [req.params.id]
+  );
+
   const products = db.query(
     'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? AND p.status = ? ORDER BY p.created_at DESC',
     [req.params.id, 'active']
@@ -23,6 +28,7 @@ router.get('/:id', (req, res) => {
     title: seller.name,
     seller,
     daysOnPlatform,
+    rating,
     products,
     totalProducts
   });

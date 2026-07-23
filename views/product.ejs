@@ -91,6 +91,57 @@
         </div>
       <% } %>
 
+      <div class="product-ratings">
+        <h3><i class="fas fa-star"></i> Avaliações</h3>
+
+        <div class="rating-summary">
+          <div class="rating-stars-large">
+            <% const avg = rating && rating.count > 0 ? Math.round(rating.avg * 2) / 2 : 0; %>
+            <% const fullStars = Math.floor(avg); %>
+            <% const halfStar = avg - fullStars >= 0.5; %>
+            <% for (let i = 1; i <= 5; i++) { %>
+              <i class="fas fa-star <%= i <= fullStars ? 'star-filled' : (i === fullStars + 1 && halfStar ? 'star-half' : 'star-empty') %>"></i>
+            <% } %>
+            <span class="rating-number"><%= avg %></span>
+            <span class="rating-count">(<%= rating ? rating.count : 0 %> avaliações)</span>
+          </div>
+        </div>
+
+        <div class="rating-form">
+          <h4>Avaliar este produto</h4>
+          <form action="/produto/<%= product.id %>/avaliar" method="POST" class="star-rating-form">
+            <div class="star-input">
+              <select name="rating" id="rating-select" required>
+                <option value="">Selecione</option>
+                <option value="5">5 estrelas</option>
+                <option value="4">4 estrelas</option>
+                <option value="3">3 estrelas</option>
+                <option value="2">2 estrelas</option>
+                <option value="1">1 estrela</option>
+              </select>
+            </div>
+            <textarea name="comment" placeholder="Seu comentário (opcional)" rows="2" maxlength="500"></textarea>
+            <button type="submit" class="btn-contact"><i class="fas fa-star"></i> Avaliar</button>
+          </form>
+        </div>
+
+        <% if (reviews && reviews.length > 0) { %>
+          <div class="reviews-list">
+            <% reviews.forEach(r => { %>
+              <div class="review-item">
+                <div class="review-stars">
+                  <% for (let i = 1; i <= 5; i++) { %>
+                    <i class="fas fa-star <%= i <= r.rating ? 'star-filled' : 'star-empty' %>"></i>
+                  <% } %>
+                  <span class="review-date"><%= new Date(r.created_at).toLocaleDateString('pt-BR') %></span>
+                </div>
+                <% if (r.comment) { %><p class="review-comment"><%= r.comment %></p><% } %>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
       <div class="contact-seller">
         <h3><i class="fas fa-comment"></i> Entrar em contato</h3>
         <p>Interessado neste produto? Entre em contato com o vendedor.</p>

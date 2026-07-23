@@ -140,6 +140,20 @@ async function initDb() {
     }
   }
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+      comment TEXT DEFAULT '',
+      reviewer_ip TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id),
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {
