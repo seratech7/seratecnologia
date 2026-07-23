@@ -2968,3 +2968,41 @@ img { max-width: 100%; height: auto; display: block; }
 
   .contact-item { padding: 12px; }
 }
+
+/* =========================================
+   NOTIFICATION BELL
+   ========================================= */
+.notif-bell {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all .2s;
+  font-size: 16px;
+}
+.notif-bell:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.notif-bell.has-unread { color: #ffc107; }
+.notif-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+@media (max-width: 480px) {
+  .notif-bell { font-size: 15px; width: 32px; height: 32px; }
+}

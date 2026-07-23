@@ -205,6 +205,19 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT DEFAULT 'info',
+      message TEXT NOT NULL,
+      icon TEXT DEFAULT 'bell',
+      link TEXT DEFAULT '',
+      ip TEXT NOT NULL DEFAULT '',
+      read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {
@@ -258,4 +271,31 @@ function run(sql, params = []) {
   return query(sql, params);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb };
+function addNotification(ip, type, message, icon, link) {
+  run('INSERT INTO notifications (ip, type, message, icon, link) VALUES (?, ?, ?, ?, ?)',
+    [ip || '', type || 'info', message, icon || 'bell', link || '']);
+}
+
+function getUnreadNotifications(ip) {
+  return query("SELECT * FROM notifications WHERE ip = ? AND read = 0 ORDER BY created_at DESC LIMIT 20", [ip || '']);
+}
+
+function getNotifications(ip, limit, offset) {
+  return query("SELECT * FROM notifications WHERE ip = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+    [ip || '', limit || 50, offset || 0]);
+}
+
+function markNotificationRead(id, ip) {
+  run("UPDATE notifications SET read = 1 WHERE id = ? AND ip = ?", [id, ip]);
+}
+
+function markAllNotificationsRead(ip) {
+  run("UPDATE notifications SET read = 1 WHERE ip = ? AND read = 0", [ip || '']);
+}
+
+function getNotificationCount(ip) {
+  var r = get("SELECT COUNT(*) as c FROM notifications WHERE ip = ? AND read = 0", [ip || '']);
+  return r ? r.c : 0;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount };

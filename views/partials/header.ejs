@@ -28,6 +28,10 @@
       </form>
     </div>
     <div class="header-right">
+      <div class="notif-bell" id="notifBell" onclick="window.location.href='/notificacoes'">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+      </div>
       <button class="search-toggle-mobile" id="searchToggle" aria-label="Buscar">
         <i class="fas fa-search"></i>
       </button>
@@ -131,6 +135,29 @@ document.addEventListener('DOMContentLoaded', function() {
       catToggle.querySelector('.fa-chevron-down').classList.toggle('rotated');
     });
   }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  function atualizarNotificacoes() {
+    fetch('/api/notifications').then(function(r) { return r.json(); }).then(function(data) {
+      var badge = document.getElementById('notifBadge');
+      if (!badge) return;
+      if (data.count > 0) {
+        badge.textContent = data.count;
+        badge.style.display = 'flex';
+        var bell = document.getElementById('notifBell');
+        if (bell) bell.classList.add('has-unread');
+      } else {
+        badge.style.display = 'none';
+        var bell = document.getElementById('notifBell');
+        if (bell) bell.classList.remove('has-unread');
+      }
+    }).catch(function() {});
+  }
+  atualizarNotificacoes();
+  setInterval(atualizarNotificacoes, 15000);
 });
 </script>
 

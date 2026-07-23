@@ -17,6 +17,7 @@ const sellerRoutes = require('./routes/seller');
 const sellerProfileRoutes = require('./routes/seller-profile');
 const productRoutes = require('./routes/products');
 const adRoutes = require('./routes/ads');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -120,6 +121,16 @@ app.use(function(req, res, next) {
     db.run('INSERT INTO page_views (path, product_id, session_id, ip, referrer) VALUES (?, ?, ?, ?, ?)',
       [req.path, productId, sessionId, ip, req.get('Referer') || '']);
   } catch(e) { /* silent */ }
+
+  if (req.path === '/' && req.query._welcome !== '1') {
+    try {
+      var visitCount = db.get("SELECT COUNT(*) as c FROM page_views WHERE ip = ?", [ip]);
+      if (visitCount && visitCount.c <= 1) {
+        db.addNotification(ip, 'welcome', 'Bem-vindo à SeraTecnologia! Explore nossos produtos de hardware e componentes.', 'wave', '/');
+      }
+    } catch(e) { /* silent */ }
+  }
+
   next();
 });
 
@@ -160,6 +171,7 @@ app.use('/admin', adminRoutes(upload));
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);
+app.use('/', notificationRoutes);
 app.use('/api', adRoutes);
 
 app.use((req, res) => {
