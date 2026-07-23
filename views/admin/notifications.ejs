@@ -1,0 +1,169 @@
+<%- include('../partials/admin-header') %>
+
+<div class="dashboard-header">
+  <h1><i class="fas fa-bell"></i> Notificações</h1>
+  <p>Gerencie todas as notificações da plataforma</p>
+</div>
+
+<div style="margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="/admin/notifications" class="btn-small" style="<%= filter === 'all' ? 'background:var(--primary);color:#fff;' : '' %>">Todas</a>
+    <a href="/admin/notifications?filter=unread" class="btn-small" style="<%= filter === 'unread' ? 'background:var(--primary);color:#fff;' : '' %>">Não lidas</a>
+    <a href="/admin/notifications?filter=read" class="btn-small" style="<%= filter === 'read' ? 'background:var(--primary);color:#fff;' : '' %>">Lidas</a>
+  </div>
+  <button class="btn-small" style="background:var(--primary);color:#fff;" onclick="document.getElementById('newForm').style.display='block'">
+    <i class="fas fa-plus"></i> Nova Notificação
+  </button>
+</div>
+
+<% if (error) { %>
+<div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"><%= error %></div>
+<% } %>
+
+<div id="newForm" style="display:none;background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:20px;margin-bottom:20px;">
+  <h3 style="margin:0 0 12px;">Nova Notificação</h3>
+  <form method="POST" action="/admin/notifications/new" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="grid-column:1/-1;">
+      <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Mensagem *</label>
+      <input type="text" name="message" required style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+    </div>
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Tipo</label>
+      <select name="type" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+        <option value="info">info</option><option value="welcome">welcome</option><option value="alert">alert</option><option value="promo">promo</option>
+      </select>
+    </div>
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Ícone (FontAwesome)</label>
+      <input type="text" name="icon" value="bell" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+    </div>
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Link</label>
+      <input type="text" name="link" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+    </div>
+    <div>
+      <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">IP (deixe vazio para global)</label>
+      <input type="text" name="ip" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+    </div>
+    <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" class="btn-small" onclick="document.getElementById('newForm').style.display='none'">Cancelar</button>
+      <button type="submit" class="btn-small" style="background:var(--primary);color:#fff;"><i class="fas fa-save"></i> Criar</button>
+    </div>
+  </form>
+</div>
+
+<% if (notifications.length === 0) { %>
+<div style="text-align:center;padding:60px;color:#999;">
+  <i class="fas fa-bell-slash" style="font-size:48px;opacity:0.3;margin-bottom:16px;"></i>
+  <p>Nenhuma notificação encontrada</p>
+</div>
+<% } else { %>
+<div style="overflow-x:auto;">
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Mensagem</th>
+      <th>Tipo</th>
+      <th>IP</th>
+      <th>Lida</th>
+      <th>Data</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% notifications.forEach(function(n) { %>
+    <tr style="<%= !n.read ? 'background:#f0f7ff;' : '' %>">
+      <td><%= n.id %></td>
+      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        <i class="fas fa-<%= n.icon || 'bell' %>" style="margin-right:4px;color:#666;"></i>
+        <%= n.message %>
+      </td>
+      <td><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:4px;font-size:12px;"><%= n.type %></span></td>
+      <td style="font-size:12px;color:#999;"><%= n.ip || '-' %></td>
+      <td><%= n.read ? 'Sim' : 'Não' %></td>
+      <td style="font-size:12px;color:#666;white-space:nowrap;"><%= n.created_at %></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-small" onclick='editNotif(<%= n.id %>,"<%= (n.message||'').replace(/"/g,"&quot;").replace(/[\n\r]/g," ") %>","<%= n.type %>","<%= n.icon||'bell' %>","<%= (n.link||'').replace(/"/g,"&quot;") %>","<%= (n.ip||'').replace(/"/g,"&quot;") %>",<%= n.read %>)' style="margin-right:4px;">
+          <i class="fas fa-edit"></i>
+        </button>
+        <form method="POST" action="/admin/notifications/delete/<%= n.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta notificação?')">
+          <button class="btn-small" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;"><i class="fas fa-trash"></i></button>
+        </form>
+      </td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>
+</div>
+
+<% if (totalPages > 1) { %>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
+  <% for(var p=1;p<=totalPages;p++){ %>
+    <a href="/admin/notifications?filter=<%= filter %>&page=<%= p %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;"><%= p %></a>
+  <% } %>
+</div>
+<% } %>
+<% } %>
+
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:520px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
+    <h3 style="margin:0 0 16px;">Editar Notificação</h3>
+    <form method="POST" id="editForm">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Mensagem</label>
+        <input type="text" name="message" id="editMessage" required style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Tipo</label>
+          <select name="type" id="editType" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+            <option value="info">info</option><option value="welcome">welcome</option><option value="alert">alert</option><option value="promo">promo</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Ícone</label>
+          <input type="text" name="icon" id="editIcon" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Link</label>
+          <input type="text" name="link" id="editLink" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">IP</label>
+          <input type="text" name="ip" id="editIp" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;">
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;">
+          <input type="checkbox" name="read" id="editRead" value="1"> Lida
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn-small" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-small" style="background:var(--primary);color:#fff;"><i class="fas fa-save"></i> Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function editNotif(id, msg, type, icon, link, ip, read) {
+  document.getElementById('editForm').action = '/admin/notifications/edit/' + id;
+  document.getElementById('editMessage').value = msg;
+  document.getElementById('editType').value = type;
+  document.getElementById('editIcon').value = icon;
+  document.getElementById('editLink').value = link;
+  document.getElementById('editIp').value = ip;
+  document.getElementById('editRead').checked = read === 1;
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+
+<%- include('../partials/admin-footer') %>

@@ -430,5 +430,52 @@ router.post('/reviews/delete/:id', (req, res) => {
   res.redirect('/admin/reviews');
 });
 
+// ============ NOTIFICATIONS ============
+
+router.get('/notifications', (req, res) => {
+  const filter = req.query.filter || 'all';
+  const page = parseInt(req.query.page) || 1;
+  const limit = 50;
+  const offset = (page - 1) * limit;
+
+  let where = '';
+  if (filter === 'unread') where = 'WHERE read = 0';
+  else if (filter === 'read') where = 'WHERE read = 1';
+
+  const count = db.get('SELECT COUNT(*) as c FROM notifications ' + where);
+  const notifications = db.query('SELECT * FROM notifications ' + where + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', [limit, offset]);
+  const totalPages = Math.ceil((count ? count.c : 0) / limit);
+
+  res.render('admin/notifications', {
+    title: 'Notificações - Painel Admin',
+    notifications, filter, page, totalPages, error: null
+  });
+});
+
+router.post('/notifications/new', (req, res) => {
+  const { message, type, icon, link, ip } = req.body;
+  if (!message) {
+    const notifications = db.query('SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50');
+    return res.render('admin/notifications', { title: 'Notificações - Painel Admin', notifications, filter: 'all', page: 1, totalPages: 1, error: 'Mensagem é obrigatória' });
+  }
+  db.run('INSERT INTO notifications (message, type, icon, link, ip) VALUES (?, ?, ?, ?, ?)',
+    [message.trim().slice(0, 500), type || 'info', icon || 'bell', link || '', ip || '']);
+  res.redirect('/admin/notifications');
+});
+
+router.post('/notifications/edit/:id', (req, res) => {
+  const n = db.get('SELECT * FROM notifications WHERE id = ?', [req.params.id]);
+  if (!n) return res.redirect('/admin/notifications');
+  const { message, type, icon, link, ip, read } = req.body;
+  db.run('UPDATE notifications SET message = ?, type = ?, icon = ?, link = ?, ip = ?, read = ? WHERE id = ?',
+    [(message || '').trim().slice(0, 500), type || 'info', icon || 'bell', link || '', ip || '', read ? 1 : 0, req.params.id]);
+  res.redirect('/admin/notifications');
+});
+
+router.post('/notifications/delete/:id', (req, res) => {
+  db.run('DELETE FROM notifications WHERE id = ?', [req.params.id]);
+  res.redirect('/admin/notifications');
+});
+
 return router;
 };
