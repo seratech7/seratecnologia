@@ -117,6 +117,25 @@ app.get('/admin/reset-senha/:token', (req, res) => {
   res.send('Senha do admin resetada para: admin123');
 });
 
+app.get('/admin/debug', (req, res) => {
+  const db = require('./database/db');
+  const bcrypt = require('bcryptjs');
+  const admin = db.get('SELECT * FROM admins WHERE username = ?', ['admin']);
+  const sellers = db.get('SELECT COUNT(*) as c FROM sellers');
+  const products = db.get('SELECT COUNT(*) as c FROM products');
+  if (admin) {
+    res.json({
+      adminExists: true,
+      hashPrefix: admin.password_hash ? admin.password_hash.substring(0, 15) + '...' : 'null',
+      compareAdmin: bcrypt.compareSync('admin123', admin.password_hash),
+      sellers: sellers ? sellers.c : 0,
+      products: products ? products.c : 0
+    });
+  } else {
+    res.json({ adminExists: false, sellers: sellers ? sellers.c : 0, products: products ? products.c : 0 });
+  }
+});
+
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
 app.use('/seller', sellerRoutes(upload));
