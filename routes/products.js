@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../database/db');
 
 router.get('/', (req, res) => {
-  const { search, category, condition: cond } = req.query;
+  const { search, category, condition: cond, price_min, price_max, sort } = req.query;
   const categories = db.query('SELECT * FROM categories ORDER BY name');
 
   let sql = 'SELECT p.*, c.name as category_name, c.icon as category_icon FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?';
@@ -24,7 +24,21 @@ router.get('/', (req, res) => {
     params.push(cond);
   }
 
-  sql += ' ORDER BY p.featured DESC, p.created_at DESC';
+  if (price_min) {
+    sql += ' AND p.price >= ?';
+    params.push(parseFloat(price_min));
+  }
+
+  if (price_max) {
+    sql += ' AND p.price <= ?';
+    params.push(parseFloat(price_max));
+  }
+
+  let orderBy = 'p.featured DESC, p.created_at DESC';
+  if (sort === 'price_asc') orderBy = 'p.price ASC';
+  else if (sort === 'price_desc') orderBy = 'p.price DESC';
+  else if (sort === 'oldest') orderBy = 'p.created_at ASC';
+  sql += ' ORDER BY ' + orderBy;
 
   const products = db.query(sql, params);
 
@@ -34,7 +48,10 @@ router.get('/', (req, res) => {
     categories,
     search: search || '',
     selectedCategory: category || '',
-    selectedCondition: cond || ''
+    selectedCondition: cond || '',
+    priceMin: price_min || '',
+    priceMax: price_max || '',
+    selectedSort: sort || ''
   });
 });
 

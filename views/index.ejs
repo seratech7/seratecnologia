@@ -1,55 +1,113 @@
 <%- include('partials/header') %>
 
+<%
+function q(urlParams) {
+  var p = [];
+  if (search) p.push('search=' + encodeURIComponent(search));
+  if (selectedCategory) p.push('category=' + encodeURIComponent(selectedCategory));
+  if (selectedCondition) p.push('condition=' + encodeURIComponent(selectedCondition));
+  if (priceMin) p.push('price_min=' + encodeURIComponent(priceMin));
+  if (priceMax) p.push('price_max=' + encodeURIComponent(priceMax));
+  if (selectedSort) p.push('sort=' + encodeURIComponent(selectedSort));
+  return p.length ? '?' + p.join('&') : '/';
+}
+%>
+
 <div class="marketplace-container">
   <button class="filter-toggle" id="filterToggle"><i class="fas fa-filter"></i> Filtros</button>
   <aside class="sidebar-filters" id="sidebarFilters">
-    <div class="filter-section">
-      <h3><i class="fas fa-filter"></i> Filtros</h3>
-    </div>
+    <form method="GET" action="/" class="filter-form" id="filterForm">
+      <% if (search) { %><input type="hidden" name="search" value="<%= search %>"><% } %>
 
-    <div class="filter-section">
-      <h4>Categorias</h4>
-      <ul class="category-list">
-        <li>
-          <a href="/" class="<%= !selectedCategory ? 'active' : '' %>">
-            <i class="fas fa-th-large"></i> Todas
-          </a>
-        </li>
-        <% categories.forEach(cat => { %>
+      <div class="filter-section">
+        <h3><i class="fas fa-filter"></i> Filtros</h3>
+        <a href="/" class="clear-filters"><i class="fas fa-times-circle"></i> Limpar filtros</a>
+      </div>
+
+      <div class="filter-section">
+        <h4>Categorias</h4>
+        <ul class="category-list">
           <li>
-            <a href="/?category=<%= cat.slug %><%= search ? '&search=' + search : '' %>" class="<%= selectedCategory === cat.slug ? 'active' : '' %>">
-              <%= cat.icon || '📦' %> <%= cat.name %>
-            </a>
+            <label class="filter-label <%= !selectedCategory ? 'active' : '' %>">
+              <input type="radio" name="category" value="" <%= !selectedCategory ? 'checked' : '' %> onchange="this.form.submit()">
+              <i class="fas fa-th-large"></i> Todas
+            </label>
           </li>
-        <% }) %>
-      </ul>
-    </div>
+          <% categories.forEach(cat => { %>
+            <li>
+              <label class="filter-label <%= selectedCategory === cat.slug ? 'active' : '' %>">
+                <input type="radio" name="category" value="<%= cat.slug %>" <%= selectedCategory === cat.slug ? 'checked' : '' %> onchange="this.form.submit()">
+                <%= cat.icon || '📦' %> <%= cat.name %>
+              </label>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
 
-    <div class="filter-section">
-      <h4>Condição</h4>
-      <ul class="condition-list">
-        <li>
-          <a href="/<%= selectedCategory ? '?category=' + selectedCategory : '' %>" class="<%= !selectedCondition ? 'active' : '' %>">
-            Todas
-          </a>
-        </li>
-        <li>
-          <a href="/?condition=new<%= selectedCategory ? '&category=' + selectedCategory : '' %><%= search ? '&search=' + search : '' %>" class="<%= selectedCondition === 'new' ? 'active' : '' %>">
-            Novo
-          </a>
-        </li>
-        <li>
-          <a href="/?condition=semi-new<%= selectedCategory ? '&category=' + selectedCategory : '' %><%= search ? '&search=' + search : '' %>" class="<%= selectedCondition === 'semi-new' ? 'active' : '' %>">
-            Semi-novo
-          </a>
-        </li>
-        <li>
-          <a href="/?condition=used<%= selectedCategory ? '&category=' + selectedCategory : '' %><%= search ? '&search=' + search : '' %>" class="<%= selectedCondition === 'used' ? 'active' : '' %>">
-            Usado
-          </a>
-        </li>
-      </ul>
-    </div>
+      <div class="filter-section">
+        <h4>Condição</h4>
+        <ul class="condition-list">
+          <li>
+            <label class="filter-label <%= !selectedCondition ? 'active' : '' %>">
+              <input type="radio" name="condition" value="" <%= !selectedCondition ? 'checked' : '' %> onchange="this.form.submit()">
+              Todas
+            </label>
+          </li>
+          <li>
+            <label class="filter-label <%= selectedCondition === 'new' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="new" <%= selectedCondition === 'new' ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="cond-dot new"></span> Novo
+            </label>
+          </li>
+          <li>
+            <label class="filter-label <%= selectedCondition === 'open-box' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="open-box" <%= selectedCondition === 'open-box' ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="cond-dot open-box"></span> Aberto
+            </label>
+          </li>
+          <li>
+            <label class="filter-label <%= selectedCondition === 'semi-new' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="semi-new" <%= selectedCondition === 'semi-new' ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="cond-dot semi-new"></span> Semi-novo
+            </label>
+          </li>
+          <li>
+            <label class="filter-label <%= selectedCondition === 'used' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="used" <%= selectedCondition === 'used' ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="cond-dot used"></span> Usado
+            </label>
+          </li>
+          <li>
+            <label class="filter-label <%= selectedCondition === 'refurbished' ? 'active' : '' %>">
+              <input type="radio" name="condition" value="refurbished" <%= selectedCondition === 'refurbished' ? 'checked' : '' %> onchange="this.form.submit()">
+              <span class="cond-dot refurbished"></span> Recondicionado
+            </label>
+          </li>
+        </ul>
+      </div>
+
+      <div class="filter-section">
+        <h4>Faixa de Preço</h4>
+        <div class="price-range">
+          <div class="price-inputs">
+            <input type="number" name="price_min" placeholder="R$ min" value="<%= priceMin %>" class="price-field" min="0" step="0.01">
+            <span class="price-sep">—</span>
+            <input type="number" name="price_max" placeholder="R$ max" value="<%= priceMax %>" class="price-field" min="0" step="0.01">
+          </div>
+          <button type="submit" class="btn-price-apply">Aplicar</button>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <h4>Ordenar</h4>
+        <select name="sort" class="sort-select" onchange="this.form.submit()">
+          <option value="" <%= !selectedSort ? 'selected' : '' %>>Mais recentes</option>
+          <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
+          <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
+          <option value="oldest" <%= selectedSort === 'oldest' ? 'selected' : '' %>>Mais antigos</option>
+        </select>
+      </div>
+    </form>
   </aside>
 
   <section class="products-section">
@@ -64,7 +122,14 @@
           <i class="fas fa-microchip"></i> Tecnologia em Destaque
         <% } %>
       </h2>
-      <span class="products-count"><%= products.length %> produto(s)</span>
+      <div class="products-header-info">
+        <span class="products-count"><%= products.length %> produto(s)</span>
+        <select class="sort-select-mobile" onchange="var p=new URLSearchParams(location.search);p.set('sort',this.value);location='?'+p.toString()">
+          <option value="" <%= !selectedSort ? 'selected' : '' %>>Recentes</option>
+          <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
+          <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
+        </select>
+      </div>
     </div>
 
     <% if (products.length === 0) { %>
@@ -72,6 +137,7 @@
         <i class="fas fa-box-open"></i>
         <h3>Nenhum produto encontrado</h3>
         <p>Tente buscar por outros termos ou navegue pelas categorias.</p>
+        <a href="/" class="btn-empty-reset"><i class="fas fa-times-circle"></i> Limpar filtros</a>
       </div>
     <% } else { %>
       <div class="products-grid">
@@ -88,10 +154,15 @@
               <% if (product.featured) { %>
                 <span class="featured-badge"><i class="fas fa-star"></i> Destaque</span>
               <% } %>
-              <% if (product.condition === 'new') { %>
+              <% var condClass = product.condition || 'new'; %>
+              <% if (condClass === 'new') { %>
                 <span class="condition-badge new">Novo</span>
-              <% } else if (product.condition === 'semi-new') { %>
+              <% } else if (condClass === 'open-box') { %>
+                <span class="condition-badge" style="background:#ff9800;">Aberto</span>
+              <% } else if (condClass === 'semi-new') { %>
                 <span class="condition-badge" style="background:#7c4dff;">Semi-novo</span>
+              <% } else if (condClass === 'refurbished') { %>
+                <span class="condition-badge" style="background:#009688;">Recondicionado</span>
               <% } else { %>
                 <span class="condition-badge used">Usado</span>
               <% } %>
