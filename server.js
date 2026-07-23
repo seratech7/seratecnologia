@@ -16,6 +16,7 @@ const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/seller');
 const sellerProfileRoutes = require('./routes/seller-profile');
 const productRoutes = require('./routes/products');
+const adRoutes = require('./routes/ads');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -121,6 +122,7 @@ app.use('/admin', adminRoutes(upload));
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);
+app.use('/api', adRoutes);
 
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });

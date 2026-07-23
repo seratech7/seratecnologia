@@ -260,5 +260,83 @@ router.post('/admins/delete/:id', (req, res) => {
   res.redirect('/admin/admins');
 });
 
+// ============ ADS ============
+
+router.get('/ads', (req, res) => {
+  const ads = db.query('SELECT * FROM ads ORDER BY sort_order ASC, id ASC');
+  res.render('admin/ads', { title: 'Anúncios - Painel Admin', ads, error: null });
+});
+
+router.get('/ads/new', (req, res) => {
+  res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: null });
+});
+
+router.post('/ads/new', (req, res) => {
+  const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order } = req.body;
+  if (!text) return res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: 'Texto do anúncio é obrigatório' });
+  try {
+    db.run(
+      'INSERT INTO ads (title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        (title || '').toString().trim().slice(0, 100),
+        text.toString().trim().slice(0, 500),
+        (link || '').toString().trim().slice(0, 200),
+        (image || '').toString().trim().slice(0, 200),
+        parseInt(display_duration) || 15,
+        parseInt(cooldown) || 86400,
+        start_date || null,
+        end_date || null,
+        parseInt(sort_order) || 0
+      ]
+    );
+  } catch (e) {
+    return res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: 'Erro ao criar anúncio' });
+  }
+  res.redirect('/admin/ads');
+});
+
+router.get('/ads/edit/:id', (req, res) => {
+  const ad = db.get('SELECT * FROM ads WHERE id = ?', [req.params.id]);
+  if (!ad) return res.redirect('/admin/ads');
+  res.render('admin/ad-form', { title: 'Editar Anúncio', ad, error: null });
+});
+
+router.post('/ads/edit/:id', (req, res) => {
+  const ad = db.get('SELECT * FROM ads WHERE id = ?', [req.params.id]);
+  if (!ad) return res.redirect('/admin/ads');
+  const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status } = req.body;
+  if (!text) return res.render('admin/ad-form', { title: 'Editar Anúncio', ad, error: 'Texto do anúncio é obrigatório' });
+  db.run(
+    'UPDATE ads SET title = ?, text = ?, link = ?, image = ?, display_duration = ?, cooldown = ?, start_date = ?, end_date = ?, sort_order = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [
+      (title || '').toString().trim().slice(0, 100),
+      text.toString().trim().slice(0, 500),
+      (link || '').toString().trim().slice(0, 200),
+      (image || '').toString().trim().slice(0, 200),
+      parseInt(display_duration) || 15,
+      parseInt(cooldown) || 86400,
+      start_date || null,
+      end_date || null,
+      parseInt(sort_order) || 0,
+      status || 'active',
+      req.params.id
+    ]
+  );
+  res.redirect('/admin/ads');
+});
+
+router.post('/ads/toggle/:id', (req, res) => {
+  const ad = db.get('SELECT * FROM ads WHERE id = ?', [req.params.id]);
+  if (!ad) return res.redirect('/admin/ads');
+  const newStatus = ad.status === 'active' ? 'inactive' : 'active';
+  db.run('UPDATE ads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [newStatus, req.params.id]);
+  res.redirect('/admin/ads');
+});
+
+router.post('/ads/delete/:id', (req, res) => {
+  db.run('DELETE FROM ads WHERE id = ?', [req.params.id]);
+  res.redirect('/admin/ads');
+});
+
 return router;
 };

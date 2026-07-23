@@ -1,0 +1,61 @@
+<%- include('../partials/admin-header') %>
+
+<div class="page-header">
+  <h1><i class="fas fa-ad"></i> Gerenciar Anúncios</h1>
+  <a href="/admin/ads/new" class="btn-primary"><i class="fas fa-plus"></i> Novo Anúncio</a>
+</div>
+
+<% if (error) { %><div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
+
+<div class="admin-section">
+  <div class="section-header">
+    <h2><i class="fas fa-list"></i> Todos os Anúncios</h2>
+  </div>
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Ordem</th>
+          <th>Título</th>
+          <th>Texto</th>
+          <th>Link</th>
+          <th>Tempo (s)</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (ads.length === 0) { %>
+          <tr><td colspan="7" class="empty-row">Nenhum anúncio cadastrado</td></tr>
+        <% } %>
+        <% ads.forEach(ad => { %>
+          <tr>
+            <td><%= ad.sort_order %></td>
+            <td><strong><%= ad.title || '-' %></strong></td>
+            <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%- ad.text %></td>
+            <td><%= ad.link ? '<a href="' + ad.link + '" target="_blank" class="btn-small">Abrir</a>' : '-' %></td>
+            <td><%= ad.display_duration %>s</td>
+            <td>
+              <span class="status-badge <%= ad.status === 'active' ? 'active' : 'inactive' %>">
+                <%= ad.status === 'active' ? 'Ativo' : 'Inativo' %>
+              </span>
+            </td>
+            <td class="actions-cell">
+              <a href="/admin/ads/edit/<%= ad.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+              <form method="POST" action="/admin/ads/toggle/<%= ad.id %>" class="inline-form">
+                <button type="submit" class="btn-icon" title="<%= ad.status === 'active' ? 'Desativar' : 'Ativar' %>">
+                  <i class="fas fa-<%= ad.status === 'active' ? 'pause' : 'play' %>"></i>
+                </button>
+              </form>
+              <form method="POST" action="/admin/ads/delete/<%= ad.id %>" class="inline-form" onsubmit="return confirm('Excluir este anúncio?')">
+                <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

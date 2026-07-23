@@ -144,31 +144,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  var ads = [
-    '<i class="fas fa-bolt"></i> SSD Kingston NV2 1TB — R$ 349,90. <a href="/produto/1">Ver oferta</a>',
-    '<i class="fas fa-microchip"></i> Memória DDR5 32GB — R$ 589,90. <a href="/produto/4">Compre agora</a>',
-    '<i class="fas fa-hdd"></i> HD Seagate 2TB — R$ 289,90. <a href="/produto/2">Aproveite</a>',
-    '<i class="fas fa-star"></i> SSD Samsung 990 Pro 2TB — R$ 1.299,90. <a href="/produto/15">Oferta especial</a>'
-  ];
-
   var adText = document.getElementById('adText');
   var adClose = document.getElementById('adClose');
   var topAd = document.getElementById('topAd');
-
   var mc = document.querySelector('.main-content');
+  var adData = null;
+  var adStartTime = 0;
 
-  if (localStorage.getItem('adClosed')) {
+  function showAd(ad) {
+    if (!ad || !adText || !topAd) return;
+    adData = ad;
+    adStartTime = Date.now();
+    adText.innerHTML = ad.text || ad.title || '';
+    topAd.style.display = '';
+    if (mc) mc.style.paddingTop = '32px';
+    adClose.disabled = true;
+    adClose.style.opacity = '0.3';
+    adClose.style.cursor = 'default';
+
+    if (ad.link) {
+      adText.innerHTML = adText.innerHTML.replace(/<a\s/, '<a disabled ');
+      topAd.querySelector('.top-ad-content').style.cursor = 'pointer';
+      topAd.querySelector('.top-ad-content').onclick = function(e) {
+        if (e.target.tagName !== 'A') window.location.href = ad.link;
+      };
+    }
+
+    var duration = (ad.display_duration || 15) * 1000;
+    setTimeout(function() {
+      adClose.disabled = false;
+      adClose.style.opacity = '1';
+      adClose.style.cursor = 'pointer';
+    }, duration);
+  }
+
+  function hideAd(permanent) {
+    if (topAd) topAd.style.display = 'none';
+    if (mc) mc.style.paddingTop = '0';
+    if (permanent && adData) {
+      var expires = Date.now() + ((adData.cooldown || 86400) * 1000);
+      localStorage.setItem('adClosed', expires.toString());
+      localStorage.setItem('adId', adData.id.toString());
+    }
+  }
+
+  var closedTime = localStorage.getItem('adClosed');
+  var closedAdId = localStorage.getItem('adId');
+
+  if (closedTime && parseInt(closedTime) > Date.now()) {
     if (topAd) topAd.style.display = 'none';
   } else {
-    if (adText) adText.innerHTML = ads[Math.floor(Math.random() * ads.length)];
-    if (mc) mc.style.paddingTop = '32px';
+    localStorage.removeItem('adClosed');
+    localStorage.removeItem('adId');
+    fetch('/api/ads').then(function(r) { return r.json(); }).then(function(ad) {
+      if (ad && ad.id && closedAdId && parseInt(ad.id) === parseInt(closedAdId) && closedTime && parseInt(closedTime) > Date.now()) {
+        if (topAd) topAd.style.display = 'none';
+        return;
+      }
+      showAd(ad);
+    }).catch(function() {
+      if (topAd) topAd.style.display = 'none';
+    });
   }
 
   if (adClose && topAd) {
     adClose.addEventListener('click', function() {
-      topAd.style.display = 'none';
-      localStorage.setItem('adClosed', '1');
-      if (mc) { mc.style.paddingTop = '0'; }
+      if (adClose.disabled) return;
+      hideAd(true);
     });
   }
 });

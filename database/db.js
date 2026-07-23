@@ -155,6 +155,44 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS ads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL DEFAULT '',
+      text TEXT NOT NULL DEFAULT '',
+      link TEXT DEFAULT '',
+      image TEXT DEFAULT '',
+      status TEXT DEFAULT 'active',
+      display_duration INTEGER DEFAULT 15,
+      cooldown INTEGER DEFAULT 86400,
+      start_date TEXT,
+      end_date TEXT,
+      sort_order INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  const adCount = db.exec("SELECT COUNT(*) as c FROM ads");
+  if (adCount.length > 0 && adCount[0].values.length > 0 && adCount[0].values[0][0] === 0) {
+    const defaultAds = [
+      ['SSD Kingston NV2 1TB', '<i class="fas fa-bolt"></i> SSD Kingston NV2 1TB — R$ 349,90', '/produto/1', '', 15, 86400],
+      ['Memória DDR5 32GB', '<i class="fas fa-microchip"></i> Memória DDR5 32GB — R$ 589,90', '/produto/4', '', 15, 86400],
+      ['HD Seagate 2TB', '<i class="fas fa-hdd"></i> HD Seagate 2TB — R$ 289,90', '/produto/2', '', 15, 86400],
+      ['SSD Samsung 990 Pro', '<i class="fas fa-star"></i> SSD Samsung 990 Pro 2TB — R$ 1.299,90', '/produto/15', '', 15, 86400],
+      ['Promoção SSDs', '<i class="fas fa-tags"></i> Aproveite nossas ofertas em SSDs!', '/?category=ssds', '', 20, 43200],
+    ];
+    const insert = db.prepare('INSERT INTO ads (title, text, link, image, display_duration, cooldown, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    defaultAds.forEach((ad, i) => {
+      insert.bind(ad);
+      insert.step();
+      insert.free();
+      insert.reset();
+    });
+    console.log('[db] Anúncios padrão criados');
+    saveDb();
+  }
+
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {

@@ -1,0 +1,83 @@
+<%- include('../partials/admin-header') %>
+
+<div class="page-header">
+  <h1><i class="fas fa-<%= ad ? 'edit' : 'plus-circle' %>"></i> <%= ad ? 'Editar Anúncio' : 'Novo Anúncio' %></h1>
+  <a href="/admin/ads" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+</div>
+
+<% if (error) { %><div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
+
+<div class="form-card">
+  <h3><i class="fas fa-ad"></i> Dados do Anúncio</h3>
+  <form method="POST" action="/admin/ads/<%= ad ? 'edit/' + ad.id : 'new' %>" class="admin-form">
+    <div class="form-group">
+      <label>Título (opcional, usado internamente)</label>
+      <input type="text" name="title" value="<%= ad ? ad.title : '' %>" placeholder="Ex: Promoção SSDs" maxlength="100">
+    </div>
+
+    <div class="form-group">
+      <label>Texto do anúncio *</label>
+      <textarea name="text" rows="3" placeholder="Ex: &lt;i class=&quot;fas fa-bolt&quot;&gt;&lt;/i&gt; SSD Kingston NV2 1TB — R$ 349,90" maxlength="500"><%= ad ? ad.text : '' %></textarea>
+      <span style="font-size:12px;color:var(--gray-500);margin-top:4px;">Aceita HTML (ícones FontAwesome, links, etc)</span>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Link (opcional)</label>
+        <input type="text" name="link" value="<%= ad ? ad.link : '' %>" placeholder="Ex: /produto/1 ou /?category=ssds">
+      </div>
+      <div class="form-group">
+        <label>Imagem (URL, opcional)</label>
+        <input type="text" name="image" value="<%= ad ? ad.image : '' %>" placeholder="URL da imagem">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Tempo de exibição (segundos)</label>
+        <input type="number" name="display_duration" value="<%= ad ? ad.display_duration : 15 %>" min="1" max="3600">
+        <span style="font-size:12px;color:var(--gray-500);margin-top:4px;">Tempo que o anúncio fica visível antes do usuário poder fechar</span>
+      </div>
+      <div class="form-group">
+        <label>Cooldown (segundos)</label>
+        <input type="number" name="cooldown" value="<%= ad ? ad.cooldown : 86400 %>" min="1" max="2592000">
+        <span style="font-size:12px;color:var(--gray-500);margin-top:4px;">Tempo após fechar para o anúncio voltar (86400s = 24h)</span>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Data de início (opcional)</label>
+        <input type="datetime-local" name="start_date" value="<%= ad && ad.start_date ? ad.start_date.slice(0,16) : '' %>">
+      </div>
+      <div class="form-group">
+        <label>Data de término (opcional)</label>
+        <input type="datetime-local" name="end_date" value="<%= ad && ad.end_date ? ad.end_date.slice(0,16) : '' %>">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Ordem de exibição</label>
+        <input type="number" name="sort_order" value="<%= ad ? ad.sort_order : 0 %>" min="0" max="999">
+        <span style="font-size:12px;color:var(--gray-500);margin-top:4px;">Menor número aparece primeiro</span>
+      </div>
+      <% if (ad) { %>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status">
+            <option value="active" <%= ad.status === 'active' ? 'selected' : '' %>>Ativo</option>
+            <option value="inactive" <%= ad.status === 'inactive' ? 'selected' : '' %>>Inativo</option>
+          </select>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
+      <a href="/admin/ads" class="btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/admin-footer') %>
