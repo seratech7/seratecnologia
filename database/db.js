@@ -143,12 +143,21 @@ async function initDb() {
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {
-    const firstSeller = db.exec('SELECT id FROM sellers ORDER BY id ASC LIMIT 1');
-    if (firstSeller.length > 0 && firstSeller[0].values.length > 0) {
-      const firstId = firstSeller[0].values[0][0];
-      db.run('UPDATE products SET seller_id = ? WHERE seller_id IS NULL', [firstId]);
-      console.log(`[db] ${orphanCount} produtos vinculados ao vendedor #${firstId}`);
+    let firstSeller = db.exec('SELECT id FROM sellers ORDER BY id ASC LIMIT 1');
+    let sellerId = (firstSeller.length > 0 && firstSeller[0].values.length > 0) ? firstSeller[0].values[0][0] : null;
+
+    if (!sellerId) {
+      const bcrypt = require('bcryptjs');
+      const hash = bcrypt.hashSync('vendedor123', 12);
+      db.run("INSERT INTO sellers (name, email, password_hash, bio, sales_count, status) VALUES (?,?,?,?,?,?)",
+        ['SeraTecnologia Store', 'vendas@seratecnologia.com', hash, 'Loja oficial SeraTecnologia.', 0, 'active']);
+      firstSeller = db.exec('SELECT id FROM sellers ORDER BY id ASC LIMIT 1');
+      sellerId = firstSeller[0].values[0][0];
+      console.log('[db] Vendedor padrão criado para produtos órfãos');
     }
+
+    db.run('UPDATE products SET seller_id = ? WHERE seller_id IS NULL', [sellerId]);
+    console.log(`[db] ${orphanCount} produtos vinculados ao vendedor #${sellerId}`);
   }
 
   saveDb();
