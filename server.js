@@ -123,11 +123,15 @@ app.get('/admin/debug', (req, res) => {
   const admin = db.get('SELECT * FROM admins WHERE username = ?', ['admin']);
   const sellers = db.get('SELECT COUNT(*) as c FROM sellers');
   const products = db.get('SELECT COUNT(*) as c FROM products');
+  const freshHash = bcrypt.hashSync('admin123', 12);
   if (admin) {
     res.json({
       adminExists: true,
-      hashPrefix: admin.password_hash ? admin.password_hash.substring(0, 15) + '...' : 'null',
-      compareAdmin: bcrypt.compareSync('admin123', admin.password_hash),
+      hashFull: admin.password_hash,
+      compareAdmin123: bcrypt.compareSync('admin123', admin.password_hash),
+      freshHash: freshHash,
+      compareFresh: bcrypt.compareSync('admin123', freshHash),
+      envAdminPassword: process.env.ADMIN_PASSWORD || '(not set)',
       sellers: sellers ? sellers.c : 0,
       products: products ? products.c : 0
     });
