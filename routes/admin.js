@@ -24,6 +24,54 @@ router.get('/dashboard', (req, res) => {
   });
 });
 
+router.get('/analytics', (req, res) => {
+  const totalViews = db.get('SELECT COUNT(*) as c FROM page_views');
+  const uniqueVisitors = db.get("SELECT COUNT(DISTINCT ip) as c FROM page_views");
+  const todayViews = db.get("SELECT COUNT(*) as c FROM page_views WHERE date(created_at) = date('now')");
+  const todayVisitors = db.get("SELECT COUNT(DISTINCT ip) as c FROM page_views WHERE date(created_at) = date('now')");
+  const activeNow = db.get("SELECT COUNT(DISTINCT session_id) as c FROM page_views WHERE created_at >= datetime('now', '-5 minutes')");
+
+  const topProducts = db.query(`
+    SELECT p.id, p.name, p.image, COUNT(*) as views,
+           (SELECT MIN(created_at) FROM page_views WHERE product_id = p.id) as first_view
+    FROM page_views pv JOIN products p ON pv.product_id = p.id
+    GROUP BY p.id ORDER BY views DESC LIMIT 10
+  `);
+
+  const topPages = db.query(`
+    SELECT path, COUNT(*) as views, COUNT(DISTINCT ip) as visitors
+    FROM page_views WHERE product_id IS NULL
+    GROUP BY path ORDER BY views DESC LIMIT 10
+  `);
+
+  const viewsByDay = db.query(`
+    SELECT date(created_at) as day, COUNT(*) as views, COUNT(DISTINCT ip) as visitors
+    FROM page_views WHERE created_at >= date('now', '-14 days')
+    GROUP BY day ORDER BY day ASC
+  `);
+
+  const recentViews = db.query(`
+    SELECT pv.*, p.name as product_name
+    FROM page_views pv LEFT JOIN products p ON pv.product_id = p.id
+    ORDER BY pv.created_at DESC LIMIT 20
+  `);
+
+  res.render('admin/analytics', {
+    title: 'Analytics - Painel Admin',
+    stats: {
+      totalViews: totalViews ? totalViews.c : 0,
+      uniqueVisitors: uniqueVisitors ? uniqueVisitors.c : 0,
+      todayViews: todayViews ? todayViews.c : 0,
+      todayVisitors: todayVisitors ? todayVisitors.c : 0,
+      activeNow: activeNow ? activeNow.c : 0
+    },
+    topProducts,
+    topPages,
+    viewsByDay,
+    recentViews
+  });
+});
+
 router.get('/products', (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = 20;

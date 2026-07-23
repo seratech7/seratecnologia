@@ -108,6 +108,21 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(function(req, res, next) {
+  if (req.path.startsWith('/admin') || req.path.startsWith('/seller') || req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2?)$/i)) return next();
+  var db = require('./database/db');
+  var ip = req.ip || req.connection.remoteAddress || '';
+  var sessionId = req.sessionID || '';
+  var productId = null;
+  var m = req.path.match(/^\/produto\/(\d+)/);
+  if (m) productId = parseInt(m[1], 10);
+  try {
+    db.run('INSERT INTO page_views (path, product_id, session_id, ip, referrer) VALUES (?, ?, ?, ?, ?)',
+      [req.path, productId, sessionId, ip, req.get('Referer') || '']);
+  } catch(e) { /* silent */ }
+  next();
+});
+
 app.get('/admin/reset-senha/:token', (req, res) => {
   if (req.params.token !== '12345') return res.status(404).send('not found');
   const bcrypt = require('bcryptjs');

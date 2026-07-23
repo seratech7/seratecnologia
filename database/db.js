@@ -192,6 +192,19 @@ async function initDb() {
     saveDb();
   }
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS page_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT NOT NULL,
+      product_id INTEGER,
+      session_id TEXT,
+      ip TEXT,
+      referrer TEXT DEFAULT '',
+      time_spent INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {
