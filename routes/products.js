@@ -3,66 +3,79 @@ const router = express.Router();
 const db = require('../database/db');
 
 router.get('/', (req, res) => {
-  const { search, category, condition: cond, price_min, price_max, sort, location } = req.query;
-  const categories = db.query('SELECT * FROM categories ORDER BY name');
-  const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location");
+  try {
+    const { search, category, condition: cond, price_min, price_max, sort, location } = req.query;
+    const categories = db.query('SELECT * FROM categories ORDER BY name') || [];
+    const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location") || [];
 
-  let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
-  let params = ['active'];
+    let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
+    let params = ['active'];
 
-  if (search) {
-    sql += ' AND (p.name LIKE ? OR p.description LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
+    if (search) {
+      sql += ' AND (p.name LIKE ? OR p.description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (category) {
+      sql += ' AND c.slug = ?';
+      params.push(category);
+    }
+
+    if (cond) {
+      sql += ' AND p.condition = ?';
+      params.push(cond);
+    }
+
+    if (location) {
+      sql += ' AND p.location = ?';
+      params.push(location);
+    }
+
+    if (price_min) {
+      sql += ' AND p.price >= ?';
+      params.push(parseFloat(price_min));
+    }
+
+    if (price_max) {
+      sql += ' AND p.price <= ?';
+      params.push(parseFloat(price_max));
+    }
+
+    let orderBy = 'p.featured DESC, p.created_at DESC';
+    if (sort === 'price_asc') orderBy = 'p.price ASC';
+    else if (sort === 'price_desc') orderBy = 'p.price DESC';
+    else if (sort === 'oldest') orderBy = 'p.created_at ASC';
+    sql += ' ORDER BY ' + orderBy;
+
+    const products = db.query(sql, params) || [];
+    const banners = db.getActiveBanners() || [];
+
+    res.render('index', {
+      title: 'SeraTecnologia',
+      products,
+      categories,
+      locations,
+      banners,
+      search: search || '',
+      selectedCategory: category || '',
+      selectedCondition: cond || '',
+      selectedLocation: location || '',
+      priceMin: price_min || '',
+      priceMax: price_max || '',
+      selectedSort: sort || ''
+    });
+  } catch (e) {
+    console.error('Homepage error:', e);
+    res.render('index', {
+      title: 'SeraTecnologia',
+      products: [],
+      categories: [],
+      locations: [],
+      banners: [],
+      search: '', selectedCategory: '', selectedCondition: '',
+      selectedLocation: '', priceMin: '', priceMax: '', selectedSort: ''
+    });
   }
-
-  if (category) {
-    sql += ' AND c.slug = ?';
-    params.push(category);
-  }
-
-  if (cond) {
-    sql += ' AND p.condition = ?';
-    params.push(cond);
-  }
-
-  if (location) {
-    sql += ' AND p.location = ?';
-    params.push(location);
-  }
-
-  if (price_min) {
-    sql += ' AND p.price >= ?';
-    params.push(parseFloat(price_min));
-  }
-
-  if (price_max) {
-    sql += ' AND p.price <= ?';
-    params.push(parseFloat(price_max));
-  }
-
-  let orderBy = 'p.featured DESC, p.created_at DESC';
-  if (sort === 'price_asc') orderBy = 'p.price ASC';
-  else if (sort === 'price_desc') orderBy = 'p.price DESC';
-  else if (sort === 'oldest') orderBy = 'p.created_at ASC';
-  sql += ' ORDER BY ' + orderBy;
-
-  const products = db.query(sql, params);
-  const banners = db.getActiveBanners();
-
-  res.render('index', {
-    title: 'SeraTecnologia',
-    products,
-    categories,
-    locations,
-    banners,
-    search: search || '',
-    selectedCategory: category || '',
-    selectedCondition: cond || '',
-    selectedLocation: location || '',
-    priceMin: price_min || '',
-    priceMax: price_max || '',
-    selectedSort: sort || ''
-  });
 });
 
 router.get('/produto/:id', (req, res) => {
