@@ -47,12 +47,14 @@ router.get('/', (req, res) => {
   sql += ' ORDER BY ' + orderBy;
 
   const products = db.query(sql, params);
+  const banners = db.getActiveBanners();
 
   res.render('index', {
     title: 'SeraTecnologia',
     products,
     categories,
     locations,
+    banners,
     search: search || '',
     selectedCategory: category || '',
     selectedCondition: cond || '',
@@ -137,6 +139,18 @@ router.post('/produto/:id/avaliar', (req, res) => {
   }
 
   res.redirect('/produto/' + productId);
+});
+
+// Public page route (CMS)
+router.get('/pagina/:slug', (req, res) => {
+  var page = db.getPage(req.params.slug);
+  if (!page) return res.status(404).render('404', { title: 'Página não encontrada' });
+  res.render('page', { title: page.title, page: page });
+});
+
+// API: public banners (for potential frontend use)
+router.get('/api/banners', (req, res) => {
+  res.json(db.getActiveBanners());
 });
 
 module.exports = router;

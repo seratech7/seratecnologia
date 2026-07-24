@@ -357,6 +357,72 @@ async function initDb() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS cms_pages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      slug TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      meta_description TEXT DEFAULT '',
+      published INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      type TEXT NOT NULL DEFAULT 'percentage',
+      value REAL NOT NULL DEFAULT 0,
+      min_order REAL DEFAULT 0,
+      max_uses INTEGER DEFAULT 0,
+      used_count INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      expires_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS banners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL DEFAULT '',
+      subtitle TEXT DEFAULT '',
+      image TEXT NOT NULL,
+      link TEXT DEFAULT '',
+      sort_order INTEGER DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS activity_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_type TEXT NOT NULL DEFAULT 'system',
+      user_id INTEGER DEFAULT 0,
+      user_name TEXT DEFAULT '',
+      action TEXT NOT NULL,
+      details TEXT DEFAULT '',
+      target_type TEXT DEFAULT '',
+      target_id INTEGER DEFAULT 0,
+      ip TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS blocked_ips (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ip TEXT UNIQUE NOT NULL,
+      reason TEXT DEFAULT '',
+      blocked_by INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT DEFAULT 'info',
@@ -655,4 +721,116 @@ function getSaleProofs(saleId) {
   return query('SELECT * FROM sale_proofs WHERE sale_id = ? ORDER BY created_at DESC', [saleId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs };
+// === CMS PAGES ===
+function getPage(slug) {
+  return get("SELECT * FROM cms_pages WHERE slug = ? AND published = 1", [slug]);
+}
+
+function getAllPages() {
+  return query("SELECT * FROM cms_pages ORDER BY title ASC");
+}
+
+function savePage(slug, title, content, meta, published) {
+  var existing = get("SELECT id FROM cms_pages WHERE slug = ?", [slug]);
+  if (existing) {
+    run("UPDATE cms_pages SET title = ?, content = ?, meta_description = ?, published = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+      [title, content, meta || '', published ? 1 : 0, slug]);
+  } else {
+    run("INSERT INTO cms_pages (slug, title, content, meta_description, published) VALUES (?, ?, ?, ?, ?)",
+      [slug, title, content, meta || '', published ? 1 : 0]);
+  }
+}
+
+function deletePage(id) {
+  run("DELETE FROM cms_pages WHERE id = ?", [id]);
+}
+
+// === COUPONS ===
+function getCoupon(code) {
+  return get("SELECT * FROM coupons WHERE code = ? AND active = 1 AND (expires_at IS NULL OR expires_at >= datetime('now')) AND (max_uses = 0 OR used_count < max_uses)", [code.toUpperCase()]);
+}
+
+function getAllCoupons() {
+  return query("SELECT * FROM coupons ORDER BY created_at DESC");
+}
+
+function saveCoupon(code, type, value, minOrder, maxUses, expiresAt) {
+  var existing = get("SELECT id FROM coupons WHERE code = ?", [code]);
+  if (existing) {
+    run("UPDATE coupons SET type = ?, value = ?, min_order = ?, max_uses = ?, expires_at = ? WHERE code = ?",
+      [type, value, minOrder || 0, maxUses || 0, expiresAt || null, code]);
+  } else {
+    run("INSERT INTO coupons (code, type, value, min_order, max_uses, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [code, type, value, minOrder || 0, maxUses || 0, expiresAt || null]);
+  }
+}
+
+function deleteCoupon(id) {
+  run("DELETE FROM coupons WHERE id = ?", [id]);
+}
+
+function incrementCoupon(id) {
+  run("UPDATE coupons SET used_count = used_count + 1 WHERE id = ?", [id]);
+}
+
+// === BANNERS ===
+function getActiveBanners() {
+  return query("SELECT * FROM banners WHERE active = 1 ORDER BY sort_order ASC, id ASC");
+}
+
+function getAllBanners() {
+  return query("SELECT * FROM banners ORDER BY sort_order ASC, id ASC");
+}
+
+function saveBanner(id, title, subtitle, image, link, sortOrder, active) {
+  if (id) {
+    run("UPDATE banners SET title = ?, subtitle = ?, image = ?, link = ?, sort_order = ?, active = ? WHERE id = ?",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, id]);
+  } else {
+    run("INSERT INTO banners (title, subtitle, image, link, sort_order, active) VALUES (?, ?, ?, ?, ?, ?)",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0]);
+  }
+}
+
+function deleteBanner(id) {
+  run("DELETE FROM banners WHERE id = ?", [id]);
+}
+
+// === ACTIVITY LOG ===
+function logActivity(userType, userId, userName, action, details, targetType, targetId, ip) {
+  try {
+    run("INSERT INTO activity_log (user_type, user_id, user_name, action, details, target_type, target_id, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [userType || 'system', userId || 0, userName || '', action || '', details || '', targetType || '', targetId || 0, ip || '']);
+  } catch(e) {}
+}
+
+function getActivityLog(limit, offset) {
+  return query("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT ? OFFSET ?", [limit || 100, offset || 0]);
+}
+
+function getActivityLogCount() {
+  var r = get("SELECT COUNT(*) as c FROM activity_log");
+  return r ? r.c : 0;
+}
+
+// === BLOCKED IPS ===
+function isIpBlocked(ip) {
+  var r = get("SELECT id FROM blocked_ips WHERE ip = ?", [ip]);
+  return !!r;
+}
+
+function getBlockedIps() {
+  return query("SELECT * FROM blocked_ips ORDER BY created_at DESC");
+}
+
+function blockIp(ip, reason, blockedBy) {
+  try {
+    run("INSERT OR IGNORE INTO blocked_ips (ip, reason, blocked_by) VALUES (?, ?, ?)", [ip, reason || '', blockedBy || 0]);
+  } catch(e) {}
+}
+
+function unblockIp(id) {
+  run("DELETE FROM blocked_ips WHERE id = ?", [id]);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp };

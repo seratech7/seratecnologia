@@ -1,0 +1,26 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/paginas' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-edit"></i> <%= page.id ? 'Editar' : 'Nova' %> Página</h1>
+    <a href="/admin/paginas" class="btn-small"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <% if (error) { %><div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;"><%= error %></div><% } %>
+  <form method="POST" action="/admin/paginas/editar/<%= page.slug %>">
+    <div class="form-card">
+      <div class="form-group"><label>Título</label><input type="text" name="title" value="<%= page.title %>" class="admin-input" required></div>
+      <div class="form-group" style="margin-top:12px;"><label>Slug (URL)</label><input type="text" value="<%= page.slug %>" class="admin-input" disabled style="background:#f5f5f5;"><span style="font-size:12px;color:#999;">A slug não pode ser alterada</span></div>
+      <div class="form-group" style="margin-top:12px;"><label>Meta Description</label><input type="text" name="meta_description" value="<%= page.meta_description %>" class="admin-input" maxlength="300"></div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>Conteúdo (HTML)</label>
+        <textarea name="content" rows="16" class="admin-input" style="font-family:monospace;font-size:13px;"><%= page.content %></textarea>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="published" value="1" <%= page.published ? 'checked' : '' %>> Publicado
+        </label>
+      </div>
+      <button type="submit" class="btn-primary" style="margin-top:16px;"><i class="fas fa-save"></i> Salvar</button>
+    </div>
+  </form>
+</div>
+<%- include('../partials/admin-footer') %>

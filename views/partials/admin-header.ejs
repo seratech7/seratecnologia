@@ -56,6 +56,21 @@
       <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
         <i class="fas fa-coins"></i> Financeiro
       </a>
+      <a href="/admin/paginas" class="<%= currentPath.startsWith('/admin/paginas') ? 'active' : '' %>">
+        <i class="fas fa-file-alt"></i> Páginas
+      </a>
+      <a href="/admin/cupons" class="<%= currentPath === '/admin/cupons' ? 'active' : '' %>">
+        <i class="fas fa-ticket-alt"></i> Cupons
+      </a>
+      <a href="/admin/banners" class="<%= currentPath === '/admin/banners' ? 'active' : '' %>">
+        <i class="fas fa-images"></i> Banners
+      </a>
+      <a href="/admin/logs" class="<%= currentPath === '/admin/logs' ? 'active' : '' %>">
+        <i class="fas fa-history"></i> Logs
+      </a>
+      <a href="/admin/ips-bloqueados" class="<%= currentPath === '/admin/ips-bloqueados' ? 'active' : '' %>">
+        <i class="fas fa-ban"></i> IPs Bloqueados
+      </a>
       <a href="/admin/config" class="<%= currentPath === '/admin/config' ? 'active' : '' %>">
         <i class="fas fa-cog"></i> Configurações
       </a>

@@ -1,0 +1,30 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/paginas' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-file-alt"></i> Páginas do Site</h1>
+    <a href="/admin/paginas/editar/nova" class="btn-primary" style="padding:8px 16px;font-size:14px;text-decoration:none;"><i class="fas fa-plus"></i> Nova Página</a>
+  </div>
+  <div class="table-wrapper">
+    <table class="admin-table">
+      <thead><tr><th>Slug</th><th>Título</th><th>Status</th><th>Atualizada</th><th>Ações</th></tr></thead>
+      <tbody>
+        <% if (pages.length === 0) { %><tr><td colspan="5" class="empty-row">Nenhuma página</td></tr><% } %>
+        <% pages.forEach(function(p) { %>
+          <tr>
+            <td><code><%= p.slug %></code></td>
+            <td><strong><%= p.title %></strong></td>
+            <td><span class="status-badge <%= p.published ? 'active' : 'inactive' %>"><%= p.published ? 'Publicada' : 'Rascunho' %></span></td>
+            <td><%= new Date(p.updated_at || p.created_at).toLocaleDateString('pt-BR') %></td>
+            <td>
+              <a href="/admin/paginas/editar/<%= p.slug %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+              <form method="POST" action="/admin/paginas/deletar/<%= p.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta página?')">
+                <button class="btn-icon" style="color:#c62828;"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

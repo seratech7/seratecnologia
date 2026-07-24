@@ -1,0 +1,31 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/ips-bloqueados' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-ban"></i> IPs Bloqueados</h1>
+  </div>
+  <div class="form-card" style="margin-bottom:20px;">
+    <h3>Bloquear IP</h3>
+    <form method="POST" action="/admin/ips-bloqueados/novo" style="display:flex;gap:8px;">
+      <input type="text" name="ip" class="admin-input" placeholder="192.168.1.1" required style="max-width:200px;">
+      <input type="text" name="reason" class="admin-input" placeholder="Motivo (opcional)" style="max-width:300px;">
+      <button type="submit" class="btn-primary"><i class="fas fa-ban"></i> Bloquear</button>
+    </form>
+  </div>
+  <div class="table-wrapper">
+    <table class="admin-table">
+      <thead><tr><th>IP</th><th>Motivo</th><th>Bloqueado em</th><th>Ações</th></tr></thead>
+      <tbody>
+        <% if (ips.length === 0) { %><tr><td colspan="4" class="empty-row">Nenhum IP bloqueado</td></tr><% } %>
+        <% ips.forEach(function(ip) { %>
+          <tr>
+            <td><code><%= ip.ip %></code></td>
+            <td><%= ip.reason || '-' %></td>
+            <td><%= new Date(ip.created_at).toLocaleString('pt-BR') %></td>
+            <td><form method="POST" action="/admin/ips-bloqueados/desbloquear/<%= ip.id %>" style="display:inline;"><button class="btn-small" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-unlock"></i> Desbloquear</button></form></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

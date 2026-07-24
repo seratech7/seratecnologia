@@ -1,5 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
 const db = require('../database/db');
 const { requireAdmin } = require('../middleware/auth');
 
@@ -721,7 +723,160 @@ router.post('/config', (req, res) => {
       db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key, String(req.body[key]).trim()]);
     }
   });
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_config', 'Configurações do site atualizadas');
   res.redirect('/admin/config');
+});
+
+// ========== CMS PAGES ==========
+router.get('/paginas', (req, res) => {
+  var pages = db.getAllPages();
+  res.render('admin/pages', { title: 'Páginas do Site', pages });
+});
+
+router.get('/paginas/editar/:slug', (req, res) => {
+  var page = db.get("SELECT * FROM cms_pages WHERE slug = ?", [req.params.slug]);
+  if (!page) page = { slug: req.params.slug, title: '', content: '', meta_description: '', published: 1 };
+  res.render('admin/page-form', { title: 'Editar Página', page, error: null });
+});
+
+router.post('/paginas/editar/:slug', (req, res) => {
+  var { title, content, meta_description, published } = req.body;
+  if (!title) return res.render('admin/page-form', { title: 'Editar Página', page: { slug: req.params.slug, title: '', content: '', meta_description: '', published: 1 }, error: 'Título é obrigatório' });
+  db.savePage(req.params.slug, title, content, meta_description, published === '1');
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'edit_page', 'Página editada: ' + title, 'page', 0, req.ip);
+  res.redirect('/admin/paginas');
+});
+
+router.post('/paginas/deletar/:id', (req, res) => {
+  db.deletePage(req.params.id);
+  res.redirect('/admin/paginas');
+});
+
+// ========== COUPONS ==========
+router.get('/cupons', (req, res) => {
+  var coupons = db.getAllCoupons();
+  res.render('admin/coupons', { title: 'Cupons de Desconto', coupons, error: null });
+});
+
+router.post('/cupons/novo', (req, res) => {
+  var { code, type, value, min_order, max_uses, expires_at } = req.body;
+  if (!code || !value) return res.redirect('/admin/cupons');
+  try {
+    db.saveCoupon(code.toUpperCase(), type, parseFloat(value), parseFloat(min_order) || 0, parseInt(max_uses) || 0, expires_at || null);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'create_coupon', 'Cupom criado: ' + code, 'coupon', 0, req.ip);
+  } catch(e) {}
+  res.redirect('/admin/cupons');
+});
+
+router.post('/cupons/deletar/:id', (req, res) => {
+  db.deleteCoupon(req.params.id);
+  res.redirect('/admin/cupons');
+});
+
+// ========== BANNERS ==========
+router.get('/banners', (req, res) => {
+  var banners = db.getAllBanners();
+  res.render('admin/banners', { title: 'Banners da Home', banners, error: null });
+});
+
+router.post('/banners/novo', upload.single('image'), (req, res) => {
+  var { title, subtitle, link, sort_order, active } = req.body;
+  var image = req.file ? '/uploads/' + req.file.filename : '';
+  if (!image) return res.redirect('/admin/banners');
+  db.saveBanner(null, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1');
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'create_banner', 'Banner criado: ' + (title || ''), 'banner', 0, req.ip);
+  res.redirect('/admin/banners');
+});
+
+router.post('/banners/editar/:id', upload.single('image'), (req, res) => {
+  var { title, subtitle, link, sort_order, active } = req.body;
+  var existing = db.get("SELECT * FROM banners WHERE id = ?", [req.params.id]);
+  if (!existing) return res.redirect('/admin/banners');
+  var image = req.file ? '/uploads/' + req.file.filename : existing.image;
+  db.saveBanner(req.params.id, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1');
+  res.redirect('/admin/banners');
+});
+
+router.post('/banners/deletar/:id', (req, res) => {
+  var b = db.get("SELECT image FROM banners WHERE id = ?", [req.params.id]);
+  if (b && b.image) {
+    try { fs.unlinkSync(path.join(__dirname, '..', 'public', b.image)); } catch(e) {}
+  }
+  db.deleteBanner(req.params.id);
+  res.redirect('/admin/banners');
+});
+
+// ========== ACTIVITY LOG ==========
+router.get('/logs', (req, res) => {
+  var page = parseInt(req.query.page) || 1;
+  var limit = 50;
+  var offset = (page - 1) * limit;
+  var logs = db.getActivityLog(limit, offset);
+  var total = db.getActivityLogCount();
+  var totalPages = Math.ceil(total / limit);
+  res.render('admin/logs', { title: 'Registro de Atividades', logs, page, totalPages });
+});
+
+// ========== BACKUP ==========
+router.get('/backup', (req, res) => {
+  var dbPath = path.join(__dirname, '..', 'database', 'data.db');
+  res.download(dbPath, 'backup-seratecnologia-' + new Date().toISOString().slice(0,10) + '.db');
+});
+
+// ========== CSV EXPORT ==========
+router.get('/exportar/:tipo', (req, res) => {
+  var tipo = req.params.tipo;
+  var data = [];
+  var headers = [];
+  var filename = '';
+
+  if (tipo === 'produtos') {
+    data = db.query("SELECT p.*, c.name as category_name, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id ORDER BY p.created_at DESC");
+    headers = ['id','name','description','price','category','seller','condition','location','status','featured','code','views','created_at'];
+    filename = 'produtos.csv';
+  } else if (tipo === 'vendas') {
+    data = db.query("SELECT s.*, sl.name as seller_name FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id ORDER BY s.created_at DESC");
+    headers = ['id','product_code','product_name','product_price','buyer_name','buyer_email','buyer_phone','status','seller','tracking_code','created_at'];
+    filename = 'vendas.csv';
+  } else if (tipo === 'vendedores') {
+    data = db.query("SELECT s.*, (SELECT COUNT(*) FROM products WHERE seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC");
+    headers = ['id','name','email','phone','whatsapp','status','product_count','sales_count','created_at'];
+    filename = 'vendedores.csv';
+  } else {
+    return res.redirect('/admin/config');
+  }
+
+  var csv = headers.join(',') + '\n';
+  data.forEach(function(row) {
+    var line = headers.map(function(h) {
+      var val = row[h] !== undefined && row[h] !== null ? String(row[h]) : '';
+      if (val.includes(',') || val.includes('"') || val.includes('\n')) val = '"' + val.replace(/"/g, '""') + '"';
+      return val;
+    }).join(',');
+    csv += line + '\n';
+  });
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename=' + filename);
+  res.send('\ufeff' + csv);
+});
+
+// ========== BLOCKED IPS ==========
+router.get('/ips-bloqueados', (req, res) => {
+  var ips = db.getBlockedIps();
+  res.render('admin/blocked-ips', { title: 'IPs Bloqueados', ips, error: null });
+});
+
+router.post('/ips-bloqueados/novo', (req, res) => {
+  var { ip, reason } = req.body;
+  if (!ip) return res.redirect('/admin/ips-bloqueados');
+  db.blockIp(ip.trim(), reason || '', req.session.adminId);
+  res.redirect('/admin/ips-bloqueados');
+});
+
+router.post('/ips-bloqueados/desbloquear/:id', (req, res) => {
+  db.unblockIp(req.params.id);
+  res.redirect('/admin/ips-bloqueados');
 });
 
 return router;

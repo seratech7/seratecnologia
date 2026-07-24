@@ -168,6 +168,38 @@ app.use(function(req, res, next) {
   next();
 });
 
+// IP Block middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith('/admin')) return next();
+  try {
+    var ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+    var db = require('./database/db');
+    if (db.isIpBlocked(ip)) {
+      return res.status(403).send('Seu IP foi bloqueado.');
+    }
+  } catch(e) {}
+  next();
+});
+
+// Activity logger middleware (admin + seller actions)
+app.use((req, res, next) => {
+  var originalEnd = res.end;
+  var db = require('./database/db');
+  res.end = function() {
+    if (req.method === 'POST' && (req.session?.adminId || req.session?.sellerId)) {
+      var userType = req.session.adminId ? 'admin' : 'seller';
+      var userId = req.session.adminId || req.session.sellerId;
+      var userName = req.session.adminName || req.session.sellerName || '';
+      var action = req.method + ' ' + req.path;
+      if (!req.path.includes('/login') && !req.path.includes('/logout')) {
+        db.logActivity(userType, userId, userName, action, '', '', 0, req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '');
+      }
+    }
+    originalEnd.apply(res, arguments);
+  };
+  next();
+});
+
 // Debug endpoint — only accessible with valid admin session
 app.get('/admin/debug', (req, res) => {
   if (!req.session || !req.session.adminId) {
