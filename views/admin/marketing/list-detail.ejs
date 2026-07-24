@@ -1,0 +1,82 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/lists' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-list"></i> <%= list.name %></h1>
+    <div style="display:flex;gap:8px;">
+      <a href="/admin/marketing/lists" class="btn-secondary"><i class="fas fa-arrow-left"></i> Listas</a>
+      <a href="/admin/marketing/whatsapp" class="btn-secondary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+    </div>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+    <!-- Membros -->
+    <div class="card">
+      <h3><i class="fas fa-users"></i> Membros (<%= members.length %>)</h3>
+      <form method="POST" action="/admin/marketing/lists/<%= list.id %>/add" style="display:flex;gap:5px;margin-bottom:8px;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="text" name="name" placeholder="Nome" class="admin-input" style="flex:1;font-size:12px;">
+        <input type="text" name="phone" placeholder="Telefone" class="admin-input" style="flex:1;font-size:12px;" required>
+        <button type="submit" class="btn-primary" style="padding:6px 12px;font-size:12px;">+</button>
+      </form>
+      <form method="POST" action="/admin/marketing/lists/<%= list.id %>/add-from-contacts" style="margin-bottom:8px;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn-secondary" style="font-size:12px;padding:4px 12px;"><i class="fas fa-download"></i> Importar da base</button>
+      </form>
+      <% if (members.length === 0) { %><p style="color:#999;font-size:13px;">Lista vazia.</p><% } else { %>
+      <div style="max-height:300px;overflow-y:auto;font-size:13px;">
+        <% members.forEach(function(m) { %>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f5;">
+          <span><%= m.name || '—' %> <small style="color:#999;"><%= m.phone %></small></span>
+          <form method="POST" action="/admin/marketing/lists/member/delete/<%= m.id %>" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:12px;">✕</button>
+          </form>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- Disparo -->
+    <div class="form-card">
+      <h3><i class="fas fa-paper-plane"></i> Enviar para Lista</h3>
+      <form method="POST" action="/admin/marketing/lists/<%= list.id %>/send">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label>Mensagem</label>
+          <textarea name="message" class="admin-input" rows="6" required placeholder="Digite a mensagem..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary" <%= waReady ? '' : 'disabled' %>><i class="fab fa-whatsapp"></i> Enviar para <%= members.length %> membros</button>
+        <% if (!waReady) { %><p style="font-size:12px;color:#c62828;margin-top:5px;">WhatsApp desconectado</p><% } %>
+      </form>
+    </div>
+
+    <!-- Contatos disponíveis -->
+    <div class="card">
+      <h3><i class="fas fa-address-book"></i> Contatos Disponíveis</h3>
+      <div style="max-height:300px;overflow-y:auto;font-size:13px;">
+        <% if (contacts.length === 0) { %><p style="color:#999;">Nenhum contato na base.</p><% } else { %>
+          <% contacts.slice(0,30).forEach(function(c) { %>
+            <div style="padding:4px 0;border-bottom:1px solid #f5f5f5;">
+              <span><%= c.name || '—' %> <small style="color:#999;"><%= c.phone %></small></span>
+              <form method="POST" action="/admin/marketing/lists/<%= list.id %>/add" style="display:inline;float:right;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="phone" value="<%= c.phone %>">
+                <input type="hidden" name="name" value="<%= c.name || '' %>">
+                <button type="submit" style="background:none;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:11px;padding:2px 8px;">+</button>
+              </form>
+            </div>
+          <% }) %>
+          <% if (contacts.length > 30) { %><p style="color:#999;text-align:center;font-size:11px;padding:4px;">+ <%= contacts.length - 30 %> contatos</p><% } %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+</style>
+<%- include('../../partials/admin-footer') %>

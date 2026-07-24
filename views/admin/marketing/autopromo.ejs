@@ -1,0 +1,79 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/autopromo' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-bolt"></i> Auto-Promo</h1>
+    <p style="font-size:13px;color:#666;margin:0;">Gere divulgação automática dos seus produtos</p>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div class="form-card" style="margin-bottom:20px;">
+    <h3><i class="fas fa-box"></i> Selecione o Produto</h3>
+    <select id="productSelect" class="admin-input" style="max-width:100%;">
+      <option value="">-- Escolha um produto --</option>
+      <% products.forEach(function(p) { %>
+        <option value="<%= p.id %>" data-name="<%= p.name %>" data-price="<%= p.price %>" data-url="<%= baseUrl %>/produto/<%= p.id %>" data-cat="<%= p.category_name || '' %>"><%= p.name %> - R$ <%= Number(p.price).toFixed(2) %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-comment"></i> Mensagem Gerada</h3>
+      <textarea id="promoMessage" class="admin-input" rows="8" readonly placeholder="Selecione um produto para gerar a mensagem..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button type="button" class="btn-secondary" onclick="gerarMsg('formal')">Formal</button>
+        <button type="button" class="btn-secondary" onclick="gerarMsg('emoji')">Com Emojis</button>
+        <button type="button" class="btn-secondary" onclick="gerarMsg('urgente')">Urgente</button>
+        <button type="button" class="btn-secondary" onclick="gerarMsg('desconto')">Desconto</button>
+      </div>
+    </div>
+    <div class="form-card">
+      <h3><i class="fas fa-paper-plane"></i> Enviar</h3>
+      <form method="POST" action="/admin/marketing/autopromo/send" id="sendForm">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="productId" id="selectedProductId" value="">
+        <input type="hidden" name="message" id="selectedMessage" value="">
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select name="platform" class="admin-input">
+            <option value="whatsapp" <%= waReady ? '' : 'disabled' %>>WhatsApp (<%= waReady ? 'conectado' : 'desconectado' %>)</option>
+            <option value="telegram">Telegram</option>
+            <option value="discord">Discord</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary" onclick="return confirm('Enviar divulgação?')"><i class="fas fa-rocket"></i> Enviar Agora</button>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+let selectedProduct = null;
+document.getElementById('productSelect').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (!opt.value) { selectedProduct = null; document.getElementById('promoMessage').value = ''; return; }
+  selectedProduct = { id: opt.value, name: opt.dataset.name, price: opt.dataset.price, url: opt.dataset.url, cat: opt.dataset.cat };
+  document.getElementById('selectedProductId').value = opt.value;
+  gerarMsg('formal');
+});
+function gerarMsg(style) {
+  if (!selectedProduct) return alert('Selecione um produto primeiro');
+  const p = selectedProduct;
+  const preco = 'R$ ' + parseFloat(p.price).toFixed(2).replace('.', ',');
+  const msgs = {
+    formal: '*[' + '<%= siteName %>' + ']* \n\n' + p.name + '\n💰 ' + preco + '\n\nAcesse: ' + p.url,
+    emoji: '🔥 *' + p.name + '* 🔥\n\n💵 Apenas ' + preco + '\n⭐ Oferta imperdível!\n\n👉 ' + p.url,
+    urgente: '⚡ *ÚLTIMAS UNIDADES* ⚡\n\n' + p.name + '\nDe *' + preco + '*\n\nCorra e garanta o seu! 🏃\n' + p.url,
+    desconto: '🎉 *PROMOÇÃO RELÂMPAGO* 🎉\n\n' + p.name + '\n💰 *' + preco + '*\n\n📦 Estoque limitado!\n👇\n' + p.url,
+  };
+  const msg = msgs[style] || msgs.formal;
+  document.getElementById('promoMessage').value = msg;
+  document.getElementById('selectedMessage').value = msg;
+}
+</script>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+</style>
+<%- include('../../partials/admin-footer') %>

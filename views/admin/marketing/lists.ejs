@@ -1,0 +1,46 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/lists' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-list"></i> Listas de Transmissão</h1>
+    <p style="font-size:13px;color:#666;margin:0;">Agrupe contatos para disparos segmentados</p>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-plus-circle"></i> Nova Lista</h3>
+      <form method="POST" action="/admin/marketing/lists/create">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group"><label>Nome</label><input type="text" name="name" class="admin-input" required placeholder="Clientes VIP"></div>
+        <div class="form-group"><label>Descrição</label><input type="text" name="description" class="admin-input" placeholder="Clientes que compraram mais de R$500"></div>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Criar Lista</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-list"></i> Listas</h3>
+      <% if (lists.length === 0) { %><p style="color:#999;font-size:13px;">Nenhuma lista criada.</p><% } else { %>
+      <div style="max-height:400px;overflow-y:auto;">
+      <% lists.forEach(function(l) { %>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #eee;">
+          <div>
+            <a href="/admin/marketing/lists/<%= l.id %>" style="font-weight:600;color:#1565c0;text-decoration:none;"><%= l.name %></a>
+            <div style="font-size:12px;color:#666;"><%= l.member_count %> membros <%= l.description ? '| ' + l.description : '' %></div>
+          </div>
+          <form method="POST" action="/admin/marketing/lists/delete/<%= l.id %>" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:14px;" onclick="return confirm('Excluir lista e todos os membros?')" title="Excluir">✕</button>
+          </form>
+        </div>
+      <% }) %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+</style>
+<%- include('../../partials/admin-footer') %>
