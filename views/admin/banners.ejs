@@ -32,7 +32,7 @@
                 <input type="text" name="subtitle" value="<%= b.subtitle %>" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
                 <input type="number" name="sort_order" value="<%= b.sort_order %>" style="width:50px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
                 <input type="file" name="image" accept="image/*" style="width:80px;font-size:11px;">
-                <label style="font-size:11px;"><input type="checkbox" name="active" value="1" <%= b.active ? 'checked' : %>> Ativo</label>
+                <label style="font-size:11px;"><input type="checkbox" name="active" value="1" <%= b.active ? 'checked' : '' %>> Ativo</label>
                 <button class="btn-icon" style="font-size:11px;padding:4px;" title="Salvar"><i class="fas fa-save"></i></button>
               </form>
               <form method="POST" action="/admin/banners/deletar/<%= b.id %>" style="display:inline;" onsubmit="return confirm('Excluir banner?')">
