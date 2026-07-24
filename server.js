@@ -115,13 +115,14 @@ app.set('views', path.join(__dirname, 'views'));
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Erro:', err.message);
+  console.error(err.stack);
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).send('Arquivo muito grande. Máximo 5MB.');
   }
   if (err.message?.includes('Formato de imagem')) {
     return res.status(400).send(err.message);
   }
-  res.status(500).send('Erro interno do servidor');
+  res.status(500).send('Erro: ' + err.message + '\n' + (err.stack || '').split('\n').slice(0,10).join('\n'));
 });
 
 app.use((req, res, next) => {
@@ -129,6 +130,7 @@ app.use((req, res, next) => {
   res.locals.seller = req.session.sellerId ? true : false;
   res.locals.currentPath = req.path;
   res.locals.session = req.session;
+  res.locals.query = req.query;
   next();
 });
 

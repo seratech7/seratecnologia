@@ -5,7 +5,7 @@
   <p>Histórico de vendas dos seus produtos</p>
 </div>
 
-<% if (req.query.error === 'prova_foto') { %>
+<% if (query && query.error === 'prova_foto') { %>
   <div style="background:#fdecea;color:#c62828;padding:12px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
     <i class="fas fa-exclamation-circle"></i> Para alterar para este status é obrigatório enviar <strong>pelo menos 1 foto</strong> como comprovante.
   </div>

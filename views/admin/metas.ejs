@@ -1,0 +1,48 @@
+<%- include('../partials/admin-header') %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-bullseye"></i> Metas dos Vendedores</h1>
+  </div>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <div class="form-card" style="margin-bottom:20px;">
+    <h3>Nova Meta</h3>
+    <form method="POST" action="/admin/metas/novo" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="form-group"><label>Título</label><input type="text" name="title" class="admin-input" required placeholder="Ex: Meta de Julho"></div>
+      <div class="form-group"><label>Tipo</label><select name="type" class="admin-select"><option value="sales_count">Qtd de Vendas</option><option value="revenue">Faturamento (R$)</option></select></div>
+      <div class="form-group"><label>Valor da Meta</label><input type="number" name="target_value" class="admin-input" step="0.01" min="1" required></div>
+      <div class="form-group"><label>Data Início</label><input type="date" name="start_date" class="admin-input" required></div>
+      <div class="form-group"><label>Data Fim</label><input type="date" name="end_date" class="admin-input" required></div>
+      <div class="form-group"><label>Prêmio (ex: R$ 50,00)</label><input type="text" name="prize_description" class="admin-input" placeholder="Ex: R$ 50 no Pix"></div>
+      <div style="grid-column:1/-1;"><button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Criar Meta</button></div>
+    </form>
+  </div>
+  <div class="table-container">
+    <table class="admin-table">
+      <thead><tr><th>Título</th><th>Tipo</th><th>Meta</th><th>Prêmio</th><th>Período</th><th>Ativa</th><th>Ações</th></tr></thead>
+      <tbody>
+        <% if (goals.length === 0) { %><tr><td colspan="7" class="empty-row">Nenhuma meta cadastrada</td></tr><% } %>
+        <% goals.forEach(function(g) { %>
+          <tr>
+            <td><strong><%= g.title %></strong></td>
+            <td><%= g.type === 'sales_count' ? 'Vendas' : 'Faturamento' %></td>
+            <td><%= g.type === 'sales_count' ? g.target_value + ' vendas' : 'R$ ' + parseFloat(g.target_value).toFixed(2) %></td>
+            <td><%= g.prize_description || '-' %></td>
+            <td><%= g.start_date %> até <%= g.end_date %></td>
+            <td>
+              <form method="POST" action="/admin/metas/toggle/<%= g.id %>" style="display:inline;">
+                <span class="status-badge <%= g.active ? 'active' : 'inactive' %>" style="cursor:pointer;" onclick="this.closest('form').submit()"><%= g.active ? 'Ativa' : 'Inativa' %></span>
+              </form>
+            </td>
+            <td class="actions-cell">
+              <a href="/admin/placar?goal_id=<%= g.id %>" class="btn-icon" title="Ver Placar"><i class="fas fa-ranking-star"></i></a>
+              <form method="POST" action="/admin/metas/deletar/<%= g.id %>" style="display:inline;" onsubmit="return confirm('Excluir meta?')">
+                <button class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

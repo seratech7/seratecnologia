@@ -68,14 +68,16 @@ router.get('/dashboard', (req, res) => {
   var chartData = db.getSellerChartData(sid, 30);
   var topProducts = db.getSellerTopProducts(sid);
   var totalViews = db.getSellerProductViews(sid);
-  var goal = db.getSellerMonthlyProgress(sid);
+  var activeGoal = db.getActiveGoal();
+  var goalProgress = activeGoal ? db.getSellerGoalProgress(sid, activeGoal) : null;
+  var leaderboard = activeGoal ? db.getGoalLeaderboard(activeGoal.id) : [];
   var pendingQuestions = db.query("SELECT COUNT(*) as c FROM product_questions WHERE seller_id = ? AND (answer IS NULL OR answer = '')", [sid]);
   pendingQuestions = pendingQuestions && pendingQuestions[0] ? pendingQuestions[0].c : 0;
 
   res.render('seller/dashboard', {
     title: 'Meu Painel - Vendedor',
     stats: { total: total.count, active: active.count, pending: pending.count, rejected: rejected.count },
-    recent, salesSummary, chartData, topProducts, totalViews, goal, pendingQuestions
+    recent, salesSummary, chartData, topProducts, totalViews, goal: goalProgress, activeGoal, leaderboard, pendingQuestions
   });
 });
 
@@ -195,13 +197,18 @@ router.post('/products/delete-image/:id', (req, res) => {
 
 // ========== SALES ==========
 router.get('/sales', requireSeller, (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = 30;
-  const offset = (page - 1) * limit;
-  const total = db.get('SELECT COUNT(*) as c FROM sales WHERE seller_id = ?', [req.session.sellerId]);
-  const sales = db.query('SELECT * FROM sales WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [req.session.sellerId, limit, offset]);
-  const totalPages = Math.ceil((total ? total.c : 0) / limit);
-  res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages });
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 30;
+    const offset = (page - 1) * limit;
+    const total = db.get('SELECT COUNT(*) as c FROM sales WHERE seller_id = ?', [req.session.sellerId]);
+    const sales = db.query('SELECT * FROM sales WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [req.session.sellerId, limit, offset]);
+    const totalPages = Math.ceil((total ? total.c : 0) / limit);
+    res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages });
+  } catch(e) {
+    console.error('ERRO /seller/sales:', e);
+    res.status(500).send('Erro: ' + e.message);
+  }
 });
 
 router.post('/sales/status/:id', requireSeller, upload.array('proof_photos', 5), (req, res) => {
@@ -339,11 +346,19 @@ router.post('/configuracoes', requireSeller, (req, res) => {
   var prefs = {
     notify_email_sale: req.body.notify_email_sale === '1',
     notify_email_approve: req.body.notify_email_approve === '1',
-    notify_whatsapp_sale: req.body.notify_whatsapp_sale === '1',
-    monthly_goal: parseInt(req.body.monthly_goal) || 0
+    notify_whatsapp_sale: req.body.notify_whatsapp_sale === '1'
   };
   db.updateSellerNotifPrefs(req.session.sellerId, prefs);
   res.redirect('/seller/configuracoes?sucesso=Salvo');
+});
+
+// ========== PLACAR / SCOREBOARD ==========
+router.get('/placar', requireSeller, (req, res) => {
+  var activeGoal = db.getActiveGoal();
+  var allGoals = db.getAllGoals();
+  var leaderboard = activeGoal ? db.getGoalLeaderboard(activeGoal.id) : [];
+  var myProgress = activeGoal ? db.getSellerGoalProgress(req.session.sellerId, activeGoal) : null;
+  res.render('seller/placar', { title: 'Placar de Metas', activeGoal, allGoals, leaderboard, myProgress });
 });
 
 return router;

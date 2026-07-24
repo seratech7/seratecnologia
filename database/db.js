@@ -482,13 +482,39 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS seller_goals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'sales_count',
+      target_value REAL NOT NULL,
+      prize_description TEXT DEFAULT '',
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS goal_winners (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      goal_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      progress REAL DEFAULT 0,
+      prize_given INTEGER DEFAULT 0,
+      achieved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      notes TEXT DEFAULT '',
+      UNIQUE(goal_id, seller_id)
+    )
+  `);
+
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
     var sn = sCols[0].values.map(function(r) { return r[1]; });
     if (!sn.includes('notify_email_sale')) db.run("ALTER TABLE sellers ADD COLUMN notify_email_sale INTEGER DEFAULT 1");
     if (!sn.includes('notify_email_approve')) db.run("ALTER TABLE sellers ADD COLUMN notify_email_approve INTEGER DEFAULT 1");
     if (!sn.includes('notify_whatsapp_sale')) db.run("ALTER TABLE sellers ADD COLUMN notify_whatsapp_sale INTEGER DEFAULT 0");
-    if (!sn.includes('monthly_goal')) db.run("ALTER TABLE sellers ADD COLUMN monthly_goal INTEGER DEFAULT 0");
   }
 
   var saCols = db.exec("PRAGMA table_info(sales)");
@@ -985,20 +1011,78 @@ function cloneProduct(id) {
   return r ? r.id : null;
 }
 
-// === MONTHLY GOAL ===
-function getSellerMonthlyProgress(sellerId) {
-  var seller = get("SELECT monthly_goal FROM sellers WHERE id = ?", [sellerId]);
-  var goal = seller ? (seller.monthly_goal || 0) : 0;
-  if (goal <= 0) return { goal: 0, sales: 0, pct: 0 };
-  var monthSales = get("SELECT COUNT(*) as c FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')", [sellerId]);
-  var sales = monthSales ? monthSales.c : 0;
-  return { goal: goal, sales: sales, pct: Math.min(100, Math.round((sales / goal) * 100)) };
+// === SELLER GOALS ===
+function getActiveGoal() {
+  return get("SELECT * FROM seller_goals WHERE active = 1 AND start_date <= date('now') AND end_date >= date('now') ORDER BY created_at DESC LIMIT 1");
 }
 
-// === SELLER SETTINGS ===
-function updateSellerNotifPrefs(sellerId, prefs) {
-  run("UPDATE sellers SET notify_email_sale = ?, notify_email_approve = ?, notify_whatsapp_sale = ?, monthly_goal = ? WHERE id = ?",
-    [prefs.notify_email_sale ? 1 : 0, prefs.notify_email_approve ? 1 : 0, prefs.notify_whatsapp_sale ? 1 : 0, parseInt(prefs.monthly_goal) || 0, sellerId]);
+function getSellerGoalProgress(sellerId, goal) {
+  if (!goal) return null;
+  var r;
+  if (goal.type === 'sales_count') {
+    r = get("SELECT COUNT(*) as c FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND date(created_at) >= ? AND date(created_at) <= ?", [sellerId, goal.start_date, goal.end_date]);
+  } else {
+    r = get("SELECT COALESCE(SUM(product_price),0) as c FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND date(created_at) >= ? AND date(created_at) <= ?", [sellerId, goal.start_date, goal.end_date]);
+  }
+  var progress = r ? r.c : 0;
+  return { progress: progress, target: goal.target_value, pct: Math.min(100, Math.round((progress / goal.target_value) * 100)), achieved: progress >= goal.target_value };
+}
+
+function getGoalLeaderboard(goalId) {
+  var goal = get("SELECT * FROM seller_goals WHERE id = ?", [goalId]);
+  if (!goal) return [];
+  var sellers = query("SELECT id, name, avatar FROM sellers WHERE status = 'active'");
+  var result = [];
+  sellers.forEach(function(s) {
+    var p = getSellerGoalProgress(s.id, goal);
+    if (!p) return;
+    var w = get("SELECT prize_given FROM goal_winners WHERE goal_id = ? AND seller_id = ?", [goalId, s.id]);
+    result.push({
+      seller_id: s.id,
+      seller_name: s.name,
+      avatar: s.avatar || '',
+      progress: p.progress,
+      target: p.target,
+      pct: p.pct,
+      achieved: p.achieved,
+      prize_given: w ? w.prize_given : 0
+    });
+  });
+  result.sort(function(a, b) { return b.pct - a.pct || b.progress - a.progress; });
+  return result;
+}
+
+function getAllGoals() {
+  return query("SELECT * FROM seller_goals ORDER BY created_at DESC");
+}
+
+function saveGoal(id, title, type, targetValue, prizeDescription, startDate, endDate) {
+  if (id) {
+    run("UPDATE seller_goals SET title = ?, type = ?, target_value = ?, prize_description = ?, start_date = ?, end_date = ? WHERE id = ?",
+      [title, type, targetValue, prizeDescription||'', startDate, endDate, id]);
+  } else {
+    run("INSERT INTO seller_goals (title, type, target_value, prize_description, start_date, end_date) VALUES (?, ?, ?, ?, ?, ?)",
+      [title, type, targetValue, prizeDescription||'', startDate, endDate]);
+  }
+}
+
+function toggleGoal(id, active) {
+  run("UPDATE seller_goals SET active = ? WHERE id = ?", [active ? 1 : 0, id]);
+}
+
+function markGoalWinner(goalId, sellerId, prizeGiven) {
+  var existing = get("SELECT id FROM goal_winners WHERE goal_id = ? AND seller_id = ?", [goalId, sellerId]);
+  if (existing) {
+    run("UPDATE goal_winners SET prize_given = ? WHERE id = ?", [prizeGiven ? 1 : 0, existing.id]);
+  } else {
+    run("INSERT INTO goal_winners (goal_id, seller_id, progress, prize_given) VALUES (?, ?, (SELECT COUNT(*) FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending')), ?)",
+      [goalId, sellerId, sellerId, prizeGiven ? 1 : 0]);
+  }
+}
+
+function deleteGoal(id) {
+  run("DELETE FROM goal_winners WHERE goal_id = ?", [id]);
+  run("DELETE FROM seller_goals WHERE id = ?", [id]);
 }
 
 // === SELLER CSV EXPORT ===
@@ -1006,4 +1090,4 @@ function getSellerSalesCsv(sellerId) {
   return query("SELECT s.*, p.name as prod_name FROM sales s JOIN products p ON s.product_id = p.id WHERE s.seller_id = ? ORDER BY s.created_at DESC", [sellerId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getSellerMonthlyProgress, updateSellerNotifPrefs, getSellerSalesCsv };
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv };

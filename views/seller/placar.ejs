@@ -1,0 +1,79 @@
+<%- include('../partials/seller-header') %>
+<div class="admin-content">
+  <div class="dashboard-header">
+    <h1><i class="fas fa-ranking-star"></i> Placar de Metas</h1>
+    <p>Competição entre vendedores — veja sua posição no ranking</p>
+  </div>
+
+  <% if (activeGoal) { %>
+    <div style="background:linear-gradient(135deg,#1a237e,#283593);color:#fff;border-radius:12px;padding:24px;margin-bottom:24px;text-align:center;">
+      <h2 style="margin:0 0 4px;"><%= activeGoal.title %></h2>
+      <p style="opacity:.8;margin:0 0 8px;">
+        <%= activeGoal.start_date %> até <%= activeGoal.end_date %>
+        &middot; Meta: <%= activeGoal.type === 'sales_count' ? activeGoal.target_value + ' vendas' : 'R$ ' + parseFloat(activeGoal.target_value).toFixed(2) %>
+        <% if (activeGoal.prize_description) { %> &middot; 🎁 Prêmio: <strong><%= activeGoal.prize_description %></strong><% } %>
+      </p>
+      <% if (myProgress) { %>
+        <div style="max-width:400px;margin:12px auto 0;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+            <span>Meu progresso: <%= myProgress.progress %> / <%= myProgress.target %></span>
+            <span><%= myProgress.pct %>%</span>
+          </div>
+          <div style="height:16px;background:rgba(255,255,255,0.2);border-radius:8px;overflow:hidden;">
+            <div style="height:100%;background:<%= myProgress.achieved ? '#4caf50' : '#ffc107' %>;width:<%= Math.min(myProgress.pct,100) %>%!important;border-radius:8px;transition:width .5s;"></div>
+          </div>
+          <% if (myProgress.achieved) { %><div style="margin-top:8px;font-size:18px;">🎉 Meta batida! <%= activeGoal.prize_description ? 'Prêmio: ' + activeGoal.prize_description : '' %></div><% } %>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (leaderboard.length > 0) { %>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead><tr><th>#</th><th>Vendedor</th><th>Progresso</th><th>%</th><th>Status</th></tr></thead>
+        <tbody>
+          <% leaderboard.forEach(function(s, idx) { %>
+            <tr style="<%= s.seller_id === (session.sellerId || 0) ? 'background:#e8f5e9;font-weight:700;' : '' %>">
+              <td style="font-size:20px;font-weight:700;text-align:center;width:60px;">
+                <% if (idx === 0) { %>🥇<% } else if (idx === 1) { %>🥈<% } else if (idx === 2) { %>🥉<% } else { %><%= idx + 1 %><% } %>
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <img src="<%= s.avatar || '/images/default-avatar.png' %>" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                  <span><%= s.seller_name %></span>
+                  <% if (s.seller_id === (session.sellerId || 0)) { %><span style="font-size:11px;background:#4caf50;color:#fff;padding:1px 8px;border-radius:10px;">Você</span><% } %>
+                </div>
+              </td>
+              <td style="min-width:200px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="flex:1;height:14px;background:#e0e0e0;border-radius:7px;overflow:hidden;">
+                    <div style="height:100%;background:<%= s.achieved ? 'linear-gradient(90deg,#4caf50,#8bc34a)' : '#2196f3' %>;width:<%= Math.min(s.pct,100) %>%!important;border-radius:7px;transition:width .5s;"></div>
+                  </div>
+                  <span style="font-size:13px;white-space:nowrap;font-weight:600;"><%= s.progress %> / <%= s.target %></span>
+                </div>
+              </td>
+              <td style="font-weight:700;font-size:18px;color:<%= s.achieved ? '#4caf50' : '#333' %>;"><%= s.pct %>%</td>
+              <td>
+                <% if (s.achieved) { %>
+                  <span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">
+                    <i class="fas fa-check-circle"></i> Meta Batida
+                  </span>
+                <% } else { %>
+                  <span style="color:#999;font-size:13px;">Faltam <%= s.target - s.progress %></span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } else { %><p style="color:#999;text-align:center;padding:40px;">Nenhum vendedor com dados no período</p><% } %>
+  <% } else { %>
+    <div style="text-align:center;padding:60px;color:#999;">
+      <i class="fas fa-bullseye" style="font-size:64px;opacity:0.3;margin-bottom:16px;"></i>
+      <h3>Nenhuma meta ativa no momento</h3>
+      <p>O administrador irá criar metas periódicas. Fique ligado!</p>
+    </div>
+  <% } %>
+</div>
+<%- include('../partials/seller-footer') %>

@@ -5,7 +5,7 @@
   <p>Crie cupons promocionais para seus produtos</p>
 </div>
 
-<% if (req.query.erro) { %><div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;"><%= req.query.erro %></div><% } %>
+<% if (query && query.erro) { %><div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;"><%= query.erro %></div><% } %>
 
 <div class="form-card" style="margin-bottom:20px;">
   <h3>Novo Cupom</h3>

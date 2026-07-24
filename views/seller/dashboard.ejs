@@ -13,13 +13,23 @@
     <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-shopping-cart"></i></div><div class="stat-info"><span class="stat-number"><%= salesSummary.month.c %></span><span class="stat-label">Vendas (mês)</span></div></div>
     <div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-dollar-sign"></i></div><div class="stat-info"><span class="stat-number"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(salesSummary.month.rev) %></span><span class="stat-label">Faturamento (mês)</span></div></div>
     <div class="stat-card"><div class="stat-icon" style="background:#f3e5f5;color:#7b1fa2;"><i class="fas fa-eye"></i></div><div class="stat-info"><span class="stat-number"><%= totalViews %></span><span class="stat-label">Visitas</span></div></div>
-    <% if (goal && goal.goal > 0) { %><div class="stat-card" style="grid-column:span 2;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:8px;"><i class="fas fa-bullseye"></i> Meta do mês: <%= goal.sales %> / <%= goal.goal %> vendas</div>
-      <div style="height:12px;background:#e0e0e0;border-radius:6px;overflow:hidden;">
-        <div style="height:100%;background:linear-gradient(90deg,#4caf50,#8bc34a);width:<%= goal.pct %>%!important;border-radius:6px;transition:width .5s;"></div>
+    <% if (activeGoal) { %>
+      <div class="stat-card" style="grid-column:span 2;border:2px solid <%= goal.achieved ? '#4caf50' : '#ff9800' %>;">
+        <div style="width:100%;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;display:flex;justify-content:space-between;">
+            <span><i class="fas fa-trophy" style="color:<%= goal.achieved ? '#4caf50' : '#ff9800' %>;"></i> <%= activeGoal.title %></span>
+            <span><%= goal.achieved ? '✅ Meta Batida!' : goal.progress + ' / ' + goal.target + ' (' + activeGoal.type === 'sales_count' ? 'vendas' : 'R$' + ')' %></span>
+          </div>
+          <div style="height:14px;background:#e0e0e0;border-radius:7px;overflow:hidden;">
+            <div style="height:100%;background:<%= goal.achieved ? 'linear-gradient(90deg,#4caf50,#8bc34a)' : 'linear-gradient(90deg,#ff9800,#ffc107)' %>;width:<%= Math.min(goal.pct, 100) %>%!important;border-radius:7px;transition:width .5s;"></div>
+          </div>
+          <div style="font-size:11px;color:#666;margin-top:3px;display:flex;justify-content:space-between;">
+            <span><%= goal.pct %>% concluído</span>
+            <% if (activeGoal.prize_description) { %><span><i class="fas fa-gift"></i> Prêmio: <%= activeGoal.prize_description %></span><% } %>
+          </div>
+        </div>
       </div>
-      <div style="font-size:12px;color:#666;margin-top:4px;"><%= goal.pct %>% concluído</div>
-    </div><% } %>
+    <% } %>
     <% if (pendingQuestions > 0) { %><div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-question-circle"></i></div><div class="stat-info"><span class="stat-number"><%= pendingQuestions %></span><span class="stat-label">Perguntas</span></div></div><% } %>
   </div>
 
@@ -55,6 +65,43 @@
       <% } else { %><p style="color:#999;text-align:center;padding:20px;">Nenhuma venda ainda</p><% } %>
     </div>
   </div>
+
+  <% if (activeGoal && leaderboard && leaderboard.length > 0) { %>
+  <div class="form-card" style="margin-bottom:20px;">
+    <h3><i class="fas fa-ranking-star"></i> Placar — <%= activeGoal.title %></h3>
+    <p style="font-size:13px;color:#666;margin:-8px 0 12px;">
+      <% if (activeGoal.prize_description) { %><i class="fas fa-gift"></i> Prêmio: <strong><%= activeGoal.prize_description %></strong> &middot; <% } %>
+      <%= activeGoal.start_date %> até <%= activeGoal.end_date %>
+    </p>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead><tr><th>#</th><th>Vendedor</th><th>Progresso</th><th>%</th><th>Status</th></tr></thead>
+      <tbody>
+        <% leaderboard.forEach(function(s, idx) { %>
+          <tr style="<%= s.seller_id === (session.sellerId || 0) ? 'background:#fffde7;font-weight:600;' : '' %>">
+            <td style="font-size:16px;font-weight:700;text-align:center;">
+              <% if (idx === 0) { %>🥇<% } else if (idx === 1) { %>🥈<% } else if (idx === 2) { %>🥉<% } else { %><%= idx + 1 %><% } %>
+            </td>
+            <td><%= s.seller_name %></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;height:10px;background:#e0e0e0;border-radius:5px;overflow:hidden;">
+                  <div style="height:100%;background:<%= s.achieved ? '#4caf50' : '#2196f3' %>;width:<%= Math.min(s.pct,100) %>%!important;border-radius:5px;"></div>
+                </div>
+                <span style="font-size:12px;white-space:nowrap;"><%= s.progress %> / <%= s.target %></span>
+              </div>
+            </td>
+            <td style="font-weight:700;"><%= s.pct %>%</td>
+            <td>
+              <% if (s.achieved) { %><span style="color:#4caf50;font-weight:700;"><i class="fas fa-check-circle"></i> Meta Batida</span><% } else { %><span style="color:#999;"><%= s.pct %>%</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  <% } %>
 
   <div class="form-card">
     <h3><i class="fas fa-clock"></i> Últimos Produtos</h3>

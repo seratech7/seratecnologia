@@ -989,5 +989,50 @@ router.post('/products/bulk', requireAdmin, (req, res) => {
   res.redirect('/admin/products');
 });
 
+// ========== GOALS ==========
+router.get('/metas', requireSuperAdmin, (req, res) => {
+  var goals = db.getAllGoals();
+  res.render('admin/metas', { title: 'Metas dos Vendedores', goals, success: req.query.sucesso || '', error: null });
+});
+
+router.post('/metas/novo', requireSuperAdmin, (req, res) => {
+  var { title, type, target_value, prize_description, start_date, end_date } = req.body;
+  if (!title || !target_value || !start_date || !end_date) return res.redirect('/admin/metas');
+  db.saveGoal(null, title, type || 'sales_count', parseFloat(target_value), prize_description, start_date, end_date);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'create_goal', 'Meta criada: ' + title, 'goal', 0, req.ip);
+  res.redirect('/admin/metas?sucesso=Meta criada!');
+});
+
+router.post('/metas/editar/:id', requireSuperAdmin, (req, res) => {
+  var { title, type, target_value, prize_description, start_date, end_date } = req.body;
+  if (!title || !target_value || !start_date || !end_date) return res.redirect('/admin/metas');
+  db.saveGoal(req.params.id, title, type || 'sales_count', parseFloat(target_value), prize_description, start_date, end_date);
+  res.redirect('/admin/metas?sucesso=Meta atualizada!');
+});
+
+router.post('/metas/toggle/:id', requireSuperAdmin, (req, res) => {
+  var g = db.get("SELECT active FROM seller_goals WHERE id = ?", [req.params.id]);
+  if (g) db.toggleGoal(req.params.id, !g.active);
+  res.redirect('/admin/metas');
+});
+
+router.post('/metas/winner/:id/:sellerId', requireSuperAdmin, (req, res) => {
+  db.markGoalWinner(req.params.id, req.params.sellerId, req.body.prize_given === '1');
+  res.redirect('/admin/placar?goal_id=' + req.params.id);
+});
+
+router.post('/metas/deletar/:id', requireSuperAdmin, (req, res) => {
+  db.deleteGoal(req.params.id);
+  res.redirect('/admin/metas?sucesso=Meta removida');
+});
+
+router.get('/placar', requireAdmin, (req, res) => {
+  var goalId = req.query.goal_id || null;
+  var goals = db.getAllGoals();
+  var selectedGoal = goalId ? db.get("SELECT * FROM seller_goals WHERE id = ?", [goalId]) : (db.getActiveGoal() || null);
+  var leaderboard = selectedGoal ? db.getGoalLeaderboard(selectedGoal.id) : [];
+  res.render('admin/placar', { title: 'Placar de Metas', goals, selectedGoal, leaderboard });
+});
+
 return router;
 };
