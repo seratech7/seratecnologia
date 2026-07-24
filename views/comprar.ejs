@@ -1,0 +1,168 @@
+<%- include('partials/header') %>
+
+<div class="container" style="max-width:800px;margin:0 auto;padding:24px 16px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <h1 style="margin:0;font-size:28px;"><i class="fas fa-shopping-cart"></i> Compra Online</h1>
+    <p style="margin:8px 0 0;color:#666;">Digite o código do produto para iniciar</p>
+  </div>
+
+  <!-- Busca por código -->
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+    <form method="GET" action="/comprar" id="searchForm" style="display:flex;gap:8px;">
+      <input type="text" name="codigo" id="codigoInput" value="<%= codigo %>" placeholder="Ex: PROD-00001" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:8px;font-size:16px;font-family:monospace;text-transform:uppercase;letter-spacing:1px;" autofocus>
+      <button type="submit" style="padding:12px 24px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;white-space:nowrap;">
+        <i class="fas fa-search"></i> Buscar
+      </button>
+    </form>
+    <div style="margin-top:8px;font-size:13px;color:#999;text-align:center;">
+      <i class="fas fa-info-circle"></i> Informe o código que está na etiqueta do produto (ex: PROD-00001)
+    </div>
+  </div>
+
+  <% if (error) { %>
+  <div style="background:#fdecea;color:#c62828;padding:16px 20px;border-radius:8px;margin-bottom:24px;text-align:center;">
+    <i class="fas fa-exclamation-circle"></i> <%= error %>
+  </div>
+  <% } %>
+
+  <% if (produto) { %>
+  <!-- Dados do Produto -->
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+    <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+      <% if (produto.image) { %>
+        <img src="<%= produto.image %>" alt="<%= produto.name %>" style="width:120px;height:120px;object-fit:cover;border-radius:8px;background:#f5f5f5;">
+      <% } else { %>
+        <div style="width:120px;height:120px;background:#f5f5f5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:36px;"><i class="fas fa-image"></i></div>
+      <% } %>
+      <div style="flex:1;min-width:200px;">
+        <div style="font-family:monospace;font-size:13px;color:#1565c0;font-weight:700;margin-bottom:4px;"><%= produto.code %></div>
+        <h2 style="margin:0 0 8px;font-size:20px;"><%= produto.name %></h2>
+        <div style="font-size:28px;font-weight:800;color:#1565c0;">
+          <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.price) %>
+        </div>
+        <div style="margin-top:8px;font-size:14px;color:#666;">
+          <i class="fas fa-map-marker-alt"></i> <%= produto.location || 'Brasil' %>
+          <% if (produto.category_name) { %> &middot; <%= produto.category_name %><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulário de Dados -->
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+    <h3 style="margin:0 0 16px;"><i class="fas fa-user"></i> Dados do Comprador</h3>
+    <form id="buyerForm" onsubmit="return gerarPagamento(event)">
+      <input type="hidden" name="product_code" value="<%= produto.code %>">
+      <input type="hidden" name="product_price" value="<%= produto.price %>">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="grid-column:1/-1;">
+          <label style="display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:4px;">Nome Completo *</label>
+          <input type="text" name="nome" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:15px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:4px;">CPF/CNPJ *</label>
+          <input type="text" name="documento" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:15px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:4px;">Telefone/WhatsApp *</label>
+          <input type="tel" name="telefone" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:15px;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label style="display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:4px;">E-mail *</label>
+          <input type="email" name="email" required style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:15px;">
+        </div>
+        <div style="grid-column:1/-1;">
+          <label style="display:block;font-size:14px;font-weight:600;color:#444;margin-bottom:4px;">Endereço Completo *</label>
+          <input type="text" name="endereco" required placeholder="Rua, número, bairro, cidade, estado, CEP" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:8px;font-size:15px;">
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="submit" style="flex:1;padding:14px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:background .2s;" onmouseover="this.style.background='#0d47a1'" onmouseout="this.style.background='#1565c0'">
+          <i class="fas fa-qrcode"></i> Gerar QR Code PIX
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- QR Code PIX Placeholder -->
+  <div id="pixSection" style="display:none;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:32px;text-align:center;margin-bottom:24px;">
+    <h3 style="margin:0 0 8px;"><i class="fas fa-qrcode"></i> Pagamento via PIX</h3>
+    <p style="color:#666;margin:0 0 24px;">Escaneie o QR Code abaixo para pagar</p>
+
+    <div style="display:inline-block;background:#f5f5f5;padding:24px;border-radius:12px;border:2px dashed #ddd;">
+      <div style="width:220px;height:220px;background:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+        <div style="text-align:center;color:#999;">
+          <i class="fas fa-qrcode" style="font-size:80px;opacity:0.4;"></i>
+          <div style="margin-top:12px;font-size:13px;font-weight:600;color:#1565c0;">QR Code PIX</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding:12px;background:#fff3e0;border-radius:8px;font-size:14px;color:#e65100;">
+      <i class="fas fa-tools"></i> A chave PIX será configurada em breve pelo administrador.
+    </div>
+
+    <div id="resumoCompra" style="margin-top:20px;text-align:left;background:#f9f9f9;border-radius:8px;padding:16px;">
+      <h4 style="margin:0 0 12px;font-size:14px;color:#666;">Resumo da Compra</h4>
+      <div style="font-size:14px;line-height:1.8;" id="resumoDados"></div>
+    </div>
+
+    <button onclick="window.print()" style="margin-top:16px;padding:10px 20px;background:#fff;color:#1565c0;border:2px solid #1565c0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">
+      <i class="fas fa-print"></i> Imprimir Comprovante
+    </button>
+  </div>
+  <% } %>
+</div>
+
+<script>
+function gerarPagamento(e) {
+  e.preventDefault();
+  var form = document.getElementById('buyerForm');
+  var dados = {
+    produto: '<%= produto ? produto.code : "" %>',
+    nome: form.nome.value,
+    documento: form.documento.value,
+    telefone: form.telefone.value,
+    email: form.email.value,
+    endereco: form.endereco.value,
+    valor: '<%= produto ? produto.price : "0" %>'
+  };
+
+  var resumo = document.getElementById('resumoDados');
+  resumo.innerHTML =
+    '<strong>Produto:</strong> <%= produto ? produto.name : "" %><br>' +
+    '<strong>Código:</strong> ' + dados.produto + '<br>' +
+    '<strong>Valor:</strong> ' + (parseFloat(dados.valor)).toLocaleString('pt-BR', {style:'currency',currency:'BRL'}) + '<br>' +
+    '<strong>Comprador:</strong> ' + dados.nome + '<br>' +
+    '<strong>CPF/CNPJ:</strong> ' + dados.documento + '<br>' +
+    '<strong>WhatsApp:</strong> ' + dados.telefone + '<br>' +
+    '<strong>E-mail:</strong> ' + dados.email + '<br>' +
+    '<strong>Endereço:</strong> ' + dados.endereco;
+
+  document.getElementById('pixSection').style.display = 'block';
+  document.getElementById('pixSection').scrollIntoView({ behavior: 'smooth' });
+  return false;
+}
+
+document.getElementById('codigoInput').addEventListener('keyup', function(e) {
+  this.value = this.value.toUpperCase();
+});
+
+var params = new URLSearchParams(window.location.search);
+if (params.get('codigo') && params.get('codigo').trim() !== '') {
+  var f = document.getElementById('buyerForm');
+  if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+
+<style>
+@media(max-width:600px) {
+  #buyerForm div[style*="grid-template-columns"] { grid-template-columns:1fr !important; }
+  #searchForm { flex-direction:column; }
+  #searchForm button { width:100%; }
+}
+</style>
+
+<%- include('partials/footer') %>

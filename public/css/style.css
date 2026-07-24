@@ -2988,6 +2988,8 @@ img { max-width: 100%; height: auto; display: block; }
 .notif-bell:hover { background: rgba(255,255,255,0.1); color: #fff; }
 .notif-bell.has-unread { color: #ffc107; }
 .product-code { font-family: monospace; font-size: 11px; color: #999; }
+.btn-comprar-agora { display:inline-flex; align-items:center; gap:8px; margin-top:16px; padding:14px 32px; background:#00c853; color:#fff; border:none; border-radius:8px; font-size:16px; font-weight:700; cursor:pointer; text-decoration:none; transition:background .2s; }
+.btn-comprar-agora:hover { background:#00a844; }
 .notif-badge {
   position: absolute;
   top: -2px;

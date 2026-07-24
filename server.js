@@ -18,6 +18,7 @@ const sellerProfileRoutes = require('./routes/seller-profile');
 const productRoutes = require('./routes/products');
 const adRoutes = require('./routes/ads');
 const notificationRoutes = require('./routes/notifications');
+const purchaseRoutes = require('./routes/purchase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -172,6 +173,7 @@ app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);
 app.use('/', notificationRoutes);
+app.use('/', purchaseRoutes);
 app.use('/api', adRoutes);
 
 app.use((req, res) => {

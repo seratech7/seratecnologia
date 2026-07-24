@@ -31,6 +31,9 @@
         <p class="product-price-large">
           <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %>
         </p>
+        <a href="/comprar?codigo=<%= product.code || 'PROD-' + String(product.id).padStart(5, '0') %>" class="btn-comprar-agora">
+          <i class="fas fa-shopping-cart"></i> Comprar Agora
+        </a>
       </div>
 
       <div class="product-badges">
