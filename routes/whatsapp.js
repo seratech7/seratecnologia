@@ -2,44 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { requireAdmin } = require('../middleware/auth');
-
-let WA_CLIENT = null;
-let WA_READY = false;
-let WA_QR = '';
-
-function log(msg) { console.log('[wa-panel] ' + msg); }
-
-async function getWaClient() {
-  if (WA_CLIENT && WA_READY) return WA_CLIENT;
-  try {
-    const { Client, LocalAuth } = require('whatsapp-web.js');
-    const waSessionPath = process.env.WHATSAPP_SESSION_PATH || path.join(__dirname, '..', 'wa_session');
-    WA_CLIENT = new Client({
-      authStrategy: new LocalAuth({ clientId: 'admin', dataPath: waSessionPath }),
-      puppeteer: {
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-        headless: true
-      }
-    });
-    WA_CLIENT.on('qr', qr => { WA_QR = qr; WA_READY = false; log('QR atualizado'); });
-    WA_CLIENT.on('ready', () => { WA_READY = true; WA_QR = ''; log('Cliente pronto'); });
-    WA_CLIENT.on('disconnected', r => { WA_READY = false; log('Desconectado: ' + r); });
-    WA_CLIENT.on('auth_failure', m => { WA_READY = false; log('Falha auth: ' + m); });
-    log('Inicializando cliente...');
-    await WA_CLIENT.initialize();
-    return WA_CLIENT;
-  } catch (e) {
-    log('Erro: ' + e.message);
-    return null;
-  }
-}
-
-function destroyWaClient() {
-  if (WA_CLIENT) {
-    try { WA_CLIENT.destroy(); } catch (e) {}
-    WA_CLIENT = null; WA_READY = false; WA_QR = '';
-  }
-}
+const waManager = require('../lib/whatsapp-manager');
 
 module.exports = function() {
   const router = express.Router();
@@ -48,53 +11,99 @@ module.exports = function() {
   // === DASHBOARD ===
   router.get('/whatsapp', async (req, res) => {
     const db = require('../database/db');
+    const accounts = db.getWaAccounts();
     const stats = db.getWaStats();
     const recent = db.getWaMessages(10, 0);
     const contacts = db.getWaContacts();
+    const accountsWithState = accounts.map(function(a) {
+      var state = waManager.getState(a.id);
+      return Object.assign({}, a, { waReady: state.ready, waQr: state.qr });
+    });
     res.render('admin/whatsapp', {
-      title: 'WhatsApp - Painel Admin', currentPath: '/admin/whatsapp',
-      stats, recent, contacts, waReady: WA_READY, waQr: WA_QR,
-      error: null, success: null
+      title: 'WhatsApp - Painel Admin',
+      accounts: accountsWithState,
+      stats, recent, contacts,
+      error: req.query.error || null,
+      success: req.query.success || null
     });
   });
 
-  // === CONECTAR / DESCONECTAR ===
-  router.post('/whatsapp/connect', async (req, res) => {
-    try {
-      if (WA_READY) return res.redirect('/admin/whatsapp');
-      destroyWaClient();
-      await getWaClient();
-      res.redirect('/admin/whatsapp');
-    } catch (e) {
-      res.redirect('/admin/whatsapp?error=' + encodeURIComponent(e.message));
-    }
-  });
-
-  router.post('/whatsapp/disconnect', (req, res) => {
-    destroyWaClient();
-    try {
-      const waSessionPath = process.env.WHATSAPP_SESSION_PATH || path.join(__dirname, '..', 'wa_session');
-      const dir = path.join(waSessionPath, 'admin');
-      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
-    } catch (e) {}
+  // === GERENCIAR CONTAS ===
+  router.post('/whatsapp/account/new', (req, res) => {
+    const db = require('../database/db');
+    var id = db.saveWaAccount(null, req.body.name || 'WhatsApp', req.body.phone || '');
+    req.flash('Conta "' + (req.body.name || 'WhatsApp') + '" criada!', 'success');
     res.redirect('/admin/whatsapp');
   });
 
-  router.get('/whatsapp/qr', (req, res) => {
-    if (!WA_QR) return res.json({ qr: null, ready: WA_READY });
-    res.json({ qr: WA_QR, ready: WA_READY });
+  router.post('/whatsapp/account/rename/:id', (req, res) => {
+    const db = require('../database/db');
+    db.saveWaAccount(req.params.id, req.body.name, req.body.phone || '');
+    req.flash('Conta renomeada!', 'success');
+    res.redirect('/admin/whatsapp');
+  });
+
+  router.post('/whatsapp/account/delete/:id', (req, res) => {
+    const db = require('../database/db');
+    waManager.destroyClient(req.params.id);
+    db.deleteWaAccount(req.params.id);
+    try {
+      const waSessionPath = process.env.WHATSAPP_SESSION_PATH || path.join(__dirname, '..', 'wa_session');
+      const dir = path.join(waSessionPath, 'wa_' + req.params.id);
+      if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+    } catch (e) {}
+    req.flash('Conta removida!', 'success');
+    res.redirect('/admin/whatsapp');
+  });
+
+  // === CONECTAR / DESCONECTAR ===
+  router.post('/whatsapp/connect/:id', async (req, res) => {
+    const db = require('../database/db');
+    const account = db.getWaAccount(req.params.id);
+    if (!account) return res.redirect('/admin/whatsapp?error=Conta n\u00e3o encontrada');
+    try {
+      db.setWaAccountStatus(req.params.id, 'connecting', '');
+      const entry = await waManager.initClient(req.params.id, 'wa_' + req.params.id);
+      if (entry) {
+        db.setWaAccountStatus(req.params.id, entry.ready ? 'connected' : 'waiting_qr', '');
+      } else {
+        db.setWaAccountStatus(req.params.id, 'error', 'Erro ao iniciar cliente');
+      }
+    } catch (e) {
+      db.setWaAccountStatus(req.params.id, 'error', e.message);
+    }
+    res.redirect('/admin/whatsapp');
+  });
+
+  router.post('/whatsapp/disconnect/:id', (req, res) => {
+    const db = require('../database/db');
+    waManager.destroyClient(req.params.id);
+    db.setWaAccountStatus(req.params.id, 'disconnected', '');
+    req.flash('WhatsApp desconectado!', 'info');
+    res.redirect('/admin/whatsapp');
+  });
+
+  router.get('/whatsapp/qr/:id', (req, res) => {
+    const state = waManager.getState(req.params.id);
+    if (!state.qr) return res.json({ qr: null, ready: state.ready });
+    res.json({ qr: state.qr, ready: state.ready });
   });
 
   // === ENVIAR MENSAGEM ===
   router.post('/whatsapp/send', async (req, res) => {
-    const { phone, message } = req.body;
+    const { phone, message, account_id } = req.body;
     const db = require('../database/db');
+    const aid = account_id || (db.getWaAccounts().filter(a => a.status === 'connected')[0] || {}).id;
+    if (!aid) return res.redirect('/admin/whatsapp?error=' + encodeURIComponent('Nenhuma conta conectada'));
+    const state = waManager.getState(aid);
+    if (!state.ready) return res.redirect('/admin/whatsapp?error=' + encodeURIComponent('WhatsApp desconectado. Conecte primeiro.'));
+    if (!phone || !message) return res.redirect('/admin/whatsapp?error=' + encodeURIComponent('Preencha telefone e mensagem.'));
     try {
-      if (!WA_READY) return res.redirect('/admin/whatsapp?error=' + encodeURIComponent('WhatsApp desconectado. Conecte primeiro.'));
-      if (!phone || !message) return res.redirect('/admin/whatsapp?error=' + encodeURIComponent('Preencha telefone e mensagem.'));
       const cleaned = phone.replace(/\D/g, '');
       const chatId = cleaned.length >= 10 ? cleaned + '@c.us' : phone;
-      await WA_CLIENT.sendMessage(chatId, message);
+      var client = waManager.getClient(aid);
+      if (!client) throw new Error('Cliente n\u00e3o dispon\u00edvel');
+      await client.sendMessage(chatId, message);
       db.addWaMessage(cleaned, '', message, 'sent');
       res.redirect('/admin/whatsapp?success=' + encodeURIComponent('Mensagem enviada para ' + phone));
     } catch (e) {
@@ -109,8 +118,9 @@ module.exports = function() {
     const search = req.query.search || '';
     const contacts = db.getWaContacts(search);
     res.render('admin/whatsapp-contacts', {
-      title: 'Contatos WhatsApp - Painel Admin', currentPath: '/admin/whatsapp/contacts',
-      contacts, search, error: null, success: null
+      title: 'Contatos WhatsApp - Painel Admin',
+      contacts, search,
+      error: req.query.error || null, success: req.query.success || null
     });
   });
 
@@ -147,8 +157,11 @@ module.exports = function() {
 
   router.post('/whatsapp/contacts/send-all', async (req, res) => {
     const db = require('../database/db');
-    const { message } = req.body;
-    if (!WA_READY) return res.redirect('/admin/whatsapp/contacts?error=' + encodeURIComponent('WhatsApp desconectado'));
+    const { message, account_id } = req.body;
+    const aid = account_id || (db.getWaAccounts().filter(a => a.status === 'connected')[0] || {}).id;
+    if (!aid) return res.redirect('/admin/whatsapp/contacts?error=' + encodeURIComponent('Nenhuma conta conectada'));
+    const state = waManager.getState(aid);
+    if (!state.ready) return res.redirect('/admin/whatsapp/contacts?error=' + encodeURIComponent('WhatsApp desconectado'));
     if (!message) return res.redirect('/admin/whatsapp/contacts?error=' + encodeURIComponent('Digite a mensagem'));
     const contacts = db.getWaContacts();
     let sent = 0; let failed = 0;
@@ -156,7 +169,8 @@ module.exports = function() {
       try {
         const cleaned = c.phone.replace(/\D/g, '');
         if (cleaned.length >= 10) {
-          await WA_CLIENT.sendMessage(cleaned + '@c.us', message);
+          var client = waManager.getClient(aid);
+      if (client) await client.sendMessage(cleaned + '@c.us', message);
           db.addWaMessage(cleaned, c.name, message, 'sent');
           sent++;
         }
@@ -178,9 +192,9 @@ module.exports = function() {
     const messages = db.getWaMessages(limit, offset);
     const total = db.getWaMessagesCount();
     res.render('admin/whatsapp-history', {
-      title: 'Histórico WhatsApp - Painel Admin', currentPath: '/admin/whatsapp/history',
+      title: 'Hist\u00f3rico WhatsApp - Painel Admin',
       messages, page, total, pages: Math.ceil(total / limit),
-      error: null, success: null
+      error: req.query.error || null, success: req.query.success || null
     });
   });
 
@@ -189,8 +203,9 @@ module.exports = function() {
     const db = require('../database/db');
     const schedules = db.getWaSchedules();
     res.render('admin/whatsapp-schedule', {
-      title: 'Agendamentos WhatsApp', currentPath: '/admin/whatsapp/schedules',
-      schedules, error: null, success: null
+      title: 'Agendamentos WhatsApp',
+      schedules,
+      error: req.query.error || null, success: req.query.success || null
     });
   });
 
@@ -208,15 +223,22 @@ module.exports = function() {
     res.redirect('/admin/whatsapp/schedules');
   });
 
-  // === EXECUTAR AGENDADOS (chamado via cron) ===
+  // === EXECUTAR AGENDADOS ===
   router.post('/whatsapp/run-schedules', async (req, res) => {
     const db = require('../database/db');
-    if (!WA_READY) return res.json({ ok: false, error: 'WhatsApp desconectado' });
+    const accounts = db.getWaAccounts();
+    const connected = accounts.filter(function(a) {
+      var state = waManager.getState(a.id);
+      return state.ready;
+    });
+    if (connected.length === 0) return res.json({ ok: false, error: 'Nenhuma conta conectada' });
     const pending = db.getPendingWaSchedules();
     let done = 0;
     for (const s of pending) {
+      const clientInfo = connected[0];
       try {
-        await WA_CLIENT.sendMessage(s.phone.replace(/\D/g, '') + '@c.us', s.message);
+        var cl = waManager.getClient(clientInfo.id);
+        if (cl) await cl.sendMessage(s.phone.replace(/\D/g, '') + '@c.us', s.message);
         db.addWaMessage(s.phone, '', s.message, 'sent');
         db.markWaScheduleDone(s.id);
         done++;

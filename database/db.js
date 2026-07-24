@@ -511,6 +511,17 @@ async function initDb() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS wa_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      phone TEXT DEFAULT '',
+      status TEXT DEFAULT 'disconnected',
+      error_message TEXT DEFAULT '',
+      session_id TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
     CREATE TABLE IF NOT EXISTS wa_contacts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL DEFAULT '',
@@ -1145,12 +1156,16 @@ function toggleGoal(id, active) {
 }
 
 function markGoalWinner(goalId, sellerId, prizeGiven) {
+  var goal = get("SELECT * FROM seller_goals WHERE id = ?", [goalId]);
+  var progressSql = goal && goal.type === 'revenue'
+    ? "(SELECT COALESCE(SUM(product_price),0) FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND date(created_at) >= ? AND date(created_at) <= ?)"
+    : "(SELECT COUNT(*) FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND date(created_at) >= ? AND date(created_at) <= ?)";
   var existing = get("SELECT id FROM goal_winners WHERE goal_id = ? AND seller_id = ?", [goalId, sellerId]);
   if (existing) {
     run("UPDATE goal_winners SET prize_given = ? WHERE id = ?", [prizeGiven ? 1 : 0, existing.id]);
   } else {
-    run("INSERT INTO goal_winners (goal_id, seller_id, progress, prize_given) VALUES (?, ?, (SELECT COUNT(*) FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending')), ?)",
-      [goalId, sellerId, sellerId, prizeGiven ? 1 : 0]);
+    run("INSERT INTO goal_winners (goal_id, seller_id, progress, prize_given) VALUES (?, ?, " + progressSql + ", ?)",
+      [goalId, sellerId, sellerId, goal.start_date, goal.end_date, prizeGiven ? 1 : 0]);
   }
 }
 
@@ -1235,6 +1250,24 @@ function addWaSchedule(phone, message, scheduledFor) {
 function markWaScheduleDone(id) { run("UPDATE wa_schedules SET status = 'sent' WHERE id = ?", [id]); }
 
 function deleteWaSchedule(id) { run("DELETE FROM wa_schedules WHERE id = ?", [id]); }
+
+// === WHATSAPP ACCOUNTS (multi-conta) ===
+function getWaAccounts() { return query("SELECT * FROM wa_accounts ORDER BY created_at DESC"); }
+function getWaAccount(id) { return get("SELECT * FROM wa_accounts WHERE id = ?", [id]); }
+function saveWaAccount(id, name, phone) {
+  if (id) { run("UPDATE wa_accounts SET name=?, phone=? WHERE id=?", [name, phone||'', id]); return id; }
+  run("INSERT INTO wa_accounts (name, phone) VALUES (?, ?)", [name, phone||'']);
+  return get("SELECT last_insert_rowid() as id").id;
+}
+function deleteWaAccount(id) {
+  run("DELETE FROM wa_accounts WHERE id = ?", [id]);
+}
+function setWaAccountStatus(id, status, errorMessage) {
+  run("UPDATE wa_accounts SET status=?, error_message=? WHERE id=?", [status, errorMessage||'', id]);
+}
+function setWaAccountPhone(id, phone) {
+  run("UPDATE wa_accounts SET phone=? WHERE id=?", [phone||'', id]);
+}
 
 // === MARKETING TEMPLATES ===
 function getMarketingTemplates(platform) {

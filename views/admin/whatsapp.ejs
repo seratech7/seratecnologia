@@ -1,110 +1,329 @@
-<%- include('../partials/admin-header', { title: title, currentPath: '/admin/whatsapp' }) %>
+<%- include('../partials/admin-header') %>
 <div class="admin-content">
-  <div class="admin-header-bar">
-    <h1><i class="fab fa-whatsapp"></i> WhatsApp Manager</h1>
-    <p>Painel de disparo de mensagens automáticas</p>
+  <div class="page-header">
+    <div>
+      <h1><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp</h1>
+      <p>Gerencie contas e envie mensagens</p>
+    </div>
+    <div class="header-actions">
+      <a href="/admin/marketing/whatsapp" class="btn-secondary"><i class="fas fa-bullhorn"></i> Marketing</a>
+      <a href="/admin/whatsapp/contacts" class="btn-secondary"><i class="fas fa-address-book"></i> Contatos</a>
+      <a href="/admin/whatsapp/history" class="btn-secondary"><i class="fas fa-history"></i> Histórico</a>
+    </div>
   </div>
 
-  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
-  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
-
-  <!-- Status Conexão -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;">
-      <div>
-        <strong>Status:</strong>
-        <% if (waReady) { %>
-          <span style="color:#25D366;font-size:18px;">✅ Conectado</span>
-        <% } else if (waQr) { %>
-          <span style="color:#FFA500;font-size:18px;">⏳ QR Code gerado — escaneie com o celular</span>
-        <% } else { %>
-          <span style="color:#999;font-size:18px;">❌ Desconectado</span>
+  <div class="wa-accounts-grid">
+    <% accounts.forEach(function(acc) { %>
+      <div class="wa-account-card">
+        <div class="wa-account-header">
+          <div class="wa-account-status">
+            <span class="wa-status-dot <%= acc.status === 'connected' ? 'green' : (acc.status === 'waiting_qr' ? 'orange' : (acc.status === 'connecting' ? 'yellow' : 'gray')) %>"></span>
+            <span class="wa-status-text">
+              <%= acc.status === 'connected' ? 'Conectado' : (acc.status === 'waiting_qr' ? 'Aguardando QR' : (acc.status === 'connecting' ? 'Conectando...' : (acc.status === 'error' ? 'Erro' : 'Desconectado'))) %>
+            </span>
+          </div>
+          <form method="POST" action="/admin/whatsapp/account/delete/<%= acc.id %>" style="display:inline;" onsubmit="return confirm('Remover esta conta?')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn-icon btn-delete" title="Remover conta"><i class="fas fa-times"></i></button>
+          </form>
+        </div>
+        <div class="wa-account-body">
+          <div class="wa-account-icon">
+            <i class="fab fa-whatsapp"></i>
+          </div>
+          <div class="wa-account-info">
+            <form method="POST" action="/admin/whatsapp/account/rename/<%= acc.id %>" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="text" name="name" value="<%= acc.name %>" class="wa-name-input" placeholder="Nome da conta">
+              <input type="text" name="phone" value="<%= acc.phone %>" class="wa-phone-input" placeholder="5521999999999">
+              <button type="submit" class="btn-icon" title="Salvar"><i class="fas fa-check"></i></button>
+            </form>
+            <% if (acc.phone) { %><span class="wa-account-phone"><i class="fas fa-phone"></i> <%= acc.phone %></span><% } %>
+          </div>
+        </div>
+        <% if (acc.waQr && !acc.waReady) { %>
+          <div class="wa-qr-area">
+            <div class="wa-qr-container" id="qr-<%= acc.id %>"></div>
+            <p class="wa-qr-hint"><i class="fas fa-info-circle"></i> WhatsApp > Menu > Dispositivos Conectados</p>
+          </div>
         <% } %>
+        <% if (acc.status === 'error' && acc.error_message) { %>
+          <div class="wa-error-msg"><i class="fas fa-exclamation-triangle"></i> <%= acc.error_message %></div>
+        <% } %>
+        <div class="wa-account-actions">
+          <% if (acc.status !== 'connected' && acc.status !== 'connecting') { %>
+            <form method="POST" action="/admin/whatsapp/connect/<%= acc.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn-primary btn-sm"><i class="fas fa-plug"></i> Conectar</button>
+            </form>
+          <% } %>
+          <% if (acc.status === 'connected' || acc.waReady) { %>
+            <form method="POST" action="/admin/whatsapp/disconnect/<%= acc.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn-danger btn-sm" onclick="return confirm('Desconectar?')"><i class="fas fa-power-off"></i> Desconectar</button>
+            </form>
+          <% } %>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <% if (!waReady) { %>
-          <form method="POST" action="/admin/whatsapp/connect" style="display:inline;">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn-primary"><i class="fas fa-plug"></i> Conectar WhatsApp</button>
-          </form>
-        <% } %>
-        <% if (waReady) { %>
-          <form method="POST" action="/admin/whatsapp/disconnect" style="display:inline;">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn-danger" onclick="return confirm('Desconectar WhatsApp?')"><i class="fas fa-power-off"></i> Desconectar</button>
-          </form>
-        <% } %>
+    <% }) %>
+
+    <!-- Nova Conta -->
+    <div class="wa-account-card wa-add-card">
+      <form method="POST" action="/admin/whatsapp/account/new" class="wa-add-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <i class="fas fa-plus-circle wa-add-icon"></i>
+        <input type="text" name="name" placeholder="Nome da conta" class="wa-name-input" required>
+        <input type="text" name="phone" placeholder="Telefone (opcional)" class="wa-phone-input">
+        <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Adicionar Conta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stats + Envio Rápido -->
+  <div class="dashboard-grid" style="margin-top:24px;">
+    <div class="admin-section">
+      <div class="section-header">
+        <h2><i class="fas fa-paper-plane"></i> Envio Rápido</h2>
+      </div>
+      <div class="form-card">
+        <form method="POST" action="/admin/whatsapp/send">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group">
+            <label>Conta para envio</label>
+            <select name="account_id" class="admin-select">
+              <% var connectedAccounts = accounts.filter(function(a) { return a.waReady; }); %>
+              <% if (connectedAccounts.length === 0) { %>
+                <option value="">Nenhuma conta conectada</option>
+              <% } else { %>
+                <% connectedAccounts.forEach(function(a) { %>
+                  <option value="<%= a.id %>"><%= a.name %><%= a.phone ? ' (' + a.phone + ')' : '' %></option>
+                <% }); %>
+              <% } %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Número (com DDD, ex: 5521999999999)</label>
+            <input type="text" name="phone" class="admin-input" required placeholder="5521999999999">
+          </div>
+          <div class="form-group">
+            <label>Mensagem</label>
+            <textarea name="message" class="admin-input" rows="4" required placeholder="Digite a mensagem..."></textarea>
+          </div>
+          <button type="submit" class="btn-primary" <%= connectedAccounts.length > 0 ? '' : 'disabled' %>><i class="fas fa-paper-plane"></i> Enviar</button>
+          <% if (connectedAccounts.length === 0) { %><span class="text-muted" style="margin-left:10px;">Conecte uma conta primeiro</span><% } %>
+        </form>
       </div>
     </div>
-    <% if (waQr && !waReady) { %>
-      <div style="margin-top:15px;text-align:center;">
-        <p><strong>Escaneie o QR Code com seu celular:</strong></p>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=<%= encodeURIComponent(waQr) %>"
-             alt="QR Code" style="border:2px solid #25D366;border-radius:8px;max-width:250px;">
-        <p style="font-size:13px;color:#666;margin-top:8px;">
-          WhatsApp > Menu > WhatsApp Web (ou Linked Devices > Link a Device)
-        </p>
-      </div>
-    <% } %>
-  </div>
 
-  <!-- Stats -->
-  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-bottom:20px;">
-    <div class="stat-card"><div class="stat-value"><%= stats.contacts %></div><div class="stat-label">Contatos</div></div>
-    <div class="stat-card"><div class="stat-value"><%= stats.messages %></div><div class="stat-label">Total Enviadas</div></div>
-    <div class="stat-card"><div class="stat-value"><%= stats.today %></div><div class="stat-label">Enviadas Hoje</div></div>
-  </div>
-
-  <!-- Envio Rápido -->
-  <div class="form-card" style="margin-bottom:20px;">
-    <h3><i class="fas fa-paper-plane"></i> Envio Rápido</h3>
-    <form method="POST" action="/admin/whatsapp/send">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div class="form-group">
-        <label>Número (com DDD, ex: 5521999999999)</label>
-        <input type="text" name="phone" class="admin-input" required placeholder="5521999999999">
+    <div class="admin-section">
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:16px;">
+        <div class="stat-card" style="text-align:center;display:flex;flex-direction:column;">
+          <span style="font-size:28px;font-weight:700;color:#25D366;"><%= stats.contacts %></span>
+          <span style="font-size:13px;color:var(--gray-500);">Contatos</span>
+        </div>
+        <div class="stat-card" style="text-align:center;display:flex;flex-direction:column;">
+          <span style="font-size:28px;font-weight:700;color:var(--primary);"><%= stats.messages %></span>
+          <span style="font-size:13px;color:var(--gray-500);">Enviadas</span>
+        </div>
+        <div class="stat-card" style="text-align:center;display:flex;flex-direction:column;">
+          <span style="font-size:28px;font-weight:700;color:var(--secondary);"><%= stats.today %></span>
+          <span style="font-size:13px;color:var(--gray-500);">Hoje</span>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Mensagem</label>
-        <textarea name="message" class="admin-input" rows="4" required placeholder="Digite a mensagem..."></textarea>
-      </div>
-      <button type="submit" class="btn-primary" <%= waReady ? '' : 'disabled' %>><i class="fas fa-send"></i> Enviar</button>
-      <% if (!waReady) { %><span style="color:#999;margin-left:10px;">Conecte o WhatsApp primeiro</span><% } %>
-    </form>
-  </div>
 
-  <!-- Últimas Mensagens -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-      <h3 style="margin:0;"><i class="fas fa-history"></i> Últimas Mensagens</h3>
-      <a href="/admin/whatsapp/history" class="btn-secondary">Ver Todas</a>
+      <div class="section-header">
+        <h2><i class="fas fa-clock"></i> Últimas Mensagens</h2>
+        <a href="/admin/whatsapp/history" class="btn-small">Ver Todas</a>
+      </div>
+      <div class="table-container">
+        <table class="admin-table">
+          <thead><tr><th>Telefone</th><th>Mensagem</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody>
+            <% if (recent.length === 0) { %>
+              <tr><td colspan="4" class="empty-row">Nenhuma mensagem enviada ainda</td></tr>
+            <% } else { %>
+              <% recent.forEach(function(m) { %>
+              <tr>
+                <td><%= m.phone %></td>
+                <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= m.message %></td>
+                <td><span class="status-badge <%= m.status === 'sent' ? 'active' : 'inactive' %>"><%= m.status %></span></td>
+                <td><%= m.sent_at %></td>
+              </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
     </div>
-    <% if (recent.length === 0) { %>
-      <p style="color:#999;">Nenhuma mensagem enviada ainda.</p>
-    <% } else { %>
-      <table class="admin-table">
-        <thead><tr><th>Telefone</th><th>Mensagem</th><th>Status</th><th>Data</th></tr></thead>
-        <tbody>
-          <% recent.forEach(function(m) { %>
-          <tr>
-            <td><%= m.phone %></td>
-            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= m.message %></td>
-            <td><span class="badge badge-<%= m.status === 'sent' ? 'success' : 'danger' %>"><%= m.status %></span></td>
-            <td><%= m.sent_at %></td>
-          </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    <% } %>
   </div>
 </div>
+
 <style>
-.stat-card { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:8px; padding:20px; text-align:center; }
-.stat-value { font-size:28px; font-weight:700; color:#25D366; }
-.stat-label { font-size:13px; color:#666; margin-top:4px; }
-.badge-success { background:#e8f5e9; color:#2e7d32; padding:3px 10px; border-radius:12px; font-size:12px; }
-.badge-danger { background:#ffebee; color:#c62828; padding:3px 10px; border-radius:12px; font-size:12px; }
-.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; }
-.btn-secondary:hover { background:#e0e0e0; }
+.wa-accounts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.wa-account-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.wa-account-card:hover {
+  box-shadow: var(--shadow-md);
+}
+.wa-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--gray-50);
+}
+.wa-account-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.wa-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.wa-status-dot.green { background: #25D366; box-shadow: 0 0 6px rgba(37,211,102,0.4); }
+.wa-status-dot.orange { background: #FFA500; box-shadow: 0 0 6px rgba(255,165,0,0.4); }
+.wa-status-dot.yellow { background: #f0ad4e; animation: pulse 1s infinite; }
+.wa-status-dot.gray { background: #999; }
+.wa-status-dot.red { background: #e74c3c; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+.wa-account-body {
+  padding: 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.wa-account-icon {
+  width: 48px;
+  height: 48px;
+  background: #e8f5e9;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #25D366;
+  flex-shrink: 0;
+}
+.wa-account-info { flex: 1; }
+.wa-name-input, .wa-phone-input {
+  padding: 6px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.wa-name-input:focus, .wa-phone-input:focus {
+  border-color: var(--primary);
+}
+.wa-name-input { width: 140px; }
+.wa-phone-input { width: 130px; }
+.wa-account-phone {
+  display: block;
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+.wa-qr-area {
+  padding: 16px;
+  text-align: center;
+  background: #fafafa;
+  border-top: 1px solid var(--gray-100);
+}
+.wa-qr-container {
+  display: inline-block;
+  padding: 8px;
+  background: white;
+  border: 2px solid #25D366;
+  border-radius: 8px;
+}
+.wa-qr-hint {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-top: 8px;
+}
+.wa-error-msg {
+  padding: 8px 16px;
+  background: #fdecea;
+  color: #e74c3c;
+  font-size: 13px;
+  border-top: 1px solid var(--gray-100);
+}
+.wa-account-actions {
+  padding: 12px 16px;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  gap: 8px;
+}
+.btn-sm { padding: 7px 14px !important; font-size: 13px !important; }
+.wa-add-card {
+  border: 2px dashed var(--gray-300);
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wa-add-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  width: 100%;
+}
+.wa-add-icon {
+  font-size: 36px;
+  color: var(--primary);
+  opacity: 0.5;
+}
+.text-muted { color: var(--gray-500); font-size: 13px; }
 </style>
+
+<script>
+// Render QR codes in-browser using a canvas-based approach
+document.addEventListener('DOMContentLoaded', function() {
+  var qrContainers = document.querySelectorAll('.wa-qr-container');
+  qrContainers.forEach(function(container) {
+    var accountId = container.id.replace('qr-', '');
+    fetchQrCode(accountId, container);
+  });
+});
+
+function fetchQrCode(accountId, container) {
+  fetch('/admin/whatsapp/qr/' + accountId)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.qr) {
+        // Render QR using a QR library if available, or show as text for manual use
+        var img = document.createElement('img');
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(data.qr);
+        img.alt = 'QR Code';
+        img.style.maxWidth = '250px';
+        img.style.borderRadius = '4px';
+        container.innerHTML = '';
+        container.appendChild(img);
+      }
+    })
+    .catch(function() {});
+}
+</script>
+
 <%- include('../partials/admin-footer') %>

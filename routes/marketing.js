@@ -4,6 +4,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const { requireAdmin } = require('../middleware/auth');
+const waManager = require('../lib/whatsapp-manager');
 
 function reqPromise(url, method = 'GET', data = null, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -21,39 +22,39 @@ function reqPromise(url, method = 'GET', data = null, headers = {}) {
   });
 }
 
-// WhatsApp client (shared across routes)
-let WA_CLIENT = null;
-let WA_READY = false;
-let WA_QR = '';
-
-async function getWaClient() {
-  if (WA_CLIENT && WA_READY) return WA_CLIENT;
-  try {
-    const { Client, LocalAuth } = require('whatsapp-web.js');
-    const sessionPath = process.env.WHATSAPP_SESSION_PATH || path.join(__dirname, '..', 'wa_session');
-    WA_CLIENT = new Client({
-      authStrategy: new LocalAuth({ clientId: 'admin', dataPath: sessionPath }),
-      puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'], headless: true }
-    });
-    WA_CLIENT.on('qr', qr => { WA_QR = qr; WA_READY = false; });
-    WA_CLIENT.on('ready', () => { WA_READY = true; WA_QR = ''; });
-    WA_CLIENT.on('disconnected', () => { WA_READY = false; });
-    WA_CLIENT.on('auth_failure', () => { WA_READY = false; });
-    await WA_CLIENT.initialize();
-    return WA_CLIENT;
-  } catch (e) { return null; }
-}
-
-function destroyWaClient() {
-  if (WA_CLIENT) { try { WA_CLIENT.destroy(); } catch (e) {} WA_CLIENT = null; WA_READY = false; WA_QR = ''; }
-}
-
 module.exports = function() {
   const router = express.Router();
   router.use(requireAdmin);
   const db = require('../database/db');
 
   function getBaseUrl() { return process.env.SITE_URL || 'https://seratecnologia-1.onrender.com'; }
+
+  // Compat helpers using shared waManager
+  function getFirstConnectedAccount() {
+    var accs = db.getWaAccounts();
+    for (var i = 0; i < accs.length; i++) {
+      var st = waManager.getState(accs[i].id);
+      if (st.ready) return { id: accs[i].id, state: st };
+    }
+    return null;
+  }
+  function getMarketingWaReady() {
+    var c = getFirstConnectedAccount();
+    return c ? c.state.ready : false;
+  }
+  function getMarketingWaQr() {
+    // Return QR from the first account that has a QR
+    var accs = db.getWaAccounts();
+    for (var i = 0; i < accs.length; i++) {
+      var st = waManager.getState(accs[i].id);
+      if (st.qr) return st.qr;
+    }
+    return '';
+  }
+  async function getMarketingWaClient() {
+    var c = getFirstConnectedAccount();
+    return c ? waManager.getClient(c.id) : null;
+  }
 
   // === DASHBOARD PRINCIPAL ===
   router.get('/marketing', (req, res) => {
@@ -62,7 +63,7 @@ module.exports = function() {
     const templates = db.getMarketingTemplates();
     res.render('admin/marketing/index', {
       title: 'Marketing Central', currentPath: '/admin/marketing',
-      waReady: WA_READY, waQr: WA_QR,
+      waReady: getMarketingWaReady(), waQr: getMarketingWaQr(),
       telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
@@ -82,32 +83,33 @@ module.exports = function() {
     res.render('admin/marketing/whatsapp', {
       title: 'WhatsApp Marketing', currentPath: '/admin/marketing/whatsapp',
       stats, recent, contacts, templates,
-      waReady: WA_READY, waQr: WA_QR, baseUrl: getBaseUrl(),
+      waReady: getMarketingWaReady(), waQr: getMarketingWaQr(), baseUrl: getBaseUrl(),
       error: null, success: null
     });
   });
 
   router.post('/marketing/whatsapp/connect', async (req, res) => {
-    if (WA_READY) return res.redirect('/admin/marketing/whatsapp');
-    destroyWaClient();
-    await getWaClient();
+    if (getMarketingWaReady()) return res.redirect('/admin/marketing/whatsapp');
+    waManager.destroyAll();
+    // Conectar via /admin/whatsapp (gestão de contas)
     res.redirect('/admin/marketing/whatsapp');
   });
 
   router.post('/marketing/whatsapp/disconnect', (req, res) => {
-    destroyWaClient();
+    waManager.destroyAll();
     try { const d = path.join(process.env.WHATSAPP_SESSION_PATH || path.join(__dirname, '..', 'wa_session'), 'admin'); if (fs.existsSync(d)) fs.rmSync(d, { recursive: true, force: true }); } catch (e) {}
     res.redirect('/admin/marketing/whatsapp');
   });
 
-  router.get('/marketing/whatsapp/qr', (req, res) => res.json({ qr: WA_QR, ready: WA_READY }));
+  router.get('/marketing/whatsapp/qr', (req, res) => res.json({ qr: getMarketingWaQr(), ready: getMarketingWaReady() }));
 
   router.post('/marketing/whatsapp/send', async (req, res) => {
     const { phone, message } = req.body;
-    if (!WA_READY) return res.redirect('/admin/marketing/whatsapp?error=' + encodeURIComponent('WhatsApp desconectado'));
+    if (!getMarketingWaReady()) return res.redirect('/admin/marketing/whatsapp?error=' + encodeURIComponent('WhatsApp desconectado'));
     if (!phone || !message) return res.redirect('/admin/marketing/whatsapp?error=' + encodeURIComponent('Preencha telefone e mensagem'));
     try {
-      await WA_CLIENT.sendMessage(phone.replace(/\D/g, '') + '@c.us', message);
+      var waCli = await getMarketingWaClient();
+      if (waCli) await waCli.sendMessage(phone.replace(/\D/g, '') + '@c.us', message);
       db.addWaMessage(phone.replace(/\D/g, ''), '', message, 'sent');
       res.redirect('/admin/marketing/whatsapp?success=' + encodeURIComponent('Enviado para ' + phone));
     } catch (e) {
@@ -146,14 +148,14 @@ module.exports = function() {
 
   router.post('/marketing/whatsapp/send-all', async (req, res) => {
     const { message } = req.body;
-    if (!WA_READY) return res.redirect('/admin/marketing/whatsapp?error=WhatsApp desconectado');
+    if (!getMarketingWaReady()) return res.redirect('/admin/marketing/whatsapp?error=WhatsApp desconectado');
     if (!message) return res.redirect('/admin/marketing/whatsapp?error=Digite a mensagem');
     const contacts = db.getWaContacts();
     let sent = 0, failed = 0;
     for (const c of contacts) {
       try {
         const cleaned = c.phone.replace(/\D/g, '');
-        if (cleaned.length >= 10) { await WA_CLIENT.sendMessage(cleaned + '@c.us', message); db.addWaMessage(cleaned, c.name, message, 'sent'); sent++; }
+        if (cleaned.length >= 10) { var waCli = await getMarketingWaClient(); if (waCli) await waCli.sendMessage(cleaned + '@c.us', message); db.addWaMessage(cleaned, c.name, message, 'sent'); sent++; }
       } catch (e) { db.addWaMessage(c.phone, c.name, message, 'failed'); failed++; }
       await new Promise(r => setTimeout(r, 3000));
     }
@@ -319,7 +321,7 @@ module.exports = function() {
     const templates = db.getMarketingTemplates();
     res.render('admin/marketing/campaigns', {
       title: 'Campanhas', currentPath: '/admin/marketing/campaigns',
-      waReady: WA_READY, campaigns, templates,
+      waReady: getMarketingWaReady(), campaigns, templates,
       telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
@@ -335,12 +337,12 @@ module.exports = function() {
     const results = [];
 
     // WhatsApp
-    if (selected.includes('whatsapp') && WA_READY) {
+    if (selected.includes('whatsapp') && getMarketingWaReady()) {
       try {
         const contacts = db.getWaContacts();
         let s = 0, f = 0;
         for (const c of contacts) {
-          try { await WA_CLIENT.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'sent', ''); s++; } catch (e) { db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'failed', e.message); f++; }
+          try { var waCli = await getMarketingWaClient(); if (waCli) await waCli.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'sent', ''); s++; } catch (e) { db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'failed', e.message); f++; }
           await new Promise(r => setTimeout(r, 2000));
         }
         db.updateMarketingCampaignStats(campaignId, s, f);
@@ -459,7 +461,7 @@ module.exports = function() {
     const products = db.query("SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM sales s WHERE s.product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 30");
     res.render('admin/marketing/autopromo', {
       title: 'Auto-Promo', currentPath: '/admin/marketing/autopromo',
-      products, waReady: WA_READY, baseUrl: getBaseUrl(),
+      products, waReady: getMarketingWaReady(), baseUrl: getBaseUrl(),
       siteName: process.env.SITE_NAME || 'Martplace',
       error: null, success: null
     });
@@ -471,11 +473,11 @@ module.exports = function() {
     const product = db.get('SELECT * FROM products WHERE id = ?', [productId]);
     if (!product) return res.redirect('/admin/marketing/autopromo?error=Produto não encontrado');
 
-    if (platform === 'whatsapp' && WA_READY) {
+    if (platform === 'whatsapp' && getMarketingWaReady()) {
       const contacts = db.getWaContacts();
       let sent = 0;
       for (const c of contacts) {
-        try { await WA_CLIENT.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); sent++; } catch (e) {}
+        try { var waCli = await getMarketingWaClient(); if (waCli) await waCli.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); sent++; } catch (e) {}
         await new Promise(r => setTimeout(r, 2000));
       }
       res.redirect('/admin/marketing/autopromo?success=' + sent + ' mensagens enviadas via WhatsApp');
@@ -501,7 +503,7 @@ module.exports = function() {
     const lists = db.getMarketingLists();
     res.render('admin/marketing/lists', {
       title: 'Listas de Transmissão', currentPath: '/admin/marketing/lists',
-      lists, waReady: WA_READY,
+      lists, waReady: getMarketingWaReady(),
       error: null, success: null
     });
   });
@@ -526,7 +528,7 @@ module.exports = function() {
     const lists = db.getMarketingLists();
     res.render('admin/marketing/list-detail', {
       title: 'Lista: ' + list.name, currentPath: '/admin/marketing/lists',
-      list, members, contacts, lists, waReady: WA_READY,
+      list, members, contacts, lists, waReady: getMarketingWaReady(),
       error: null, success: null
     });
   });
@@ -553,12 +555,12 @@ module.exports = function() {
   router.post('/marketing/lists/:id/send', async (req, res) => {
     const { message } = req.body;
     const listId = req.params.id;
-    if (!WA_READY) return res.redirect('/admin/marketing/lists/' + listId + '?error=WhatsApp desconectado');
+    if (!getMarketingWaReady()) return res.redirect('/admin/marketing/lists/' + listId + '?error=WhatsApp desconectado');
     if (!message) return res.redirect('/admin/marketing/lists/' + listId + '?error=Digite a mensagem');
     const members = db.getMarketingListMembers(listId);
     let sent = 0, failed = 0;
     for (const m of members) {
-      try { await WA_CLIENT.sendMessage(m.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(m.phone, m.name, message, 'sent'); sent++; } catch (e) { failed++; }
+      try { var waCli = await getMarketingWaClient(); if (waCli) await waCli.sendMessage(m.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(m.phone, m.name, message, 'sent'); sent++; } catch (e) { failed++; }
       await new Promise(r => setTimeout(r, 2000));
     }
     res.redirect('/admin/marketing/lists/' + listId + '?success=' + sent + ' enviadas, ' + failed + ' falhas');
@@ -571,7 +573,7 @@ module.exports = function() {
     const replies = db.getWaAutoReplies();
     res.render('admin/marketing/autoreply', {
       title: 'Respostas Automáticas', currentPath: '/admin/marketing/autoreply',
-      replies, waReady: WA_READY,
+      replies, waReady: getMarketingWaReady(),
       error: null, success: null
     });
   });
@@ -602,7 +604,7 @@ module.exports = function() {
     const lists = db.getMarketingLists();
     res.render('admin/marketing/coupon-dist', {
       title: 'Distribuir Cupons', currentPath: '/admin/marketing/coupons',
-      coupons, lists, waReady: WA_READY, baseUrl: getBaseUrl(),
+      coupons, lists, waReady: getMarketingWaReady(), baseUrl: getBaseUrl(),
       siteName: process.env.SITE_NAME || 'Martplace',
       error: null, success: null
     });
@@ -616,13 +618,13 @@ module.exports = function() {
     var code = coupon.code;
     var msg = (message || 'Cupom exclusivo: ' + code).replace('{code}', code).replace('{valor}', coupon.discount_value || '');
 
-    if (target === 'whatsapp' && WA_READY) {
+    if (target === 'whatsapp' && getMarketingWaReady()) {
       var phones = [];
       if (listId) { phones = db.getMarketingListMembers(listId); }
       else { phones = db.getWaContacts(); }
       var sent = 0;
       for (var p of phones) {
-        try { await WA_CLIENT.sendMessage(p.phone.replace(/\D/g, '') + '@c.us', msg); db.addWaMessage(p.phone, p.name||'', msg, 'sent'); sent++; } catch(e) {}
+        try { var waCli = await getMarketingWaClient(); if (waCli) await waCli.sendMessage(p.phone.replace(/\D/g, '') + '@c.us', msg); db.addWaMessage(p.phone, p.name||'', msg, 'sent'); sent++; } catch(e) {}
         await new Promise(r => setTimeout(r, 2000));
       }
       res.redirect('/admin/marketing/coupons?success=Cupom ' + code + ' enviado para ' + sent + ' contatos');

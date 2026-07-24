@@ -1,8 +1,12 @@
 <%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/whatsapp' }) %>
 <div class="admin-content">
-  <div class="admin-header-bar">
-    <h1><i class="fab fa-whatsapp"></i> WhatsApp Marketing</h1>
-    <div style="display:flex;gap:8px;">
+  <div class="page-header">
+    <div>
+      <h1><i class="fab fa-whatsapp" style="color:#25D366;"></i> WhatsApp Marketing</h1>
+      <p>Envio de campanhas e mensagens em massa</p>
+    </div>
+    <div class="header-actions">
+      <a href="/admin/whatsapp" class="btn-secondary"><i class="fas fa-cog"></i> Gerenciar Contas</a>
       <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
       <a href="/admin/marketing/templates?platform=whatsapp" class="btn-secondary"><i class="fas fa-file-alt"></i> Modelos</a>
     </div>
@@ -10,27 +14,6 @@
 
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
-
-  <!-- Status + Conexão -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:32px;"><i class="fas fa-circle" style="color:<%= waReady ? '#25D366' : (waQr ? '#FFA500' : '#999') %>;"></i></span>
-        <div><strong style="font-size:16px;"><%= waReady ? 'Conectado' : (waQr ? 'Aguardando QR' : 'Desconectado') %></strong>
-        <span style="font-size:12px;color:#666;display:block;"><%= waReady ? 'WhatsApp ativo e pronto para enviar' : (waQr ? 'Escaneie o QR abaixo para conectar' : 'Clique em Conectar para iniciar') %></span></div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <% if (!waReady) { %><form method="POST" action="/admin/marketing/whatsapp/connect" style="display:inline;"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" class="btn-primary"><i class="fas fa-plug"></i> Conectar</button></form><% } %>
-        <% if (waReady) { %><form method="POST" action="/admin/marketing/whatsapp/disconnect" style="display:inline;"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" class="btn-danger" onclick="return confirm('Desconectar WhatsApp?')"><i class="fas fa-power-off"></i> Desconectar</button></form><% } %>
-      </div>
-    </div>
-    <% if (waQr && !waReady) { %>
-      <div style="margin-top:15px;text-align:center;padding:15px;background:#fafafa;border-radius:8px;">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=<%= encodeURIComponent(waQr) %>" style="border:3px solid #25D366;border-radius:12px;max-width:250px;">
-        <p style="font-size:13px;color:#666;margin-top:8px;">WhatsApp > Menu > Dispositivos Conectados</p>
-      </div>
-    <% } %>
-  </div>
 
   <!-- Stats -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">

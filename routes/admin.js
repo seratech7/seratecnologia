@@ -945,6 +945,8 @@ router.post('/products/flash/remove/:id', requireSuperAdmin, (req, res) => {
 });
 
 // ========== FLASH SALES MANAGEMENT ==========
+router.get('/ofertas/novo', requireSuperAdmin, (req, res) => res.redirect('/admin/ofertas'));
+
 router.get('/ofertas', requireSuperAdmin, (req, res) => {
   var flashProducts = db.getFlashSales();
   var allProducts = db.query("SELECT id, name, price, status FROM products WHERE status = 'active' ORDER BY name");
