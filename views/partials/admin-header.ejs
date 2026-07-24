@@ -6,6 +6,12 @@
   <title><%= title %> | MarketPlace</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
+<style>
+.sub-link { padding-left:44px !important; font-size:12px !important; opacity:.85; }
+.sub-link i { width:16px !important; margin-right:6px !important; font-size:11px !important; }
+.sub-link:hover { opacity:1; }
+.sub-link.active { opacity:1; border-left:2px solid var(--accent,#25D366); }
+</style>
 </head>
 <body class="admin-page">
 
@@ -80,6 +86,11 @@
       <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
         <i class="fas fa-bullhorn"></i> Marketing
       </a>
+      <a href="/admin/marketing/whatsapp" class="sub-link <%= (currentPath || '') === '/admin/marketing/whatsapp' ? 'active' : '' %>"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> Auto-Promo</a>
+      <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> Campanhas</a>
+      <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> QR Code</a>
+      <a href="/admin/marketing/reports" class="sub-link <%= (currentPath || '') === '/admin/marketing/reports' ? 'active' : '' %>"><i class="fas fa-chart-bar"></i> Relatórios</a>
       <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
         <i class="fas fa-bullhorn"></i> Notificar Todos
       </a>
