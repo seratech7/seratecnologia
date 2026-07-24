@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
 <style>
-.sub-link { padding-left:44px !important; font-size:12px !important; opacity:.85; }
-.sub-link i { width:16px !important; margin-right:6px !important; font-size:11px !important; }
-.sub-link:hover { opacity:1; }
-.sub-link.active { opacity:1; border-left:2px solid var(--accent,#25D366); }
+.sub-link { padding-left:52px !important; font-size:13px !important; opacity:.75; }
+.sub-link i { width:16px !important; margin-right:8px !important; font-size:13px !important; }
+.sub-link:hover { opacity:1; color:white !important; }
+.sub-link.active { opacity:1; color:var(--primary) !important; border-left-color:var(--primary) !important; }
 </style>
 </head>
 <body class="admin-page">
@@ -26,95 +26,108 @@
     </div>
 
     <nav class="sidebar-nav">
+      <div class="nav-section-label">Principal</div>
       <a href="/admin/dashboard" class="<%= currentPath === '/admin/dashboard' ? 'active' : '' %>">
-        <i class="fas fa-tachometer-alt"></i> Dashboard
+        <i class="fas fa-tachometer-alt"></i> <span>Dashboard</span>
       </a>
+
+      <div class="nav-section-label">Conteúdo</div>
       <a href="/admin/products" class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>">
-        <i class="fas fa-box"></i> Produtos
+        <i class="fas fa-box"></i> <span>Produtos</span>
       </a>
       <a href="/admin/products?filter=featured" style="color:#ffd700;">
-        <i class="fas fa-star"></i> Destaques
-      </a>
-      <a href="/admin/sellers" class="<%= currentPath === '/admin/sellers' ? 'active' : '' %>">
-        <i class="fas fa-store-alt"></i> Vendedores
+        <i class="fas fa-star"></i> <span>Destaques</span>
       </a>
       <a href="/admin/categories" class="<%= currentPath === '/admin/categories' ? 'active' : '' %>">
-        <i class="fas fa-tags"></i> Categorias
-      </a>
-      <a href="/admin/admins" class="<%= currentPath === '/admin/admins' ? 'active' : '' %>">
-        <i class="fas fa-users-cog"></i> Admins
-      </a>
-      <a href="/admin/ads" class="<%= currentPath.startsWith('/admin/ads') ? 'active' : '' %>">
-        <i class="fas fa-ad"></i> Anúncios
-      </a>
-      <a href="/admin/sales" class="<%= currentPath.startsWith('/admin/sales') ? 'active' : '' %>">
-        <i class="fas fa-shopping-bag"></i> Vendas
-      </a>
-      <a href="/admin/ofertas" class="<%= currentPath.startsWith('/admin/ofertas') ? 'active' : '' %>">
-        <i class="fas fa-bolt"></i> Ofertas
-      </a>
-      <a href="/admin/analytics" class="<%= currentPath.startsWith('/admin/analytics') ? 'active' : '' %>">
-        <i class="fas fa-chart-line"></i> Analytics
-      </a>
-      <a href="/admin/reviews" class="<%= currentPath.startsWith('/admin/reviews') ? 'active' : '' %>">
-        <i class="fas fa-star"></i> Avaliações
-      </a>
-      <a href="/admin/notifications" class="<%= currentPath.startsWith('/admin/notifications') ? 'active' : '' %>">
-        <i class="fas fa-bell"></i> Notificações
-      </a>
-      <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
-        <i class="fas fa-coins"></i> Financeiro
-      </a>
-      <a href="/admin/paginas" class="<%= currentPath.startsWith('/admin/paginas') ? 'active' : '' %>">
-        <i class="fas fa-file-alt"></i> Páginas
-      </a>
-      <a href="/admin/cupons" class="<%= currentPath === '/admin/cupons' ? 'active' : '' %>">
-        <i class="fas fa-ticket-alt"></i> Cupons
+        <i class="fas fa-tags"></i> <span>Categorias</span>
       </a>
       <a href="/admin/banners" class="<%= currentPath === '/admin/banners' ? 'active' : '' %>">
-        <i class="fas fa-images"></i> Banners
+        <i class="fas fa-images"></i> <span>Banners</span>
+      </a>
+      <a href="/admin/paginas" class="<%= currentPath.startsWith('/admin/paginas') ? 'active' : '' %>">
+        <i class="fas fa-file-alt"></i> <span>Páginas</span>
+      </a>
+      <a href="/admin/ads" class="<%= currentPath.startsWith('/admin/ads') ? 'active' : '' %>">
+        <i class="fas fa-ad"></i> <span>Anúncios</span>
+      </a>
+
+      <div class="nav-section-label">Vendas</div>
+      <a href="/admin/sales" class="<%= currentPath.startsWith('/admin/sales') ? 'active' : '' %>">
+        <i class="fas fa-shopping-bag"></i> <span>Vendas</span>
+      </a>
+      <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
+        <i class="fas fa-coins"></i> <span>Financeiro</span>
+      </a>
+      <a href="/admin/cupons" class="<%= currentPath === '/admin/cupons' ? 'active' : '' %>">
+        <i class="fas fa-ticket-alt"></i> <span>Cupons</span>
+      </a>
+      <a href="/admin/ofertas" class="<%= currentPath.startsWith('/admin/ofertas') ? 'active' : '' %>">
+        <i class="fas fa-bolt"></i> <span>Ofertas</span>
+      </a>
+      <a href="/admin/analytics" class="<%= currentPath.startsWith('/admin/analytics') ? 'active' : '' %>">
+        <i class="fas fa-chart-line"></i> <span>Analytics</span>
+      </a>
+
+      <div class="nav-section-label">Marketing</div>
+      <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
+        <i class="fas fa-bullhorn"></i> <span>Marketing Central</span>
+      </a>
+      <a href="/admin/marketing/whatsapp" class="sub-link <%= (currentPath || '') === '/admin/marketing/whatsapp' ? 'active' : '' %>"><i class="fab fa-whatsapp"></i> <span>WhatsApp</span></a>
+      <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> <span>Auto-Promo</span></a>
+      <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> <span>Campanhas</span></a>
+      <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> <span>QR Code</span></a>
+      <a href="/admin/marketing/reports" class="sub-link <%= (currentPath || '') === '/admin/marketing/reports' ? 'active' : '' %>"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
+      <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
+        <i class="fas fa-bullhorn"></i> <span>Notificar Todos</span>
+      </a>
+
+      <div class="nav-section-label">Usuários</div>
+      <a href="/admin/sellers" class="<%= currentPath === '/admin/sellers' ? 'active' : '' %>">
+        <i class="fas fa-store-alt"></i> <span>Vendedores</span>
+      </a>
+      <a href="/admin/admins" class="<%= currentPath === '/admin/admins' ? 'active' : '' %>">
+        <i class="fas fa-users-cog"></i> <span>Admins</span>
+      </a>
+      <a href="/admin/reviews" class="<%= currentPath.startsWith('/admin/reviews') ? 'active' : '' %>">
+        <i class="fas fa-star"></i> <span>Avaliações</span>
+      </a>
+      <a href="/admin/notifications" class="<%= currentPath.startsWith('/admin/notifications') ? 'active' : '' %>">
+        <i class="fas fa-bell"></i> <span>Notificações</span>
+      </a>
+
+      <div class="nav-section-label">Sistema</div>
+      <a href="/admin/config" class="<%= currentPath === '/admin/config' ? 'active' : '' %>">
+        <i class="fas fa-cog"></i> <span>Configurações</span>
       </a>
       <a href="/admin/metas" class="<%= currentPath === '/admin/metas' ? 'active' : '' %>">
-        <i class="fas fa-bullseye"></i> Metas
+        <i class="fas fa-bullseye"></i> <span>Metas</span>
       </a>
       <a href="/admin/placar" class="<%= currentPath === '/admin/placar' ? 'active' : '' %>">
-        <i class="fas fa-ranking-star"></i> Placar
+        <i class="fas fa-ranking-star"></i> <span>Placar</span>
       </a>
       <a href="/admin/toggles" class="<%= currentPath === '/admin/toggles' ? 'active' : '' %>">
-        <i class="fas fa-toggle-on"></i> Toggles
-      </a>
-      <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
-        <i class="fas fa-bullhorn"></i> Marketing
-      </a>
-      <a href="/admin/marketing/whatsapp" class="sub-link <%= (currentPath || '') === '/admin/marketing/whatsapp' ? 'active' : '' %>"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-      <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> Auto-Promo</a>
-      <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> Campanhas</a>
-      <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> QR Code</a>
-      <a href="/admin/marketing/reports" class="sub-link <%= (currentPath || '') === '/admin/marketing/reports' ? 'active' : '' %>"><i class="fas fa-chart-bar"></i> Relatórios</a>
-      <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
-        <i class="fas fa-bullhorn"></i> Notificar Todos
-      </a>
-      <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
-        <i class="fas fa-broom"></i> Limpar Dados
+        <i class="fas fa-toggle-on"></i> <span>Toggles</span>
       </a>
       <a href="/admin/logs" class="<%= currentPath === '/admin/logs' ? 'active' : '' %>">
-        <i class="fas fa-history"></i> Logs
+        <i class="fas fa-history"></i> <span>Logs</span>
       </a>
       <a href="/admin/ips-bloqueados" class="<%= currentPath === '/admin/ips-bloqueados' ? 'active' : '' %>">
-        <i class="fas fa-ban"></i> IPs Bloqueados
+        <i class="fas fa-ban"></i> <span>IPs Bloqueados</span>
       </a>
-      <a href="/admin/config" class="<%= currentPath === '/admin/config' ? 'active' : '' %>">
-        <i class="fas fa-cog"></i> Configurações
+      <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
+        <i class="fas fa-broom"></i> <span>Limpar Dados</span>
       </a>
+
       <% if (!admin && seller) { %>
+      <div class="nav-section-label">Vendedor</div>
       <a href="/seller/sales" class="<%= currentPath === '/seller/sales' ? 'active' : '' %>">
-        <i class="fas fa-shopping-bag"></i> Vendas
+        <i class="fas fa-shopping-bag"></i> <span>Vendas</span>
       </a>
       <a href="/seller/coupons" class="<%= currentPath === '/seller/coupons' ? 'active' : '' %>">
-        <i class="fas fa-ticket-alt"></i> Cupons
+        <i class="fas fa-ticket-alt"></i> <span>Cupons</span>
       </a>
       <a href="/seller/wallet" class="<%= currentPath === '/seller/wallet' ? 'active' : '' %>">
-        <i class="fas fa-wallet"></i> Carteira
+        <i class="fas fa-wallet"></i> <span>Carteira</span>
       </a>
       <% } %>
     </nav>

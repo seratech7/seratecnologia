@@ -159,6 +159,14 @@ app.use((req, res, next) => {
     req.session.csrfToken = crypto.randomBytes(24).toString('hex');
   }
   res.locals.csrfToken = req.session.csrfToken;
+
+  // Flash messages
+  req.flash = function(text, type) {
+    if (!req.session.flash) req.session.flash = [];
+    req.session.flash.push({ text: text, type: type || 'info' });
+  };
+  res.locals.flash = req.session.flash || [];
+  delete req.session.flash;
   next();
 });
 

@@ -1,5 +1,38 @@
   </div>
 </div>
 
+<div class="toast-container" id="toastContainer"></div>
+
+<% if (typeof flash !== 'undefined' && flash) { %>
+<script>
+(function() {
+  var msgs = <%- JSON.stringify(flash) %>;
+  if (msgs && msgs.length) {
+    msgs.forEach(function(m) {
+      showToast(m.text, m.type || 'info');
+    });
+  }
+})();
+</script>
+<% } %>
+
+<script>
+function showToast(text, type) {
+  type = type || 'info';
+  var container = document.getElementById('toastContainer');
+  var icons = { success: 'check-circle', error: 'times-circle', warning: 'exclamation-triangle', info: 'info-circle' };
+  var t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = '<i class="fas fa-' + (icons[type] || 'info-circle') + '"></i>' +
+    '<span>' + text + '</span>' +
+    '<div class="toast-progress"></div>';
+  container.appendChild(t);
+  setTimeout(function() {
+    t.style.animation = 'toastOut 0.3s ease-in forwards';
+    setTimeout(function() { t.remove(); }, 350);
+  }, 4000);
+}
+</script>
+
 </body>
 </html>

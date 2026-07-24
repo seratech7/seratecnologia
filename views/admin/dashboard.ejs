@@ -2,8 +2,40 @@
 
 <div class="admin-content">
   <div class="page-header">
-    <h1><i class="fas fa-microchip"></i> Dashboard SeraTecnologia</h1>
-    <p>Bem-vindo, <%= session.adminName %>!</p>
+    <div>
+      <h1><i class="fas fa-microchip"></i> Dashboard</h1>
+      <p>Bem-vindo, <%= session.adminName %>!</p>
+    </div>
+    <div class="header-actions">
+      <span class="header-date"><%= new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <a href="/admin/products/new" class="quick-action-card">
+      <i class="fas fa-plus-circle"></i>
+      <span>Novo Produto</span>
+    </a>
+    <a href="/admin/sales" class="quick-action-card">
+      <i class="fas fa-shopping-bag"></i>
+      <span>Vendas</span>
+    </a>
+    <a href="/admin/marketing/whatsapp" class="quick-action-card">
+      <i class="fab fa-whatsapp"></i>
+      <span>WhatsApp</span>
+    </a>
+    <a href="/admin/marketing/autopromo" class="quick-action-card">
+      <i class="fas fa-bolt"></i>
+      <span>Auto-Promo</span>
+    </a>
+    <a href="/admin/financeiro" class="quick-action-card">
+      <i class="fas fa-coins"></i>
+      <span>Financeiro</span>
+    </a>
+    <a href="/admin/analytics" class="quick-action-card">
+      <i class="fas fa-chart-line"></i>
+      <span>Analytics</span>
+    </a>
   </div>
 
   <div class="stats-grid">
@@ -93,81 +125,83 @@
     </div>
   </div>
 
-  <% if (featuredProducts.length > 0) { %>
-  <div class="admin-section">
-    <div class="section-header">
-      <h2><i class="fas fa-star" style="color:#ffd700;"></i> Produtos em Destaque</h2>
-      <a href="/admin/products?filter=featured" class="btn-small">Gerenciar</a>
-    </div>
-    <div class="featured-carousel">
-      <div class="products-grid featured-admin-grid">
-        <% featuredProducts.forEach(p => { %>
-          <a href="/admin/products/edit/<%= p.id %>" class="product-card featured-admin-card">
-            <div class="product-image">
-              <% if (p.image) { %><img src="<%= p.image %>" alt=""><% } else { %><div class="no-image"><i class="fas fa-image"></i></div><% } %>
-              <span class="featured-badge"><i class="fas fa-star"></i> Destaque</span>
-            </div>
-            <div class="product-info">
-              <h3 class="product-name"><%= p.name %></h3>
-              <p class="product-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></p>
-              <div class="product-meta">
-                <span><%= p.category_name || '-' %></span>
-                <% if (p.seller_name) { %><span class="product-category"><%= p.seller_name %></span><% } %>
+  <div class="dashboard-grid">
+    <% if (featuredProducts.length > 0) { %>
+    <div class="admin-section">
+      <div class="section-header">
+        <h2><i class="fas fa-star" style="color:#ffd700;"></i> Produtos em Destaque</h2>
+        <a href="/admin/products?filter=featured" class="btn-small">Gerenciar</a>
+      </div>
+      <div class="featured-carousel">
+        <div class="products-grid featured-admin-grid">
+          <% featuredProducts.forEach(p => { %>
+            <a href="/admin/products/edit/<%= p.id %>" class="product-card featured-admin-card">
+              <div class="product-image">
+                <% if (p.image) { %><img src="<%= p.image %>" alt=""><% } else { %><div class="no-image"><i class="fas fa-image"></i></div><% } %>
+                <span class="featured-badge"><i class="fas fa-star"></i> Destaque</span>
               </div>
-            </div>
-          </a>
-        <% }) %>
+              <div class="product-info">
+                <h3 class="product-name"><%= p.name %></h3>
+                <p class="product-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></p>
+                <div class="product-meta">
+                  <span><%= p.category_name || '-' %></span>
+                  <% if (p.seller_name) { %><span class="product-category"><%= p.seller_name %></span><% } %>
+                </div>
+              </div>
+            </a>
+          <% }) %>
+        </div>
       </div>
     </div>
-  </div>
-  <% } %>
+    <% } %>
 
-  <div class="admin-section">
-    <div class="section-header">
-      <h2><i class="fas fa-clock"></i> Produtos Recentes</h2>
-      <a href="/admin/products" class="btn-small">Ver todos</a>
-    </div>
-    <div class="table-container">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Produto</th>
-            <th>Preço</th>
-            <th>Categoria</th>
-            <th>Status</th>
-            <th>Data</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (recentProducts.length === 0) { %>
-            <tr><td colspan="6" class="empty-row">Nenhum produto cadastrado</td></tr>
-          <% } else { %>
-            <% recentProducts.forEach(p => { %>
-              <tr>
-                <td class="product-cell">
-                  <div class="product-cell-info">
-                    <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } %>
-                    <span><%= p.name %><% if (p.featured) { %> <span class="featured-tag"><i class="fas fa-star"></i></span><% } %></span>
-                  </div>
-                </td>
-                <td><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
-                <td><%= p.category_name || '-' %></td>
-                <td>
-                  <% if (p.status === 'active') { %><span class="status-badge active">Ativo</span>
-                  <% } else if (p.status === 'pending') { %><span class="status-badge" style="background:#fff3cd;color:#856404;">Pendente</span>
-                  <% } else if (p.status === 'rejected') { %><span class="status-badge" style="background:#fdecea;color:#e74c3c;">Rejeitado</span>
-                  <% } else { %><span class="status-badge inactive">Inativo</span><% } %>
-                </td>
-                <td><%= new Date(p.created_at).toLocaleDateString('pt-BR') %></td>
-                <td>
-                  <a href="/admin/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
-                </td>
-              </tr>
-            <% }) %>
-          <% } %>
-        </tbody>
-      </table>
+    <div class="admin-section">
+      <div class="section-header">
+        <h2><i class="fas fa-clock"></i> Produtos Recentes</h2>
+        <a href="/admin/products" class="btn-small">Ver todos</a>
+      </div>
+      <div class="table-container">
+        <table class="admin-table" style="position:relative;">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Preço</th>
+              <th>Categoria</th>
+              <th>Status</th>
+              <th>Data</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (recentProducts.length === 0) { %>
+              <tr><td colspan="6" class="empty-row">Nenhum produto cadastrado</td></tr>
+            <% } else { %>
+              <% recentProducts.forEach(p => { %>
+                <tr>
+                  <td class="product-cell">
+                    <div class="product-cell-info">
+                      <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } %>
+                      <span><%= p.name %><% if (p.featured) { %> <span class="featured-tag"><i class="fas fa-star"></i></span><% } %></span>
+                    </div>
+                  </td>
+                  <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
+                  <td><%= p.category_name || '-' %></td>
+                  <td>
+                    <% if (p.status === 'active') { %><span class="status-badge active">Ativo</span>
+                    <% } else if (p.status === 'pending') { %><span class="status-badge" style="background:#fff3cd;color:#856404;">Pendente</span>
+                    <% } else if (p.status === 'rejected') { %><span class="status-badge" style="background:#fdecea;color:#e74c3c;">Rejeitado</span>
+                    <% } else { %><span class="status-badge inactive">Inativo</span><% } %>
+                  </td>
+                  <td><%= new Date(p.created_at).toLocaleDateString('pt-BR') %></td>
+                  <td>
+                    <a href="/admin/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
