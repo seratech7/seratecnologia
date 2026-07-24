@@ -12,7 +12,8 @@
     "promote:telegram": "node utils/promote.js --telegram-only",
     "promote:discord": "node utils/promote.js --discord-only",
     "promote:whatsapp": "node utils/promote.js --whatsapp-only",
-    "promote:email": "node utils/promote.js --email-only"
+    "promote:email": "node utils/promote.js --email-only",
+    "postinstall": "node -e \"try{require('child_process').execSync('npx --yes puppeteer browsers install chrome',{stdio:'inherit'})}catch(e){console.error('postinstall chrome:',e.message)}\""
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
