@@ -1,0 +1,67 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/autoreply' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-robot"></i> Respostas Automáticas</h1>
+    <p style="font-size:13px;color:#666;margin:0;">Configure respostas automáticas do WhatsApp</p>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div class="card" style="margin-bottom:20px;background:<%= waReady ? '#f0fdf4' : '#fff' %>;">
+    <span style="font-size:13px;"><i class="fas fa-circle" style="color:<%= waReady ? '#25D366' : '#999' %>;"></i> WhatsApp: <%= waReady ? 'Conectado — respostas ativas' : 'Desconectado — conecte o WhatsApp primeiro' %></span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-plus"></i> Nova Resposta</h3>
+      <form method="POST" action="/admin/marketing/autoreply/save">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="id" value="">
+        <div class="form-group"><label>Palavra-chave</label><input type="text" name="keyword" class="admin-input" required placeholder="OLÁ, PREÇO, HORÁRIO"></div>
+        <div class="form-group">
+          <label>Tipo de correspondência</label>
+          <select name="match_type" class="admin-input">
+            <option value="exact">Exata (igual)</option>
+            <option value="contains">Contém</option>
+            <option value="starts">Começa com</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Resposta</label><textarea name="reply" class="admin-input" rows="4" required placeholder="Digite a resposta automática..."></textarea></div>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-list"></i> Regras (<%= replies.length %>)</h3>
+      <% if (replies.length === 0) { %><p style="color:#999;font-size:13px;">Nenhuma regra configurada.</p><% } else { %>
+      <div style="max-height:500px;overflow-y:auto;">
+      <% replies.forEach(function(r) { %>
+        <div style="padding:12px;border-bottom:1px solid #eee;display:flex;gap:10px;align-items:flex-start;">
+          <div style="flex:1;">
+            <div><strong><%= r.keyword %></strong> <span style="font-size:11px;color:#999;">(<%= r.match_type %>)</span> <span class="badge badge-<%= r.active ? 'success' : 'muted' %>"><%= r.active ? 'ativo' : 'inativo' %></span></div>
+            <div style="font-size:12px;color:#555;margin-top:4px;"><%= r.reply.slice(0,100) %><%= r.reply.length > 100 ? '...' : '' %></div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <form method="POST" action="/admin/marketing/autoreply/toggle/<%= r.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" style="background:none;border:none;cursor:pointer;font-size:14px;color:<%= r.active ? '#999' : '#2e7d32' %>;" title="Ativar/Desativar"><i class="fas fa-<%= r.active ? 'pause' : 'play' %>"></i></button>
+            </form>
+            <form method="POST" action="/admin/marketing/autoreply/delete/<%= r.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:14px;" onclick="return confirm('Excluir regra?')" title="Excluir"><i class="fas fa-trash"></i></button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+.badge-muted { background:#f5f5f5; color:#999; padding:2px 8px; border-radius:10px; font-size:11px; }
+.badge-success { background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:10px; font-size:11px; }
+</style>
+<%- include('../../partials/admin-footer') %>

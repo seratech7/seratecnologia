@@ -9,12 +9,13 @@
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
   <!-- Stats Row -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;">
+  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px;">
     <div class="mstat-card"><div class="mstat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fab fa-whatsapp"></i></div><div class="mstat-value"><%= stats.waToday %></div><div class="mstat-label">WhatsApp Hoje</div></div>
     <div class="mstat-card"><div class="mstat-icon" style="background:#e3f2fd;color:#1565c0;"><i class="fas fa-envelope"></i></div><div class="mstat-value"><%= stats.totalSent %></div><div class="mstat-label">Total Enviado</div></div>
     <div class="mstat-card"><div class="mstat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-rocket"></i></div><div class="mstat-value"><%= stats.totalCampaigns %></div><div class="mstat-label">Campanhas</div></div>
     <div class="mstat-card"><div class="mstat-icon" style="background:#f3e5f5;color:#6a1b9a;"><i class="fas fa-file-alt"></i></div><div class="mstat-value"><%= stats.totalTemplates %></div><div class="mstat-label">Modelos</div></div>
-    <div class="mstat-card"><div class="mstat-icon" style="background:#e8eaf6;color:#283593;"><i class="fas fa-check-circle"></i></div><div class="mstat-value"><%= stats.totalWaSent %></div><div class="mstat-label">WhatsApp Total</div></div>
+    <div class="mstat-card"><div class="mstat-icon" style="background:#e8eaf6;color:#283593;"><i class="fas fa-list"></i></div><div class="mstat-value"><%= stats.totalLists %></div><div class="mstat-label">Listas</div></div>
+    <div class="mstat-card"><div class="mstat-icon" style="background:#fce4ec;color:#c62828;"><i class="fas fa-robot"></i></div><div class="mstat-value"><%= stats.totalAutoReplies %></div><div class="mstat-label">Auto-Respostas</div></div>
   </div>
 
   <!-- Platform Cards -->
@@ -73,6 +74,21 @@
       <div class="plat-icon" style="color:#795548;"><i class="fas fa-list"></i></div>
       <div class="plat-name">Listas</div>
       <div class="plat-status"><span class="badge badge-primary">Segmentação</span></div>
+    </a>
+    <a href="/admin/marketing/autoreply" class="platform-card" style="border-left:4px solid #4CAF50;">
+      <div class="plat-icon" style="color:#4CAF50;"><i class="fas fa-robot"></i></div>
+      <div class="plat-name">Auto-Resposta</div>
+      <div class="plat-status"><span class="badge badge-primary"><%= stats.totalAutoReplies %> regras</span></div>
+    </a>
+    <a href="/admin/marketing/coupons" class="platform-card" style="border-left:4px solid #FF9800;">
+      <div class="plat-icon" style="color:#FF9800;"><i class="fas fa-ticket-alt"></i></div>
+      <div class="plat-name">Cupons</div>
+      <div class="plat-status"><span class="badge badge-primary">Distribuir</span></div>
+    </a>
+    <a href="/admin/marketing/reports" class="platform-card" style="border-left:4px solid #37474F;">
+      <div class="plat-icon" style="color:#37474F;"><i class="fas fa-chart-bar"></i></div>
+      <div class="plat-name">Relatórios</div>
+      <div class="plat-status"><span class="badge badge-primary">Exportar</span></div>
     </a>
   </div>
 

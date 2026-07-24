@@ -595,6 +595,27 @@ async function initDb() {
       FOREIGN KEY (list_id) REFERENCES marketing_lists(id)
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wa_autoreply (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      keyword TEXT NOT NULL,
+      reply TEXT NOT NULL,
+      match_type TEXT DEFAULT 'exact',
+      active INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_schedule (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      content TEXT NOT NULL,
+      scheduled_for DATETIME NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
@@ -1258,6 +1279,48 @@ function getMarketingStats() {
   };
 }
 
+// === WA AUTO REPLY ===
+function getWaAutoReplies() { return query("SELECT * FROM wa_autoreply ORDER BY keyword"); }
+function getWaAutoReply(id) { return get("SELECT * FROM wa_autoreply WHERE id = ?", [id]); }
+function saveWaAutoReply(keyword, reply, matchType, id) {
+  if (id) { run("UPDATE wa_autoreply SET keyword=?, reply=?, match_type=? WHERE id=?", [keyword,reply,matchType||'exact',id]); return id; }
+  run("INSERT INTO wa_autoreply (keyword,reply,match_type) VALUES (?,?,?)", [keyword,reply,matchType||'exact']);
+  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+}
+function deleteWaAutoReply(id) { run("DELETE FROM wa_autoreply WHERE id = ?", [id]); }
+function findWaAutoReply(text) {
+  var replies = query("SELECT * FROM wa_autoreply WHERE active = 1");
+  for (var i = 0; i < replies.length; i++) {
+    var r = replies[i];
+    if (r.match_type === 'exact' && text.toLowerCase() === r.keyword.toLowerCase()) return r;
+    if (r.match_type === 'contains' && text.toLowerCase().indexOf(r.keyword.toLowerCase()) !== -1) return r;
+    if (r.match_type === 'starts' && text.toLowerCase().indexOf(r.keyword.toLowerCase()) === 0) return r;
+  }
+  return null;
+}
+
+// === MARKETING SCHEDULE ===
+function getMarketingSchedules(limit) { return query("SELECT * FROM marketing_schedule ORDER BY scheduled_for ASC LIMIT ?", [limit||50]); }
+function getPendingMarketingSchedules() { return query("SELECT * FROM marketing_schedule WHERE status='pending' AND scheduled_for <= datetime('now') ORDER BY scheduled_for ASC"); }
+function createMarketingSchedule(title, platform, content, scheduledFor) { run("INSERT INTO marketing_schedule (title,platform,content,scheduled_for) VALUES (?,?,?,?)", [title,platform,content,scheduledFor]); return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0]; }
+function markMarketingScheduleDone(id) { run("UPDATE marketing_schedule SET status='sent' WHERE id=?", [id]); }
+function deleteMarketingSchedule(id) { run("DELETE FROM marketing_schedule WHERE id = ?", [id]); }
+
+function getMarketingFullStats() {
+  return {
+    totalCampaigns: (get('SELECT COUNT(*) as c FROM marketing_campaigns')||{}).c||0,
+    totalSent: (get('SELECT COALESCE(SUM(total_sent),0) as c FROM marketing_campaigns')||{}).c||0,
+    totalTemplates: (get('SELECT COUNT(*) as c FROM marketing_templates')||{}).c||0,
+    totalWaSent: (get('SELECT COUNT(*) as c FROM wa_messages WHERE status="sent"')||{}).c||0,
+    waToday: (get("SELECT COUNT(*) as c FROM wa_messages WHERE status='sent' AND date(sent_at)=date('now')")||{}).c||0,
+    totalLists: (get('SELECT COUNT(*) as c FROM marketing_lists')||{}).c||0,
+    totalMembers: (get('SELECT COUNT(*) as c FROM marketing_list_members')||{}).c||0,
+    totalAutoReplies: (get('SELECT COUNT(*) as c FROM wa_autoreply')||{}).c||0,
+    totalCoupons: (get('SELECT COUNT(*) as c FROM coupons')||{}).c||0,
+    totalSchedule: (get("SELECT COUNT(*) as c FROM marketing_schedule WHERE status='pending'")||{}).c||0
+  };
+}
+
 // === BROADCAST LISTS ===
 function getMarketingLists() { return query("SELECT ml.*, (SELECT COUNT(*) FROM marketing_list_members WHERE list_id=ml.id) as member_count FROM marketing_lists ml ORDER BY name"); }
 function getMarketingList(id) { return get('SELECT * FROM marketing_lists WHERE id = ?', [id]); }
@@ -1278,4 +1341,4 @@ function addWaContactsToList(listId) {
   return count;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList };
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList, getWaAutoReplies, getWaAutoReply, saveWaAutoReply, deleteWaAutoReply, findWaAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats };

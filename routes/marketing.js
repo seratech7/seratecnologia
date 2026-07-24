@@ -57,7 +57,7 @@ module.exports = function() {
 
   // === DASHBOARD PRINCIPAL ===
   router.get('/marketing', (req, res) => {
-    const stats = db.getMarketingStats();
+    const stats = db.getMarketingFullStats();
     const campaigns = db.getMarketingCampaigns(5);
     const templates = db.getMarketingTemplates();
     res.render('admin/marketing/index', {
@@ -562,6 +562,120 @@ module.exports = function() {
       await new Promise(r => setTimeout(r, 2000));
     }
     res.redirect('/admin/marketing/lists/' + listId + '?success=' + sent + ' enviadas, ' + failed + ' falhas');
+  });
+
+  // ============================================================
+  //  WHATSAPP AUTO REPLY
+  // ============================================================
+  router.get('/marketing/autoreply', (req, res) => {
+    const replies = db.getWaAutoReplies();
+    res.render('admin/marketing/autoreply', {
+      title: 'Respostas Automáticas', currentPath: '/admin/marketing/autoreply',
+      replies, waReady: WA_READY,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/autoreply/save', (req, res) => {
+    const { id, keyword, reply, match_type } = req.body;
+    if (!keyword || !reply) return res.redirect('/admin/marketing/autoreply?error=Palavra-chave e resposta obrigatórias');
+    db.saveWaAutoReply(keyword.trim(), reply, match_type || 'exact', id || null);
+    res.redirect('/admin/marketing/autoreply?success=Resposta salva');
+  });
+
+  router.post('/marketing/autoreply/delete/:id', (req, res) => {
+    db.deleteWaAutoReply(req.params.id);
+    res.redirect('/admin/marketing/autoreply?success=Resposta removida');
+  });
+
+  router.post('/marketing/autoreply/toggle/:id', (req, res) => {
+    var r = db.getWaAutoReply(req.params.id);
+    if (r) { db.run("UPDATE wa_autoreply SET active = ? WHERE id = ?", [r.active ? 0 : 1, req.params.id]); }
+    res.redirect('/admin/marketing/autoreply');
+  });
+
+  // ============================================================
+  //  COUPON DISTRIBUTION
+  // ============================================================
+  router.get('/marketing/coupons', (req, res) => {
+    const coupons = db.getAllCoupons();
+    const lists = db.getMarketingLists();
+    res.render('admin/marketing/coupon-dist', {
+      title: 'Distribuir Cupons', currentPath: '/admin/marketing/coupons',
+      coupons, lists, waReady: WA_READY, baseUrl: getBaseUrl(),
+      siteName: process.env.SITE_NAME || 'Martplace',
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/coupons/send', async (req, res) => {
+    const { couponId, target, listId, message } = req.body;
+    if (!couponId) return res.redirect('/admin/marketing/coupons?error=Selecione um cupom');
+    var coupon = db.getCoupon(couponId);
+    if (!coupon) return res.redirect('/admin/marketing/coupons?error=Cupom não encontrado');
+    var code = coupon.code;
+    var msg = (message || 'Cupom exclusivo: ' + code).replace('{code}', code).replace('{valor}', coupon.discount_value || '');
+
+    if (target === 'whatsapp' && WA_READY) {
+      var phones = [];
+      if (listId) { phones = db.getMarketingListMembers(listId); }
+      else { phones = db.getWaContacts(); }
+      var sent = 0;
+      for (var p of phones) {
+        try { await WA_CLIENT.sendMessage(p.phone.replace(/\D/g, '') + '@c.us', msg); db.addWaMessage(p.phone, p.name||'', msg, 'sent'); sent++; } catch(e) {}
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      res.redirect('/admin/marketing/coupons?success=Cupom ' + code + ' enviado para ' + sent + ' contatos');
+    } else if (target === 'telegram') {
+      var token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+      if (token && chat) {
+        try { var d = JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'HTML' }); await reqPromise('https://api.telegram.org/bot' + token + '/sendMessage', 'POST', d); res.redirect('/admin/marketing/coupons?success=Cupom enviado ao Telegram'); } catch(e) { res.redirect('/admin/marketing/coupons?error=' + e.message); }
+      } else { res.redirect('/admin/marketing/coupons?error=Telegram não configurado'); }
+    } else if (target === 'discord') {
+      var url = process.env.DISCORD_WEBHOOK_URL;
+      if (url) {
+        try { var d = JSON.stringify({ content: msg }); await reqPromise(url, 'POST', d, { 'Content-Type': 'application/json' }); res.redirect('/admin/marketing/coupons?success=Cupom enviado ao Discord'); } catch(e) { res.redirect('/admin/marketing/coupons?error=' + e.message); }
+      } else { res.redirect('/admin/marketing/coupons?error=Discord não configurado'); }
+    } else {
+      res.redirect('/admin/marketing/coupons?error=WhatsApp desconectado ou destino inválido');
+    }
+  });
+
+  // ============================================================
+  //  REPORTS & EXPORT
+  // ============================================================
+  router.get('/marketing/reports', (req, res) => {
+    var stats = db.getMarketingFullStats();
+    var campaigns = db.getMarketingCampaigns(10);
+    var recentMsgs = db.getWaMessages(20, 0);
+    var schedules = db.getMarketingSchedules(10);
+    res.render('admin/marketing/reports', {
+      title: 'Relatórios', currentPath: '/admin/marketing/reports',
+      stats, campaigns, recentMsgs, schedules,
+      error: null, success: null
+    });
+  });
+
+  router.get('/marketing/reports/export/:type', (req, res) => {
+    var rows, filename, header;
+    if (req.params.type === 'whatsapp') {
+      rows = db.query("SELECT phone, contact_name, message, status, sent_at FROM wa_messages ORDER BY sent_at DESC LIMIT 1000");
+      header = 'Telefone,Nome,Mensagem,Status,Data';
+    } else if (req.params.type === 'campaigns') {
+      rows = db.query("SELECT id, name, platforms, total_sent, total_failed, created_at FROM marketing_campaigns ORDER BY created_at DESC");
+      header = 'ID,Nome,Plataformas,Enviadas,Falhas,Data';
+    } else if (req.params.type === 'contacts') {
+      rows = db.query("SELECT name, phone, notes, created_at FROM wa_contacts ORDER BY name");
+      header = 'Nome,Telefone,Observacoes,Data';
+    } else { return res.redirect('/admin/marketing/reports?error=Tipo inválido'); }
+    var csv = header + '\n';
+    rows.forEach(function(r) {
+      var vals = Object.values(r).map(function(v) { var s = String(v||''); return s.indexOf(',') !== -1 ? '"' + s.replace(/"/g,'""') + '"' : s; });
+      csv += vals.join(',') + '\n';
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=' + req.params.type + '-' + new Date().toISOString().slice(0,10) + '.csv');
+    res.send('\uFEFF' + csv);
   });
 
   // ============================================================
