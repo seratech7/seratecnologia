@@ -686,5 +686,38 @@ router.post('/notifications/delete/:id', (req, res) => {
   res.redirect('/admin/notifications');
 });
 
+// ========== SITE CONFIG ==========
+router.get('/config', (req, res) => {
+  var allConfigs = db.query('SELECT * FROM config ORDER BY key');
+  var configObj = {};
+  allConfigs.forEach(function(c) { configObj[c.key] = c.value; });
+
+  var sellers = db.query('SELECT id, name, email FROM sellers ORDER BY name');
+  var admins = db.query('SELECT id, username FROM admins ORDER BY username');
+
+  res.render('admin/config', {
+    title: 'Configurações do Site',
+    config: configObj,
+    sellers: sellers,
+    admins: admins,
+    error: null,
+    success: null
+  });
+});
+
+router.post('/config', (req, res) => {
+  var allowedKeys = [
+    'site_name', 'site_description', 'site_whatsapp', 'site_email',
+    'commission_pct', 'mp_access_token', 'pix_key_platform',
+    'default_product_status', 'maintenance_mode', 'max_products_per_seller'
+  ];
+  allowedKeys.forEach(function(key) {
+    if (req.body[key] !== undefined) {
+      db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key, String(req.body[key]).trim()]);
+    }
+  });
+  res.redirect('/admin/config');
+});
+
 return router;
 };

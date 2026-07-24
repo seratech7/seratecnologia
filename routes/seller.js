@@ -134,6 +134,17 @@ router.post('/products/new', upload.single('image'), (req, res) => {
   var lastId = db.get('SELECT MAX(id) as id FROM products');
   if (lastId) db.run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lastId.id, lastId.id]);
 
+  // Notify seller about the new product
+  try {
+    var baseUrl = process.env.BASE_URL || 'https://seratecnologia-1.onrender.com';
+    var prodCode = 'PROD-' + String(lastId ? lastId.id : 0).padStart(5, '0');
+    var waMsg = encodeURIComponent('Acabei de cadastrar o produto ' + cleanName + ' (' + prodCode + ') no SeraTecnologia!');
+    var sellerPhone = req.session.sellerPhone || '';
+    var waLink = sellerPhone ? 'https://wa.me/55' + sellerPhone.replace(/\D/g, '') + '?text=' + waMsg : baseUrl + '/seller/products';
+    var sellerId = req.session.sellerId ? req.session.sellerId.toString() : 'all';
+    db.addNotification(sellerId, 'promo', 'Produto "' + cleanName + '" criado! Divulgue agora no WhatsApp →', 'share-alt', waLink);
+  } catch(e) { /* silent */ }
+
   res.redirect('/seller/products');
 });
 

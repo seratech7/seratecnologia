@@ -250,14 +250,24 @@ async function initDb() {
       value TEXT NOT NULL
     )
   `);
-  var hasCommission = get("SELECT value FROM config WHERE key = 'commission_pct'");
-  if (!hasCommission) {
-    run("INSERT INTO config (key, value) VALUES ('commission_pct', '10')");
-  }
-  var hasMpToken = get("SELECT value FROM config WHERE key = 'mp_access_token'");
-  if (!hasMpToken) {
-    run("INSERT INTO config (key, value) VALUES ('mp_access_token', '')");
-  }
+  var defaultConfigs = {
+    'commission_pct': '10',
+    'mp_access_token': '',
+    'site_name': 'SeraTecnologia',
+    'site_description': 'Marketplace de Hardware e Tecnologia',
+    'site_whatsapp': '',
+    'site_email': 'contato@seratecnologia.com.br',
+    'maintenance_mode': '0',
+    'default_product_status': 'pending',
+    'pix_key_platform': '',
+    'max_products_per_seller': '50'
+  };
+  Object.keys(defaultConfigs).forEach(function(key) {
+    var existing = get("SELECT value FROM config WHERE key = ?", [key]);
+    if (!existing) {
+      run("INSERT INTO config (key, value) VALUES (?, ?)", [key, defaultConfigs[key]]);
+    }
+  });
 
   db.run(`
     CREATE TABLE IF NOT EXISTS sales (

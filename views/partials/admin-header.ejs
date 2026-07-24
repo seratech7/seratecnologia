@@ -56,6 +56,9 @@
       <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
         <i class="fas fa-coins"></i> Financeiro
       </a>
+      <a href="/admin/config" class="<%= currentPath === '/admin/config' ? 'active' : '' %>">
+        <i class="fas fa-cog"></i> Configurações
+      </a>
       <% if (!admin && seller) { %>
       <a href="/seller/sales" class="<%= currentPath === '/seller/sales' ? 'active' : '' %>">
         <i class="fas fa-shopping-bag"></i> Vendas

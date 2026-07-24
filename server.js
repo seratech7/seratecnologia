@@ -131,6 +131,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Maintenance mode check
+app.use((req, res, next) => {
+  if (req.path.startsWith('/admin') || req.path.startsWith('/seller') || req.path === '/admin/login') return next();
+  try {
+    var maintenance = require('./database/db').get("SELECT value FROM config WHERE key = 'maintenance_mode'");
+    if (maintenance && maintenance.value === '1' && !req.session.adminId) {
+      return res.status(503).sendFile(path.join(__dirname, 'public', 'maintenance.html'));
+    }
+  } catch(e) {}
+  next();
+});
+
 app.use(function(req, res, next) {
   if (req.path.startsWith('/admin') || req.path.startsWith('/seller') || req.path.match(/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff2?)$/i)) return next();
   var db = require('./database/db');
