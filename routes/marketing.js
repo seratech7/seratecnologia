@@ -53,20 +53,20 @@ module.exports = function() {
   router.use(requireAdmin);
   const db = require('../database/db');
 
+  function getBaseUrl() { return process.env.SITE_URL || 'https://seratecnologia-1.onrender.com'; }
+
   // === DASHBOARD PRINCIPAL ===
   router.get('/marketing', (req, res) => {
-    const waStats = db.getWaStats();
-    const msgCount = db.getWaMessagesCount();
-    const contactCount = db.getWaContactsCount();
-    const sellerCount = (db.get("SELECT COUNT(*) as c FROM sellers")||{}).c||0;
-    const buyerCount = (db.get("SELECT COUNT(DISTINCT buyer_email) as c FROM sales WHERE buyer_email != ''")||{}).c||0;
+    const stats = db.getMarketingStats();
+    const campaigns = db.getMarketingCampaigns(5);
+    const templates = db.getMarketingTemplates();
     res.render('admin/marketing/index', {
-      title: 'Marketing - Painel Admin', currentPath: '/admin/marketing',
+      title: 'Marketing Central', currentPath: '/admin/marketing',
       waReady: WA_READY, waQr: WA_QR,
       telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
-      msgCount, contactCount, sellerCount, buyerCount,
+      stats, campaigns, templates,
       error: null, success: null
     });
   });
@@ -78,9 +78,11 @@ module.exports = function() {
     const stats = db.getWaStats();
     const recent = db.getWaMessages(10, 0);
     const contacts = db.getWaContacts();
+    const templates = db.getMarketingTemplates('whatsapp');
     res.render('admin/marketing/whatsapp', {
       title: 'WhatsApp Marketing', currentPath: '/admin/marketing/whatsapp',
-      stats, recent, contacts, waReady: WA_READY, waQr: WA_QR,
+      stats, recent, contacts, templates,
+      waReady: WA_READY, waQr: WA_QR, baseUrl: getBaseUrl(),
       error: null, success: null
     });
   });
@@ -162,10 +164,12 @@ module.exports = function() {
   //  TELEGRAM
   // ============================================================
   router.get('/marketing/telegram', (req, res) => {
+    const templates = db.getMarketingTemplates('telegram');
     res.render('admin/marketing/telegram', {
       title: 'Telegram Marketing', currentPath: '/admin/marketing/telegram',
       botToken: process.env.TELEGRAM_BOT_TOKEN || '',
       chatId: process.env.TELEGRAM_CHAT_ID || '',
+      templates,
       error: null, success: null
     });
   });
@@ -198,9 +202,11 @@ module.exports = function() {
   //  DISCORD
   // ============================================================
   router.get('/marketing/discord', (req, res) => {
+    const templates = db.getMarketingTemplates('discord');
     res.render('admin/marketing/discord', {
       title: 'Discord Marketing', currentPath: '/admin/marketing/discord',
       webhookUrl: process.env.DISCORD_WEBHOOK_URL || '',
+      templates,
       error: null, success: null
     });
   });
@@ -231,13 +237,14 @@ module.exports = function() {
   //  EMAIL MARKETING
   // ============================================================
   router.get('/marketing/email', (req, res) => {
-    const { sendEmail } = require('../utils/email');
+    const templates = db.getMarketingTemplates('email');
     const sellers = db.query("SELECT id, name, email FROM sellers WHERE status = 'active'");
     const buyers = db.query("SELECT DISTINCT buyer_name, buyer_email FROM sales WHERE buyer_email NOT NULL AND buyer_email != ''");
     res.render('admin/marketing/email', {
       title: 'Email Marketing', currentPath: '/admin/marketing/email',
       sendgridKey: process.env.SENDGRID_API_KEY ? '****' + process.env.SENDGRID_API_KEY.slice(-4) : '',
       sellers, buyers, sellerCount: sellers.length, buyerCount: buyers.length,
+      templates,
       error: null, success: null
     });
   });
@@ -308,9 +315,11 @@ module.exports = function() {
   //  CAMPANHAS MULTIPLATAFORMA
   // ============================================================
   router.get('/marketing/campaigns', (req, res) => {
+    const campaigns = db.getMarketingCampaigns(20);
+    const templates = db.getMarketingTemplates();
     res.render('admin/marketing/campaigns', {
       title: 'Campanhas', currentPath: '/admin/marketing/campaigns',
-      waReady: WA_READY,
+      waReady: WA_READY, campaigns, templates,
       telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
@@ -319,21 +328,23 @@ module.exports = function() {
   });
 
   router.post('/marketing/campaigns/disparar', async (req, res) => {
-    const { message, platforms, target } = req.body;
+    const { message, platforms, target, name } = req.body;
     if (!message) return res.redirect('/admin/marketing/campaigns?error=Digite a mensagem');
     const selected = Array.isArray(platforms) ? platforms : [platforms];
+    const campaignId = db.createMarketingCampaign(name||'Campanha ' + new Date().toLocaleString(), message, selected.join(','), target||'all', req.session.adminId||0);
     const results = [];
 
     // WhatsApp
     if (selected.includes('whatsapp') && WA_READY) {
       try {
-        const contacts = target === 'all' ? db.getWaContacts() : [];
-        if (contacts.length > 0) {
-          let s = 0; for (const c of contacts) { try { await WA_CLIENT.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); s++; } catch (e) {} await new Promise(r => setTimeout(r, 2000)); }
-          results.push('WhatsApp: ' + s + ' mensagens');
-        } else {
-          results.push('WhatsApp: sem contatos');
+        const contacts = db.getWaContacts();
+        let s = 0, f = 0;
+        for (const c of contacts) {
+          try { await WA_CLIENT.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'sent', ''); s++; } catch (e) { db.addMarketingCampaignResult(campaignId, 'whatsapp', c.phone, 'failed', e.message); f++; }
+          await new Promise(r => setTimeout(r, 2000));
         }
+        db.updateMarketingCampaignStats(campaignId, s, f);
+        results.push('WhatsApp: ' + s + ' enviadas, ' + f + ' falhas');
       } catch (e) { results.push('WhatsApp: erro'); }
     } else if (selected.includes('whatsapp')) { results.push('WhatsApp: desconectado'); }
 
@@ -344,8 +355,12 @@ module.exports = function() {
         try {
           const d = JSON.stringify({ chat_id: chat, text: message, parse_mode: 'HTML' });
           const r = await reqPromise(`https://api.telegram.org/bot${token}/sendMessage`, 'POST', d);
-          results.push('Telegram: ' + (r.status === 200 ? 'OK' : 'Status ' + r.status));
-        } catch (e) { results.push('Telegram: erro'); }
+          const ok = r.status === 200;
+          db.addMarketingCampaignResult(campaignId, 'telegram', chat, ok ? 'sent' : 'failed', ok ? '' : 'Status ' + r.status);
+          if (ok) db.updateMarketingCampaignStats(campaignId, 1, 0);
+          else db.updateMarketingCampaignStats(campaignId, 0, 1);
+          results.push('Telegram: ' + (ok ? 'OK' : 'Status ' + r.status));
+        } catch (e) { db.addMarketingCampaignResult(campaignId, 'telegram', chat, 'failed', e.message); db.updateMarketingCampaignStats(campaignId, 0, 1); results.push('Telegram: erro'); }
       } else { results.push('Telegram: não configurado'); }
     }
 
@@ -356,8 +371,12 @@ module.exports = function() {
         try {
           const d = JSON.stringify({ content: message });
           const r = await reqPromise(url, 'POST', d, { 'Content-Type': 'application/json' });
-          results.push('Discord: ' + (r.status < 300 ? 'OK' : 'Status ' + r.status));
-        } catch (e) { results.push('Discord: erro'); }
+          const ok = r.status < 300;
+          db.addMarketingCampaignResult(campaignId, 'discord', '', ok ? 'sent' : 'failed', ok ? '' : 'Status ' + r.status);
+          if (ok) db.updateMarketingCampaignStats(campaignId, 1, 0);
+          else db.updateMarketingCampaignStats(campaignId, 0, 1);
+          results.push('Discord: ' + (ok ? 'OK' : 'Status ' + r.status));
+        } catch (e) { db.addMarketingCampaignResult(campaignId, 'discord', '', 'failed', e.message); db.updateMarketingCampaignStats(campaignId, 0, 1); results.push('Discord: erro'); }
       } else { results.push('Discord: não configurado'); }
     }
 
@@ -373,12 +392,53 @@ module.exports = function() {
           recipients = recipients.concat(db.query("SELECT DISTINCT buyer_email as email FROM sales WHERE buyer_email NOT NULL AND buyer_email != ''").map(r => r.email));
         }
         recipients = [...new Set(recipients)];
-        let s = 0; for (const e of recipients) { try { sendEmail(e, process.env.SITE_NAME + ' - Novidade!', message); s++; } catch (e) {} }
+        let s = 0;
+        for (const e of recipients) {
+          try { sendEmail(e, process.env.SITE_NAME + ' - Novidade!', message); db.addMarketingCampaignResult(campaignId, 'email', e, 'sent', ''); s++; } catch (err) { db.addMarketingCampaignResult(campaignId, 'email', e, 'failed', err.message); }
+        }
+        db.updateMarketingCampaignStats(campaignId, s, recipients.length - s);
         results.push('Email: ' + s + ' enviados');
       } else { results.push('Email: não configurado'); }
     }
 
     res.redirect('/admin/marketing/campaigns?success=' + encodeURIComponent(results.join(' | ')));
+  });
+
+  // Campaign detail
+  router.get('/marketing/campaigns/:id', (req, res) => {
+    const campaign = db.getMarketingCampaign(req.params.id);
+    if (!campaign) return res.redirect('/admin/marketing/campaigns?error=Campanha não encontrada');
+    const results = db.getMarketingCampaignResults(req.params.id);
+    res.render('admin/marketing/campaign-detail', {
+      title: 'Campanha #' + campaign.id, currentPath: '/admin/marketing/campaigns',
+      campaign, results,
+      error: null, success: null
+    });
+  });
+
+  // ============================================================
+  //  TEMPLATES
+  // ============================================================
+  router.get('/marketing/templates', (req, res) => {
+    const platform = req.query.platform || '';
+    const templates = db.getMarketingTemplates(platform || null);
+    res.render('admin/marketing/templates', {
+      title: 'Modelos de Mensagem', currentPath: '/admin/marketing/templates',
+      templates, platform,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/templates/save', (req, res) => {
+    const { id, name, platform, subject, content } = req.body;
+    if (!name || !content || !platform) return res.redirect('/admin/marketing/templates?error=Nome, plataforma e conteúdo são obrigatórios');
+    db.saveMarketingTemplate(name, platform, subject||'', content, id || null);
+    res.redirect('/admin/marketing/templates?success=Modelo salvo');
+  });
+
+  router.post('/marketing/templates/delete/:id', (req, res) => {
+    db.deleteMarketingTemplate(req.params.id);
+    res.redirect('/admin/marketing/templates?success=Modelo removido');
   });
 
   // ============================================================

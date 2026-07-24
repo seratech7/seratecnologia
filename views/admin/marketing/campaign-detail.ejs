@@ -1,0 +1,49 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/campaigns' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-rocket"></i> <%= campaign.name || 'Campanha #' + campaign.id %></h1>
+    <a href="/admin/marketing/campaigns" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+    <div class="cd-stat"><span class="cd-lbl">Plataformas</span><span class="cd-val"><%= (campaign.platforms||'').replace(/,/g,', ') %></span></div>
+    <div class="cd-stat"><span class="cd-lbl">Alvo</span><span class="cd-val"><%= campaign.target || 'all' %></span></div>
+    <div class="cd-stat"><span class="cd-lbl">Enviadas</span><span class="cd-val" style="color:#2e7d32;"><%= campaign.total_sent %></span></div>
+    <div class="cd-stat"><span class="cd-lbl">Falhas</span><span class="cd-val" style="color:#c62828;"><%= campaign.total_failed %></span></div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px;">
+    <h3><i class="fas fa-comment"></i> Mensagem</h3>
+    <div style="background:#f9f9f9;padding:15px;border-radius:6px;font-size:14px;white-space:pre-wrap;border:1px solid #eee;"><%= campaign.message %></div>
+  </div>
+
+  <div class="card">
+    <h3><i class="fas fa-list"></i> Resultados (<%= results.length %>)</h3>
+    <% if (results.length === 0) { %><p style="color:#999;font-size:13px;">Nenhum resultado registrado.</p><% } else { %>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead><tr><th>Plataforma</th><th>Destinatário</th><th>Status</th><th>Erro</th><th>Data</th></tr></thead>
+      <tbody><% results.forEach(function(r) { %>
+        <tr>
+          <td><span class="plat-tag" style="background:<%= r.platform === 'whatsapp' ? '#e8f5e9' : r.platform === 'telegram' ? '#e3f2fd' : r.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= r.platform %></span></td>
+          <td style="font-size:13px;"><%= r.recipient || '—' %></td>
+          <td><span class="badge badge-<%= r.status === 'sent' ? 'success' : 'danger' %>"><%= r.status %></span></td>
+          <td style="font-size:12px;color:#999;"><%= r.error || '—' %></td>
+          <td style="font-size:12px;color:#999;"><%= (r.created_at||'').slice(0,16).replace('T',' ') %></td>
+        </tr>
+      <% }) %></tbody>
+    </table>
+    </div>
+    <% } %>
+  </div>
+</div>
+<style>
+.cd-stat { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:4px; }
+.cd-lbl { font-size:11px; color:#666; text-transform:uppercase; }
+.cd-val { font-size:16px; font-weight:600; }
+.badge-success { background:#e8f5e9; color:#2e7d32; padding:2px 8px; border-radius:10px; font-size:11px; }
+.badge-danger { background:#ffebee; color:#c62828; padding:2px 8px; border-radius:10px; font-size:11px; }
+.plat-tag { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+</style>
+<%- include('../../partials/admin-footer') %>

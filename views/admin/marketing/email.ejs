@@ -2,45 +2,75 @@
 <div class="admin-content">
   <div class="admin-header-bar">
     <h1><i class="fas fa-envelope"></i> Email Marketing</h1>
-    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
   </div>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:28px;"><%= sendgridKey ? '🟢' : '🔴' %></span>
+      <div><strong style="font-size:16px;"><%= sendgridKey ? 'SendGrid Configurado' : 'SendGrid Não Configurado' %></strong>
+      <span style="font-size:12px;color:#666;display:block;"><%= sendgridKey ? 'API Key: ' + sendgridKey : 'Configure SENDGRID_API_KEY no .env' %></span></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+    <div class="em-stat"><strong style="font-size:22px;"><%= sellerCount %></strong><span style="font-size:11px;color:#666;">Vendedores</span></div>
+    <div class="em-stat"><strong style="font-size:22px;"><%= buyerCount %></strong><span style="font-size:11px;color:#666;">Compradores</span></div>
+    <div class="em-stat"><strong style="font-size:22px;"><%= sellerCount + buyerCount %></strong><span style="font-size:11px;color:#666;">Total Contatos</span></div>
+  </div>
+
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
     <div class="form-card">
       <h3><i class="fas fa-paper-plane"></i> Enviar Newsletter</h3>
+      <% if (templates.length > 0) { %>
+      <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;">
+        <% templates.forEach(function(t) { %>
+          <button type="button" class="tchip" onclick="document.querySelector('[name=subject]').value='<%= (t.subject||'').replace(/'/g,"\\'") %>';document.querySelector('[name=html]').value='<%= t.content.replace(/'/g,"\\'").replace(/\n/g,'\\n') %>'"><%= t.name %></button>
+        <% }) %>
+      </div>
+      <% } %>
       <form method="POST" action="/admin/marketing/email/send">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
           <label>Enviar para</label>
           <select name="target" class="admin-input">
-            <option value="all">Todos (<%= sellerCount + buyerCount %> contatos)</option>
+            <option value="all">Todos (<%= sellerCount + buyerCount %>)</option>
             <option value="sellers">Vendedores (<%= sellerCount %>)</option>
             <option value="buyers">Compradores (<%= buyerCount %>)</option>
           </select>
         </div>
         <div class="form-group"><label>Assunto</label><input type="text" name="subject" class="admin-input" required placeholder="Assunto do email"></div>
-        <div class="form-group"><label>Mensagem (HTML)</label><textarea name="html" class="admin-input" rows="8" required placeholder="&lt;h1&gt;Novidade!&lt;/h1&gt;&lt;p&gt;Confira...&lt;/p&gt;"></textarea></div>
+        <div class="form-group"><label>HTML</label><textarea name="html" class="admin-input" rows="6" required placeholder="&lt;h1&gt;Novidade!&lt;/h1&gt;&lt;p&gt;Confira...&lt;/p&gt;"></textarea></div>
         <button type="submit" class="btn-primary" <%= sendgridKey ? '' : 'disabled' %>><i class="fas fa-paper-plane"></i> Enviar</button>
-        <% if (!sendgridKey) { %><p style="font-size:12px;color:#c62828;margin-top:5px;">Configure SENDGRID_API_KEY no .env</p><% } %>
       </form>
     </div>
     <div class="card">
-      <h3><i class="fas fa-cog"></i> Configuração</h3>
-      <p style="font-size:13px;color:#666;">API Key: <strong><%= sendgridKey || 'Não configurada' %></strong></p>
-      <p style="font-size:13px;color:#666;">Como configurar:</p>
-      <ol style="font-size:13px;line-height:1.8;">
-        <li>Crie conta em <a href="https://sendgrid.com" target="_blank">sendgrid.com</a></li>
-        <li>Vá em Settings > API Keys</li>
-        <li>Crie uma chave e adicione no <code>.env</code>: <code>SENDGRID_API_KEY=...</code></li>
-      </ol>
+      <h3><i class="fas fa-info-circle"></i> Informações</h3>
+      <p style="font-size:13px;color:#666;">O SendGrid envia emails em nome do seu domínio. Certifique-se de configurar corretamente os registros SPF/DKIM.</p>
       <hr style="margin:15px 0;">
-      <h4>Destinatários disponíveis</h4>
+      <h4>Destinatários</h4>
       <table class="admin-table" style="font-size:13px;">
         <tr><td>Vendedores ativos</td><td><strong><%= sellerCount %></strong></td></tr>
         <tr><td>Compradores</td><td><strong><%= buyerCount %></strong></td></tr>
       </table>
+      <hr style="margin:15px 0;">
+      <h4>Dicas</h4>
+      <ul style="font-size:13px;line-height:1.8;margin:0;padding-left:16px;">
+        <li>Use HTML simples para melhor compatibilidade</li>
+        <li>Evite imagens pesadas</li>
+        <li>Sempre inclua um link de descadastro</li>
+      </ul>
     </div>
   </div>
 </div>
+<style>
+.em-stat { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:10px; padding:16px; text-align:center; display:flex; flex-direction:column; gap:2px; }
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+.tchip { background:#fef2f2; border:1px solid #fecaca; border-radius:14px; padding:3px 10px; font-size:11px; color:#991b1b; cursor:pointer; }
+.tchip:hover { background:#fee2e2; }
+</style>
 <%- include('../../partials/admin-footer') %>

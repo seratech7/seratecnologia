@@ -1,25 +1,46 @@
 <%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/campaigns' }) %>
 <div class="admin-content">
   <div class="admin-header-bar">
-    <h1><i class="fas fa-rocket"></i> Campanhas Multiplataforma</h1>
-    <p>Disparo simultâneo em todas as plataformas</p>
-    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <h1><i class="fas fa-rocket"></i> Campanhas</h1>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
   </div>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
-  <!-- Status das plataformas -->
+  <!-- Status Platforms -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
-    <div class="mini-status" style="border-left:4px solid #25D366;"><%= waReady ? '✅' : '❌' %> WhatsApp</div>
-    <div class="mini-status" style="border-left:4px solid #0088cc;"><%= telegramConfigured ? '✅' : '❌' %> Telegram</div>
-    <div class="mini-status" style="border-left:4px solid #5865F2;"><%= discordConfigured ? '✅' : '❌' %> Discord</div>
-    <div class="mini-status" style="border-left:4px solid #EA4335;"><%= emailConfigured ? '✅' : '❌' %> Email</div>
+    <div class="pstat" style="border-left:4px solid #25D366;"><%= waReady ? '🟢' : '🔴' %> WhatsApp</div>
+    <div class="pstat" style="border-left:4px solid #0088cc;"><%= telegramConfigured ? '🟢' : '🔴' %> Telegram</div>
+    <div class="pstat" style="border-left:4px solid #5865F2;"><%= discordConfigured ? '🟢' : '🔴' %> Discord</div>
+    <div class="pstat" style="border-left:4px solid #EA4335;"><%= emailConfigured ? '🟢' : '🔴' %> Email</div>
   </div>
 
-  <div class="form-card">
-    <h3><i class="fas fa-bullhorn"></i> Nova Campanha</h3>
+  <!-- Nova Campanha -->
+  <div class="form-card" style="margin-bottom:24px;">
+    <h3><i class="fas fa-plus-circle"></i> Nova Campanha</h3>
+    <% if (templates.length > 0) { %>
+    <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;">
+      <% templates.forEach(function(t) { %>
+        <button type="button" class="tchip" onclick="document.querySelector('[name=message]').value='<%= t.content.replace(/'/g,"\\'").replace(/\n/g,'\\n') %>'"><%= t.name %></button>
+      <% }) %>
+    </div>
+    <% } %>
     <form method="POST" action="/admin/marketing/campaigns/disparar">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+        <div class="form-group">
+          <label>Nome (opcional)</label>
+          <input type="text" name="name" class="admin-input" placeholder="Black Friday 2026">
+        </div>
+        <div class="form-group">
+          <label>Público Alvo</label>
+          <select name="target" class="admin-input">
+            <option value="all">Todos</option>
+            <option value="sellers">Vendedores</option>
+            <option value="buyers">Compradores</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group">
         <label>Plataformas</label>
         <div style="display:flex;gap:15px;flex-wrap:wrap;margin:8px 0;">
@@ -30,22 +51,41 @@
         </div>
       </div>
       <div class="form-group">
-        <label>Público Alvo</label>
-        <select name="target" class="admin-input">
-          <option value="all">Todos (contatos + vendedores + compradores)</option>
-          <option value="sellers">Apenas Vendedores</option>
-          <option value="buyers">Apenas Compradores</option>
-        </select>
-      </div>
-      <div class="form-group">
         <label>Mensagem</label>
-        <textarea name="message" class="admin-input" rows="6" required placeholder="Digite a mensagem da campanha..."></textarea>
+        <textarea name="message" class="admin-input" rows="5" required placeholder="Digite a mensagem da campanha..."></textarea>
       </div>
-      <button type="submit" class="btn-primary" style="background:#FF6F00;border-color:#FF6F00;" onclick="return confirm('Iniciar disparo multiplataforma?')"><i class="fas fa-rocket"></i> Iniciar Campanha</button>
+      <button type="submit" class="btn-primary" style="background:#FF6F00;border-color:#FF6F00;" onclick="return confirm('Iniciar disparo nas plataformas selecionadas?')"><i class="fas fa-rocket"></i> Iniciar Campanha</button>
     </form>
+  </div>
+
+  <!-- Histórico -->
+  <div class="card">
+    <h3><i class="fas fa-history"></i> Histórico de Campanhas</h3>
+    <% if (campaigns.length === 0) { %><p style="color:#999;font-size:13px;">Nenhuma campanha realizada.</p><% } else { %>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead><tr><th>#</th><th>Nome</th><th>Plataformas</th><th>Enviadas</th><th>Falhas</th><th>Data</th><th></th></tr></thead>
+      <tbody><% campaigns.forEach(function(c) { %>
+        <tr>
+          <td><%= c.id %></td>
+          <td><%= c.name || '—' %></td>
+          <td style="font-size:11px;"><%= (c.platforms||'').replace(/,/g,', ') %></td>
+          <td style="color:#2e7d32;"><%= c.total_sent %></td>
+          <td style="color:#c62828;"><%= c.total_failed %></td>
+          <td style="font-size:12px;color:#999;"><%= (c.created_at||'').slice(0,16).replace('T',' ') %></td>
+          <td><a href="/admin/marketing/campaigns/<%= c.id %>" style="color:#1565c0;font-size:12px;">Detalhes</a></td>
+        </tr>
+      <% }) %></tbody>
+    </table>
+    </div>
+    <% } %>
   </div>
 </div>
 <style>
-.mini-status { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:6px; padding:10px 15px; font-size:13px; font-weight:600; }
+.pstat { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:6px; padding:10px 14px; font-size:13px; font-weight:600; }
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+.tchip { background:#f3e8ff; border:1px solid #d8b4fe; border-radius:14px; padding:3px 10px; font-size:11px; color:#6b21a8; cursor:pointer; }
+.tchip:hover { background:#e9d5ff; }
 </style>
 <%- include('../../partials/admin-footer') %>

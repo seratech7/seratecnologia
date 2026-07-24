@@ -1,0 +1,79 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/templates' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-file-alt"></i> Modelos de Mensagem</h1>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <!-- Form -->
+    <div class="form-card">
+      <h3><i class="fas fa-plus"></i> <%= id ? 'Editar' : 'Novo' %> Modelo</h3>
+      <form method="POST" action="/admin/marketing/templates/save">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="id" value="<%= id || '' %>">
+        <div class="form-group">
+          <label>Nome</label>
+          <input type="text" name="name" class="admin-input" required placeholder="Promoção WhatsApp">
+        </div>
+        <div class="form-group">
+          <label>Plataforma</label>
+          <select name="platform" class="admin-input">
+            <option value="whatsapp">WhatsApp</option>
+            <option value="telegram">Telegram</option>
+            <option value="discord">Discord</option>
+            <option value="email">Email</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Assunto <small>(apenas Email)</small></label>
+          <input type="text" name="subject" class="admin-input" placeholder="Oferta imperdível!">
+        </div>
+        <div class="form-group">
+          <label>Conteúdo</label>
+          <textarea name="content" class="admin-input" rows="6" required placeholder="Digite o conteúdo do modelo..."></textarea>
+        </div>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar Modelo</button>
+      </form>
+    </div>
+
+    <!-- List -->
+    <div class="card">
+      <h3><i class="fas fa-list"></i> Modelos Salvos</h3>
+      <div style="margin-bottom:10px;">
+        <a href="/admin/marketing/templates" class="filter-chip <%= !platform ? 'active' : '' %>">Todos</a>
+        <a href="/admin/marketing/templates?platform=whatsapp" class="filter-chip <%= platform === 'whatsapp' ? 'active' : '' %>">WhatsApp</a>
+        <a href="/admin/marketing/templates?platform=telegram" class="filter-chip <%= platform === 'telegram' ? 'active' : '' %>">Telegram</a>
+        <a href="/admin/marketing/templates?platform=discord" class="filter-chip <%= platform === 'discord' ? 'active' : '' %>">Discord</a>
+        <a href="/admin/marketing/templates?platform=email" class="filter-chip <%= platform === 'email' ? 'active' : '' %>">Email</a>
+      </div>
+      <% if (templates.length === 0) { %><p style="color:#999;font-size:13px;">Nenhum modelo salvo.</p><% } else { %>
+      <% templates.forEach(function(t) { %>
+        <div class="tmpl-item">
+          <div style="flex:1;">
+            <strong><%= t.name %></strong>
+            <span class="plat-badge" style="background:<%= t.platform === 'whatsapp' ? '#e8f5e9' : t.platform === 'telegram' ? '#e3f2fd' : t.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= t.platform %></span>
+            <div style="font-size:12px;color:#666;margin-top:3px;max-height:40px;overflow:hidden;"><%= t.content.slice(0,120) %><%= t.content.length > 120 ? '...' : '' %></div>
+          </div>
+          <form method="POST" action="/admin/marketing/templates/delete/<%= t.id %>" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:16px;" title="Excluir" onclick="return confirm('Excluir modelo?')">✕</button>
+          </form>
+        </div>
+      <% }) %>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+.filter-chip { display:inline-block; padding:3px 10px; border-radius:14px; font-size:11px; border:1px solid #ddd; text-decoration:none; color:#666; margin:2px; }
+.filter-chip.active { background:#1565c0; color:#fff; border-color:#1565c0; }
+.tmpl-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border-bottom:1px solid #eee; }
+.tmpl-item:last-child { border-bottom:none; }
+.plat-badge { display:inline-block; padding:1px 6px; border-radius:4px; font-size:10px; font-weight:600; margin-left:6px; }
+</style>
+<%- include('../../partials/admin-footer') %>

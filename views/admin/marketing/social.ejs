@@ -2,52 +2,54 @@
 <div class="admin-content">
   <div class="admin-header-bar">
     <h1><i class="fas fa-share-alt"></i> Links de Compartilhamento</h1>
-    <p>Gere links prontos para copiar e colar nas redes sociais</p>
-    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <p style="font-size:13px;color:#666;margin:0;">Gere links prontos para divulgar em redes sociais</p>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
   </div>
 
   <div class="form-card" style="margin-bottom:20px;">
-    <h3><i class="fas fa-edit"></i> Personalizar</h3>
-    <div class="form-group"><label>Sua mensagem</label><textarea id="shareMsg" class="admin-input" rows="3"><%= desc %>
+    <div class="form-group">
+      <label>Sua mensagem de divulgação</label>
+      <textarea id="shareMsg" class="admin-input" rows="3"><%= desc %>
 
-<%= baseUrl %></textarea></div>
+<%= baseUrl %></textarea>
+    </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:15px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
     <div class="share-card" style="border-top:4px solid #25D366;">
-      <div style="font-size:24px;color:#25D366;"><i class="fab fa-whatsapp"></i></div>
+      <div style="font-size:32px;color:#25D366;"><i class="fab fa-whatsapp"></i></div>
       <h4>WhatsApp</h4>
-      <input type="text" class="share-input" id="linkwa" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linkwa" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linkwa')">Copiar</button>
     </div>
     <div class="share-card" style="border-top:4px solid #1877F2;">
-      <div style="font-size:24px;color:#1877F2;"><i class="fab fa-facebook"></i></div>
+      <div style="font-size:32px;color:#1877F2;"><i class="fab fa-facebook"></i></div>
       <h4>Facebook</h4>
-      <input type="text" class="share-input" id="linkfb" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linkfb" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linkfb')">Copiar</button>
     </div>
     <div class="share-card" style="border-top:4px solid #1DA1F2;">
-      <div style="font-size:24px;color:#1DA1F2;"><i class="fab fa-twitter"></i></div>
+      <div style="font-size:32px;color:#1DA1F2;"><i class="fab fa-twitter"></i></div>
       <h4>Twitter / X</h4>
-      <input type="text" class="share-input" id="linktw" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linktw" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linktw')">Copiar</button>
     </div>
     <div class="share-card" style="border-top:4px solid #0A66C2;">
-      <div style="font-size:24px;color:#0A66C2;"><i class="fab fa-linkedin"></i></div>
+      <div style="font-size:32px;color:#0A66C2;"><i class="fab fa-linkedin"></i></div>
       <h4>LinkedIn</h4>
-      <input type="text" class="share-input" id="linkli" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linkli" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linkli')">Copiar</button>
     </div>
     <div class="share-card" style="border-top:4px solid #E60023;">
-      <div style="font-size:24px;color:#E60023;"><i class="fab fa-pinterest"></i></div>
+      <div style="font-size:32px;color:#E60023;"><i class="fab fa-pinterest"></i></div>
       <h4>Pinterest</h4>
-      <input type="text" class="share-input" id="linkpin" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linkpin" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linkpin')">Copiar</button>
     </div>
     <div class="share-card" style="border-top:4px solid #0088cc;">
-      <div style="font-size:24px;color:#0088cc;"><i class="fab fa-telegram-plane"></i></div>
+      <div style="font-size:32px;color:#0088cc;"><i class="fab fa-telegram-plane"></i></div>
       <h4>Telegram</h4>
-      <input type="text" class="share-input" id="linktg" readonly onclick="this.select();navigator.clipboard?.writeText(this.value)">
+      <input type="text" class="share-input" id="linktg" readonly onclick="this.select()">
       <button class="copy-btn" onclick="copyLink('linktg')">Copiar</button>
     </div>
   </div>
@@ -60,7 +62,7 @@ function gerarLinks() {
   const text = encodeURIComponent(msg);
   const encodedUrl = encodeURIComponent(url);
   const links = {
-    linkwa: 'https://wa.me/?text=' + text + '%0A' + encodedUrl,
+    linkwa: 'https://wa.me/?text=' + text,
     linkfb: 'https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '&quote=' + text,
     linktw: 'https://twitter.com/intent/tweet?text=' + text + '&url=' + encodedUrl,
     linkli: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl,
@@ -75,7 +77,7 @@ function gerarLinks() {
 function copyLink(id) {
   const el = document.getElementById(id);
   el.select();
-  try { document.execCommand('copy'); alert('Copiado!'); } catch(e) {}
+  try { document.execCommand('copy'); } catch(e) { navigator.clipboard?.writeText(el.value); }
 }
 document.getElementById('shareMsg').addEventListener('input', gerarLinks);
 gerarLinks();
@@ -83,9 +85,11 @@ gerarLinks();
 
 <style>
 .share-card { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:10px; padding:20px; text-align:center; }
-.share-card h4 { margin:8px 0 12px; }
-.share-input { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:12px; background:#f9f9f9; cursor:pointer; box-sizing:border-box; }
-.copy-btn { margin-top:8px; padding:6px 20px; background:#1565c0; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
+.share-card h4 { margin:8px 0 12px; font-size:15px; }
+.share-input { width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:11px; background:#f9f9f9; cursor:pointer; box-sizing:border-box; font-family:monospace; }
+.copy-btn { margin-top:8px; padding:6px 24px; background:#1565c0; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:13px; }
 .copy-btn:hover { background:#0d47a1; }
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
 </style>
 <%- include('../../partials/admin-footer') %>

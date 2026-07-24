@@ -541,6 +541,44 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      subject TEXT DEFAULT '',
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_campaigns (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL,
+      platforms TEXT NOT NULL,
+      target TEXT DEFAULT 'all',
+      total_sent INTEGER DEFAULT 0,
+      total_failed INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'completed',
+      created_by INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_campaign_results (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      campaign_id INTEGER NOT NULL,
+      platform TEXT NOT NULL,
+      recipient TEXT DEFAULT '',
+      status TEXT DEFAULT 'sent',
+      error TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id)
+    )
+  `);
+
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
     var sn = sCols[0].values.map(function(r) { return r[1]; });
@@ -1160,4 +1198,47 @@ function markWaScheduleDone(id) { run("UPDATE wa_schedules SET status = 'sent' W
 
 function deleteWaSchedule(id) { run("DELETE FROM wa_schedules WHERE id = ?", [id]); }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule };
+// === MARKETING TEMPLATES ===
+function getMarketingTemplates(platform) {
+  if (platform) return query("SELECT * FROM marketing_templates WHERE platform = ? ORDER BY name", [platform]);
+  return query("SELECT * FROM marketing_templates ORDER BY platform, name");
+}
+function getMarketingTemplate(id) { return get('SELECT * FROM marketing_templates WHERE id = ?', [id]); }
+function saveMarketingTemplate(name, platform, subject, content, id) {
+  if (id) { run("UPDATE marketing_templates SET name=?, platform=?, subject=?, content=?, updated_at=datetime('now') WHERE id=?", [name,platform,subject||'',content,id]); return id; }
+  run("INSERT INTO marketing_templates (name,platform,subject,content) VALUES (?,?,?,?)", [name,platform,subject||'',content]);
+  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+}
+function deleteMarketingTemplate(id) { run("DELETE FROM marketing_templates WHERE id = ?", [id]); }
+
+// === MARKETING CAMPAIGNS ===
+function getMarketingCampaigns(limit) {
+  return query("SELECT * FROM marketing_campaigns ORDER BY created_at DESC LIMIT ?", [limit||50]);
+}
+function getMarketingCampaign(id) { return get('SELECT * FROM marketing_campaigns WHERE id = ?', [id]); }
+function getMarketingCampaignResults(campaignId) {
+  return query("SELECT * FROM marketing_campaign_results WHERE campaign_id = ? ORDER BY created_at", [campaignId]);
+}
+function createMarketingCampaign(name, message, platforms, target, createdBy) {
+  run("INSERT INTO marketing_campaigns (name,message,platforms,target,created_by) VALUES (?,?,?,?,?)",
+    [name||'',message,platforms,target||'all',createdBy||0]);
+  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+}
+function addMarketingCampaignResult(campaignId, platform, recipient, status, error) {
+  run("INSERT INTO marketing_campaign_results (campaign_id,platform,recipient,status,error) VALUES (?,?,?,?,?)",
+    [campaignId,platform,recipient||'',status||'sent',error||'']);
+}
+function updateMarketingCampaignStats(id, sent, failed) {
+  run("UPDATE marketing_campaigns SET total_sent=total_sent+?, total_failed=total_failed+? WHERE id=?", [sent||0,failed||0,id]);
+}
+function getMarketingStats() {
+  return {
+    totalCampaigns: (get('SELECT COUNT(*) as c FROM marketing_campaigns')||{}).c||0,
+    totalSent: (get('SELECT COALESCE(SUM(total_sent),0) as c FROM marketing_campaigns')||{}).c||0,
+    totalTemplates: (get('SELECT COUNT(*) as c FROM marketing_templates')||{}).c||0,
+    totalWaSent: (get('SELECT COUNT(*) as c FROM wa_messages WHERE status="sent"')||{}).c||0,
+    waToday: getWaMessagesToday()
+  };
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats };
