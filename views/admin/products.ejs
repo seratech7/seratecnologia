@@ -28,6 +28,7 @@
     <table class="admin-table">
       <thead>
         <tr>
+          <th>Código</th>
           <th>Produto</th>
           <th>Preço</th>
           <th>Vendedor</th>
@@ -39,10 +40,11 @@
       </thead>
       <tbody>
         <% if (products.length === 0) { %>
-          <tr><td colspan="7" class="empty-row">Nenhum produto encontrado</td></tr>
+          <tr><td colspan="8" class="empty-row">Nenhum produto encontrado</td></tr>
         <% } else { %>
           <% products.forEach(p => { %>
             <tr>
+              <td style="font-family:monospace;font-size:13px;color:#666;white-space:nowrap;"><%= p.code || 'PROD-' + String(p.id).padStart(5, '0') %></td>
               <td class="product-cell">
                 <div class="product-cell-info">
                   <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } else { %><div class="thumb thumb-placeholder"><i class="fas fa-image"></i></div><% } %>

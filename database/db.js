@@ -96,6 +96,7 @@ async function initDb() {
       category_id INTEGER,
       seller_id INTEGER,
       image TEXT,
+      code TEXT DEFAULT '',
       status TEXT DEFAULT 'pending',
       featured INTEGER DEFAULT 0,
       condition TEXT DEFAULT 'new',
@@ -106,6 +107,13 @@ async function initDb() {
       FOREIGN KEY (seller_id) REFERENCES sellers(id)
     )
   `);
+
+  var prodCols = db.exec("PRAGMA table_info(products)");
+  var hasCode = prodCols.length > 0 && prodCols[0].values.some(function(r) { return r[1] === 'code'; });
+  if (!hasCode) {
+    db.run("ALTER TABLE products ADD COLUMN code TEXT DEFAULT ''");
+  }
+  db.run("UPDATE products SET code = 'PROD-' || substr('00000' || id, -5, 5) WHERE code IS NULL OR code = ''");
 
   const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
   if (adminPass === 'admin123') {

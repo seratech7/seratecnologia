@@ -58,8 +58,10 @@ async function start() {
       const cat = get('SELECT id FROM categories WHERE slug = ?', [p.cat]);
       const catId = cat ? cat.id : 12;
       const loc = locations[Math.floor(Math.random() * locations.length)];
-      run('INSERT INTO products (name,description,price,category_id,seller_id,image,status,featured,condition,location) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      run('INSERT INTO products (name,description,price,category_id,seller_id,image,status,featured,condition,location,code) VALUES (?,?,?,?,?,?,?,?,?,?,"")',
         [p.name, p.desc, p.price, catId, sellerId, '/uploads/' + imageFiles[i], 'active', i < 4 ? 1 : 0, p.cond, loc]);
+      var lastId = get('SELECT MAX(id) as id FROM products');
+      if (lastId) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lastId.id, lastId.id]);
       console.log(`  ${i+1}. ${p.name}`);
     }
     console.log(`✅ ${products.length} produtos inseridos!`);

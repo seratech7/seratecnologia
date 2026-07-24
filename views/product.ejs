@@ -58,6 +58,13 @@
           </div>
         </div>
         <div class="attribute">
+          <i class="fas fa-barcode"></i>
+          <div>
+            <span class="attr-label">Código</span>
+            <span class="attr-value"><%= product.code || 'PROD-' + String(product.id).padStart(5, '0') %></span>
+          </div>
+        </div>
+        <div class="attribute">
           <i class="fas fa-calendar"></i>
           <div>
             <span class="attr-label">Anunciado em</span>

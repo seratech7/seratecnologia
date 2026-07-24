@@ -128,6 +128,8 @@ router.post('/products/new', upload.single('image'), (req, res) => {
     'INSERT INTO products (name, description, price, category_id, seller_id, image, condition, location, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [cleanName, cleanDesc, cleanPrice, category_id || null, req.session.sellerId, image, condition || 'new', cleanLocation, 'pending']
   );
+  var lastId = db.get('SELECT MAX(id) as id FROM products');
+  if (lastId) db.run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lastId.id, lastId.id]);
 
   res.redirect('/seller/products');
 });

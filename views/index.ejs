@@ -303,9 +303,7 @@ function q(urlParams) {
                 <span class="product-location">
                   <i class="fas fa-map-marker-alt"></i> <%= product.location || 'Brasil' %>
                 </span>
-                <% if (product.category_name) { %>
-                  <span class="product-category"><%= product.category_name %></span>
-                <% } %>
+                <span class="product-code"><%= product.code || 'PROD-' + String(product.id).padStart(5, '0') %></span>
               </div>
             </div>
           </a>

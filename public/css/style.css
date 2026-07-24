@@ -2987,6 +2987,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 .notif-bell:hover { background: rgba(255,255,255,0.1); color: #fff; }
 .notif-bell.has-unread { color: #ffc107; }
+.product-code { font-family: monospace; font-size: 11px; color: #999; }
 .notif-badge {
   position: absolute;
   top: -2px;

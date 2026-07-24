@@ -96,9 +96,7 @@
                 </p>
                 <div class="product-meta">
                   <span><i class="fas fa-map-marker-alt"></i> <%= product.location || 'Brasil' %></span>
-                  <% if (product.category_name) { %>
-                    <span><%= product.category_name %></span>
-                  <% } %>
+                  <span style="font-family:monospace;font-size:11px;color:#999;"><%= product.code || 'PROD-' + String(product.id).padStart(5, '0') %></span>
                 </div>
               </div>
             </a>
