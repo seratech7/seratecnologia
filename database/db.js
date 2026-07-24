@@ -578,6 +578,23 @@ async function initDb() {
       FOREIGN KEY (campaign_id) REFERENCES marketing_campaigns(id)
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_lists (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS marketing_list_members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      list_id INTEGER NOT NULL,
+      phone TEXT NOT NULL,
+      name TEXT DEFAULT '',
+      FOREIGN KEY (list_id) REFERENCES marketing_lists(id)
+    )
+  `);
 
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
@@ -1241,4 +1258,24 @@ function getMarketingStats() {
   };
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats };
+// === BROADCAST LISTS ===
+function getMarketingLists() { return query("SELECT ml.*, (SELECT COUNT(*) FROM marketing_list_members WHERE list_id=ml.id) as member_count FROM marketing_lists ml ORDER BY name"); }
+function getMarketingList(id) { return get('SELECT * FROM marketing_lists WHERE id = ?', [id]); }
+function createMarketingList(name, desc) { run("INSERT INTO marketing_lists (name,description) VALUES (?,?)", [name,desc||'']); return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0]; }
+function deleteMarketingList(id) { run("DELETE FROM marketing_lists WHERE id = ?", [id]); run("DELETE FROM marketing_list_members WHERE list_id = ?", [id]); }
+function getMarketingListMembers(listId) { return query("SELECT * FROM marketing_list_members WHERE list_id = ? ORDER BY name", [listId]); }
+function addMarketingListMember(listId, phone, name) {
+  var existing = get("SELECT id FROM marketing_list_members WHERE list_id = ? AND phone = ?", [listId, phone]);
+  if (existing) return existing.id;
+  run("INSERT INTO marketing_list_members (list_id,phone,name) VALUES (?,?,?)", [listId,phone,name||'']);
+  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+}
+function deleteMarketingListMember(id) { run("DELETE FROM marketing_list_members WHERE id = ?", [id]); }
+function addWaContactsToList(listId) {
+  var contacts = query("SELECT phone, name FROM wa_contacts");
+  var count = 0;
+  contacts.forEach(function(c) { var existing = get("SELECT id FROM marketing_list_members WHERE list_id = ? AND phone = ?", [listId, c.phone.replace(/\D/g,'')]); if (!existing) { run("INSERT INTO marketing_list_members (list_id,phone,name) VALUES (?,?,?)", [listId, c.phone.replace(/\D/g,''), c.name||'']); count++; } });
+  return count;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList };

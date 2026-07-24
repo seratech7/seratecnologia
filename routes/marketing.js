@@ -442,6 +442,129 @@ module.exports = function() {
   });
 
   // ============================================================
+  //  QR CODE GENERATOR
+  // ============================================================
+  router.get('/marketing/qrcode', (req, res) => {
+    res.render('admin/marketing/qrcode', {
+      title: 'Gerador de QR Code', currentPath: '/admin/marketing/qrcode',
+      baseUrl: getBaseUrl(),
+      error: null, success: null
+    });
+  });
+
+  // ============================================================
+  //  AUTO-PROMO (Gerar divulgação de produtos)
+  // ============================================================
+  router.get('/marketing/autopromo', (req, res) => {
+    const products = db.query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 30");
+    res.render('admin/marketing/autopromo', {
+      title: 'Auto-Promo', currentPath: '/admin/marketing/autopromo',
+      products, waReady: WA_READY, baseUrl: getBaseUrl(),
+      siteName: process.env.SITE_NAME || 'Martplace',
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/autopromo/send', async (req, res) => {
+    const { productId, message, platform } = req.body;
+    if (!productId || !message) return res.redirect('/admin/marketing/autopromo?error=Selecione um produto');
+    const product = db.get('SELECT * FROM products WHERE id = ?', [productId]);
+    if (!product) return res.redirect('/admin/marketing/autopromo?error=Produto não encontrado');
+
+    if (platform === 'whatsapp' && WA_READY) {
+      const contacts = db.getWaContacts();
+      let sent = 0;
+      for (const c of contacts) {
+        try { await WA_CLIENT.sendMessage(c.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(c.phone, c.name, message, 'sent'); sent++; } catch (e) {}
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      res.redirect('/admin/marketing/autopromo?success=' + sent + ' mensagens enviadas via WhatsApp');
+    } else if (platform === 'telegram') {
+      const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+      if (token && chat) {
+        try { const d = JSON.stringify({ chat_id: chat, text: message, parse_mode: 'HTML' }); await reqPromise(`https://api.telegram.org/bot${token}/sendMessage`, 'POST', d); res.redirect('/admin/marketing/autopromo?success=Enviado ao Telegram'); } catch (e) { res.redirect('/admin/marketing/autopromo?error=' + e.message); }
+      } else { res.redirect('/admin/marketing/autopromo?error=Telegram não configurado'); }
+    } else if (platform === 'discord') {
+      const url = process.env.DISCORD_WEBHOOK_URL;
+      if (url) {
+        try { const d = JSON.stringify({ content: message }); await reqPromise(url, 'POST', d, { 'Content-Type': 'application/json' }); res.redirect('/admin/marketing/autopromo?success=Enviado ao Discord'); } catch (e) { res.redirect('/admin/marketing/autopromo?error=' + e.message); }
+      } else { res.redirect('/admin/marketing/autopromo?error=Discord não configurado'); }
+    } else {
+      res.redirect('/admin/marketing/autopromo?error=WhatsApp desconectado ou plataforma inválida');
+    }
+  });
+
+  // ============================================================
+  //  BROADCAST LISTS
+  // ============================================================
+  router.get('/marketing/lists', (req, res) => {
+    const lists = db.getMarketingLists();
+    res.render('admin/marketing/lists', {
+      title: 'Listas de Transmissão', currentPath: '/admin/marketing/lists',
+      lists, waReady: WA_READY,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/lists/create', (req, res) => {
+    const { name, description } = req.body;
+    if (!name) return res.redirect('/admin/marketing/lists?error=Nome obrigatório');
+    db.createMarketingList(name, description);
+    res.redirect('/admin/marketing/lists?success=Lista criada');
+  });
+
+  router.post('/marketing/lists/delete/:id', (req, res) => {
+    db.deleteMarketingList(req.params.id);
+    res.redirect('/admin/marketing/lists?success=Lista removida');
+  });
+
+  router.get('/marketing/lists/:id', (req, res) => {
+    const list = db.getMarketingList(req.params.id);
+    if (!list) return res.redirect('/admin/marketing/lists?error=Lista não encontrada');
+    const members = db.getMarketingListMembers(req.params.id);
+    const contacts = db.getWaContacts();
+    const lists = db.getMarketingLists();
+    res.render('admin/marketing/list-detail', {
+      title: 'Lista: ' + list.name, currentPath: '/admin/marketing/lists',
+      list, members, contacts, lists, waReady: WA_READY,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/lists/:id/add', (req, res) => {
+    const { phone, name } = req.body;
+    if (!phone) return res.redirect('/admin/marketing/lists/' + req.params.id + '?error=Telefone obrigatório');
+    db.addMarketingListMember(req.params.id, phone.replace(/\D/g, ''), name||'');
+    res.redirect('/admin/marketing/lists/' + req.params.id + '?success=Membro adicionado');
+  });
+
+  router.post('/marketing/lists/:id/add-from-contacts', (req, res) => {
+    const count = db.addWaContactsToList(req.params.id);
+    res.redirect('/admin/marketing/lists/' + req.params.id + '?success=' + count + ' contatos importados');
+  });
+
+  router.post('/marketing/lists/member/delete/:memberId', (req, res) => {
+    const member = db.get("SELECT list_id FROM marketing_list_members WHERE id = ?", [req.params.memberId]);
+    if (!member) return res.redirect('/admin/marketing/lists?error=Membro não encontrado');
+    db.deleteMarketingListMember(req.params.memberId);
+    res.redirect('/admin/marketing/lists/' + member.list_id + '?success=Membro removido');
+  });
+
+  router.post('/marketing/lists/:id/send', async (req, res) => {
+    const { message } = req.body;
+    const listId = req.params.id;
+    if (!WA_READY) return res.redirect('/admin/marketing/lists/' + listId + '?error=WhatsApp desconectado');
+    if (!message) return res.redirect('/admin/marketing/lists/' + listId + '?error=Digite a mensagem');
+    const members = db.getMarketingListMembers(listId);
+    let sent = 0, failed = 0;
+    for (const m of members) {
+      try { await WA_CLIENT.sendMessage(m.phone.replace(/\D/g, '') + '@c.us', message); db.addWaMessage(m.phone, m.name, message, 'sent'); sent++; } catch (e) { failed++; }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    res.redirect('/admin/marketing/lists/' + listId + '?success=' + sent + ' enviadas, ' + failed + ' falhas');
+  });
+
+  // ============================================================
   //  SOCIAL SHARE LINKS
   // ============================================================
   router.get('/marketing/social', (req, res) => {
