@@ -1,96 +1,134 @@
 <%- include('../partials/admin-header') %>
 
 <style>
-.fin-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.08); padding:20px; }
-.fin-card h3 { margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:6px; }
+.sw-card { background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); padding:20px; transition:box-shadow .2s; }
+.sw-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+.sw-card h3 { margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:8px; color:#333; }
+.sw-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:24px; }
+.sw-stat-card { border-radius:12px; padding:20px; color:#fff; position:relative; overflow:hidden; }
+.sw-stat-card .icon-bg { position:absolute; right:-8px; bottom:-8px; font-size:48px; opacity:0.12; }
+.sw-stat-card .label { font-size:12px; opacity:0.85; }
+.sw-stat-card .value { font-size:26px; font-weight:800; margin-top:4px; letter-spacing:-0.5px; }
+.sw-stat-card .sub { font-size:12px; opacity:0.65; margin-top:4px; }
+.sw-chart { display:flex; gap:2px; align-items:flex-end; height:80px; padding:8px 0; }
+.sw-chart-bar { flex:1; display:flex; flex-direction:column; align-items:center; height:80px; justify-content:flex-end; cursor:pointer; position:relative; }
+.sw-chart-bar .bar { width:100%; border-radius:3px 3px 0 0; min-height:3px; background:linear-gradient(180deg,#42a5f5,#1565c0); transition:opacity .15s; }
+.sw-chart-bar:hover .bar { opacity:0.7; }
+.sw-chart-bar .day-label { font-size:7px; color:#aaa; font-weight:500; margin-top:2px; }
+.sw-chart-tip { display:none; position:absolute; bottom:100%; background:#333; color:#fff; padding:4px 8px; border-radius:4px; font-size:10px; white-space:nowrap; z-index:10; pointer-events:none; }
+.sw-chart-bar:hover .sw-chart-tip { display:block; }
+.sw-period { display:flex; gap:4px; }
+.sw-period a { padding:4px 10px; border-radius:5px; font-size:11px; font-weight:500; text-decoration:none; background:#f5f5f5; color:#555; transition:all .15s; }
+.sw-period a:hover { background:#e0e0e0; }
+.sw-period a.active { background:var(--primary); color:#fff; }
+.alert-success { background:#e8f5e9; color:#2e7d32; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:13px; display:flex; align-items:center; gap:8px; }
+.alert-error { background:#fce4ec; color:#c62828; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-size:13px; display:flex; align-items:center; gap:8px; }
+.empty-state { text-align:center; padding:40px 20px; color:#bbb; }
+.empty-state i { font-size:36px; margin-bottom:12px; opacity:0.3; }
+@media(max-width:600px) {
+  .sw-stats { grid-template-columns:1fr; }
+  .sw-card { padding:14px; }
+  .sw-stat-card .value { font-size:22px; }
+}
 </style>
 
 <div class="dashboard-header">
   <h1><i class="fas fa-wallet"></i> Minha Carteira</h1>
-  <p>Saldo e histórico financeiro</p>
+  <p>Saldo, extrato e saques</p>
 </div>
 
-<% if (sucesso) { %><div style="background:#e8f5e9;color:#2e7d32;padding:12px 16px;border-radius:8px;margin-bottom:16px;"><%= sucesso %></div><% } %>
-<% if (erro) { %><div style="background:#fce4ec;color:#c62828;padding:12px 16px;border-radius:8px;margin-bottom:16px;"><%= erro %></div><% } %>
+<% if (sucesso) { %><div class="alert-success"><i class="fas fa-check-circle"></i> <%= sucesso %></div><% } %>
+<% if (erro) { %><div class="alert-error"><i class="fas fa-exclamation-circle"></i> <%= erro %></div><% } %>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
-  <div style="background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border-radius:12px;padding:24px;">
-    <div style="font-size:14px;opacity:0.8;">Saldo Disponível</div>
-    <div style="font-size:32px;font-weight:800;margin-top:4px;">
-      <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(balance) %>
-    </div>
-    <div style="font-size:13px;opacity:0.7;margin-top:8px;">
-      <i class="fas fa-shopping-bag"></i> <%= totalVendas %> venda(s)
-    </div>
+<!-- Stats cards -->
+<div class="sw-stats">
+  <div class="sw-stat-card" style="background:linear-gradient(135deg,#1a73e8,#0d47a1);">
+    <i class="fas fa-wallet icon-bg"></i>
+    <div class="label">Saldo Disponível</div>
+    <div class="value"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(balance) %></div>
+    <div class="sub">Saldo para saque &middot; <%= totalVendas %> venda(s)</div>
   </div>
-  <div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-    <div style="font-size:14px;color:#666;">Comissão</div>
-    <div style="font-size:28px;font-weight:800;color:#e65100;margin-top:4px;"><%= commPct %>%</div>
-    <div style="font-size:13px;color:#999;margin-top:8px;">Valor retido por venda</div>
+  <div class="sw-stat-card" style="background:linear-gradient(135deg,#e65100,#bf360c);">
+    <i class="fas fa-percent icon-bg"></i>
+    <div class="label">Comissão Aplicada</div>
+    <div class="value"><%= commPct %>%</div>
+    <div class="sub">Valor retido por venda</div>
   </div>
-  <div style="background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border-radius:12px;padding:24px;">
-    <div style="font-size:14px;opacity:0.8;">Vendas (mês)</div>
-    <div style="font-size:24px;font-weight:800;margin-top:4px;">
-      <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(summary.salesTotal || 0) %>
-    </div>
-    <div style="font-size:13px;opacity:0.7;margin-top:8px;"><%= summary.salesCount %> venda(s)</div>
+  <div class="sw-stat-card" style="background:linear-gradient(135deg,#2e7d32,#1b5e20);">
+    <i class="fas fa-chart-line icon-bg"></i>
+    <div class="label">Vendas no Período</div>
+    <div class="value"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.salesTotal || 0) %></div>
+    <div class="sub"><%= summary.salesCount %> venda(s) &middot; <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.commissionsTotal || 0) %> em comissões</div>
   </div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
-  <div class="fin-card">
-    <h3><i class="fas fa-chart-line"></i> Últimos 30 dias</h3>
-    <div style="display:flex;gap:3px;align-items:end;height:80px;padding:8px 0;">
-      <% var days = Object.keys(chartData); if (days.length === 0) { %><p style="color:#999;font-size:13px;">Sem dados</p><% } %>
+  <!-- Chart -->
+  <div class="sw-card">
+    <h3><i class="fas fa-chart-bar" style="color:#1565c0;"></i> Últimos 30 dias</h3>
+    <% var days = Object.keys(chartData); if (days.length === 0) { %>
+    <div class="empty-state"><i class="fas fa-chart-line"></i><p>Nenhuma venda nos últimos 30 dias</p></div>
+    <% } else { %>
+    <div class="sw-chart">
       <% days.forEach(function(d) { %>
-        <% var max = Math.max(Math.abs(chartData[d].sale || 0), 1); %>
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:80px;justify-content:end;">
-          <div style="width:100%;background:#1565c0;border-radius:2px 2px 0 0;height:<%= Math.abs(chartData[d].sale || 0) / max * 60 %>px;min-height:2px;" title="<%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(chartData[d].sale || 0) %>"></div>
-        </div>
+      <% var max = Math.max(Math.abs(chartData[d].sale || 0), 1); %>
+      <div class="sw-chart-bar">
+        <div class="sw-chart-tip"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(chartData[d].sale||0) %></div>
+        <div class="bar" style="height:<%= Math.abs(chartData[d].sale||0) / max * 60 %>px;"></div>
+        <span class="day-label"><%= d.slice(8) %></span>
+      </div>
       <% }); %>
     </div>
+    <% } %>
   </div>
 
-  <div class="fin-card">
-    <h3><i class="fas fa-hand-holding-usd"></i> Solicitar Saque</h3>
+  <!-- Saque -->
+  <div class="sw-card">
+    <h3><i class="fas fa-hand-holding-usd" style="color:#2e7d32;"></i> Solicitar Saque</h3>
     <form method="POST" action="/seller/wallet/solicitar-saque">
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="number" name="amount" step="0.01" min="10" max="<%= balance %>" placeholder="Valor (min R$10)" required style="flex:1;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:15px;font-weight:700;">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Valor do saque</label>
+        <div style="display:flex;gap:8px;">
+          <input type="number" name="amount" step="0.01" min="10" max="<%= balance %>" placeholder="R$ 0,00" required style="flex:1;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:16px;font-weight:700;" oninput="document.getElementById('saqueLiquido').textContent = (parseFloat(this.value||0) - parseFloat(this.value||0)*0.01).toFixed(2);">
+        </div>
+        <div style="font-size:12px;color:#999;margin-top:4px;">Taxa: 1% &middot; Líquido: <strong>R$ <span id="saqueLiquido">0,00</span></strong> &middot; Mín: R$ 10,00 &middot; Disponível: <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(balance) %></div>
       </div>
-      <div style="margin-bottom:8px;">
-        <select name="payment_method" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Método</label>
+        <select name="payment_method" style="width:100%;padding:8px 10px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
           <option value="pix">PIX</option>
           <option value="ted">TED</option>
         </select>
       </div>
-      <div style="margin-bottom:8px;">
-        <input type="text" name="bank_info" value="<%= sellerInfo ? sellerInfo.pix_key_recebimento || '' : '' %>" placeholder="Chave PIX ou dados bancários" style="width:100%;padding:10px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Chave PIX / Dados bancários</label>
+        <input type="text" name="bank_info" value="<%= sellerInfo ? sellerInfo.pix_key_recebimento || '' : '' %>" placeholder="Sua chave PIX ou dados bancários" style="width:100%;padding:8px 10px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
       </div>
-      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;" <%= balance < 10 ? 'disabled' : '' %>>
-        <i class="fas fa-paper-plane"></i> Solicitar Saque
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:15px;border:none;cursor:pointer;" <%= balance < 10 ? 'disabled title="Saldo mínimo para saque: R$ 10,00"' : '' %>>
+        <i class="fas fa-paper-plane"></i> <%= balance < 10 ? 'Saldo Insuficiente' : 'Solicitar Saque' %>
       </button>
-      <% if (balance < 10) { %><p style="font-size:12px;color:#999;margin-top:4px;">Saldo mínimo para saque: R$ 10,00</p><% } %>
     </form>
   </div>
 </div>
 
+<!-- Saques realizados -->
 <% if (payouts.length > 0) { %>
-<div class="fin-card" style="margin-bottom:20px;">
-  <h3><i class="fas fa-history"></i> Meus Saques</h3>
+<div class="sw-card" style="margin-bottom:20px;">
+  <h3><i class="fas fa-history" style="color:#666;"></i> Histórico de Saques</h3>
   <div style="overflow-x:auto;">
   <table class="admin-table">
     <thead><tr><th>Data</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Status</th></tr></thead>
     <tbody>
       <% payouts.forEach(function(p) { %>
       <tr>
-        <td style="font-size:12px;color:#666;white-space:nowrap;"><%= p.created_at %></td>
-        <td style="font-weight:700;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %></td>
-        <td style="color:#999;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.fee || 0) %></td>
-        <td><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.net_amount || p.amount) %></td>
+        <td style="font-size:12px;color:#999;white-space:nowrap;"><%= p.created_at %></td>
+        <td style="font-weight:600;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %></td>
+        <td style="color:#999;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.fee||0) %></td>
+        <td><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.net_amount||p.amount) %></td>
         <td>
-          <% if (p.status === 'pending') { %><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:11px;">Pendente</span>
-          <% } else if (p.status === 'approved') { %><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">Aprovado</span>
-          <% } else { %><span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px;">Rejeitado</span><% } %>
+          <% if (p.status === 'pending') { %><span class="badge-pending" style="background:#fff3e0;color:#e65100;padding:2px 10px;border-radius:10px;font-size:11px;">Pendente</span>
+          <% } else if (p.status === 'approved') { %><span class="badge-approved" style="background:#e8f5e9;color:#2e7d32;padding:2px 10px;border-radius:10px;font-size:11px;">Aprovado</span>
+          <% } else { %><span class="badge-rejected" style="background:#fce4ec;color:#c62828;padding:2px 10px;border-radius:10px;font-size:11px;">Rejeitado</span><% } %>
         </td>
       </tr>
       <% }); %>
@@ -100,55 +138,47 @@
 </div>
 <% } %>
 
-<% if (txns.length === 0) { %>
-<div style="text-align:center;padding:60px;color:#999;">
-  <i class="fas fa-wallet" style="font-size:48px;opacity:0.3;margin-bottom:16px;"></i>
-  <p>Nenhuma movimentação financeira ainda</p>
-</div>
-<% } else { %>
-<div class="fin-card">
+<!-- Extrato -->
+<div class="sw-card">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
-    <h3 style="margin:0;"><i class="fas fa-list"></i> Extrato</h3>
-    <div style="display:flex;gap:4px;">
-      <a href="/seller/wallet" class="btn-small <%= period === 'all' ? 'style=background:var(--primary);color:#fff;' : '' %>">Tudo</a>
-      <a href="/seller/wallet?period=7d" class="btn-small <%= period === '7d' ? 'style=background:var(--primary);color:#fff;' : '' %>">7d</a>
-      <a href="/seller/wallet?period=30d" class="btn-small <%= period === '30d' ? 'style=background:var(--primary);color:#fff;' : '' %>">30d</a>
-      <a href="/seller/wallet?period=90d" class="btn-small <%= period === '90d' ? 'style=background:var(--primary);color:#fff;' : '' %>">90d</a>
+    <h3 style="margin:0;"><i class="fas fa-list" style="color:#1565c0;"></i> Extrato</h3>
+    <div class="sw-period">
+      <a href="/seller/wallet" class="<%= period === 'all' ? 'active' : '' %>">Tudo</a>
+      <a href="/seller/wallet?period=7d" class="<%= period === '7d' ? 'active' : '' %>">7d</a>
+      <a href="/seller/wallet?period=30d" class="<%= period === '30d' ? 'active' : '' %>">30d</a>
+      <a href="/seller/wallet?period=90d" class="<%= period === '90d' ? 'active' : '' %>">90d</a>
     </div>
   </div>
+
+  <% if (txns.length === 0) { %>
+  <div class="empty-state"><i class="fas fa-wallet"></i><p>Nenhuma movimentação financeira</p></div>
+  <% } else { %>
   <div style="overflow-x:auto;">
   <table class="admin-table">
-    <thead>
-      <tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Saldo</th></tr>
-    </thead>
+    <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Saldo</th></tr></thead>
     <tbody>
       <% txns.forEach(function(t) { %>
       <tr>
-        <td style="font-size:12px;color:#666;white-space:nowrap;"><%= t.created_at %></td>
+        <td style="font-size:11px;color:#999;white-space:nowrap;"><%= t.created_at %></td>
         <td style="font-size:13px;"><%= t.description %></td>
-        <td>
-          <% if (t.type === 'sale') { %><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">Venda</span>
-          <% } else if (t.type === 'payout') { %><span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px;">Saque</span>
-          <% } else if (t.type === 'adjustment') { %><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:4px;font-size:11px;">Ajuste</span>
-          <% } else { %><span style="background:#f5f5f5;color:#666;padding:2px 8px;border-radius:4px;font-size:11px;"><%= t.type %></span><% } %>
+        <td><span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:600;<%= t.type === 'sale' ? 'background:#e8f5e9;color:#2e7d32;' : t.type === 'payout' ? 'background:#fce4ec;color:#c62828;' : t.type === 'adjustment' ? 'background:#e3f2fd;color:#1565c0;' : 'background:#f5f5f5;color:#666;' %>"><%= t.type === 'sale' ? 'Venda' : t.type === 'payout' ? 'Saque' : t.type === 'adjustment' ? 'Ajuste' : t.type %></span></td>
+        <td style="font-weight:700;font-size:13px;color:<%= (t.amount||0) >= 0 ? '#2e7d32' : '#c62828' %>;">
+          <%= (t.amount||0) >= 0 ? '+' : '' %><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(t.amount||0) %>
         </td>
-        <td style="font-weight:700;font-size:13px;color:<%= (t.amount || 0) >= 0 ? '#2e7d32' : '#c62828' %>;">
-          <%= (t.amount || 0) >= 0 ? '+' : '' %><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount || 0) %>
-        </td>
-        <td style="font-size:13px;"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.balance || 0) %></td>
+        <td style="font-size:13px;font-weight:500;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(t.balance||0) %></td>
       </tr>
       <% }); %>
     </tbody>
   </table>
   </div>
   <% if (totalPages > 1) { %>
-  <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
+  <div style="display:flex;gap:4px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
     <% for(var p=1;p<=totalPages;p++){ %>
-      <a href="/seller/wallet?page=<%= p %><%= period !== 'all' ? '&period='+period : '' %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;font-size:12px;"><%= p %></a>
+    <a href="/seller/wallet?page=<%= p %><%= period !== 'all' ? '&period='+period : '' %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:32px;text-align:center;text-decoration:none;font-size:12px;"><%= p %></a>
     <% } %>
   </div>
   <% } %>
+  <% } %>
 </div>
-<% } %>
 
 <%- include('../partials/admin-footer') %>

@@ -518,7 +518,8 @@ router.get('/financeiro', (req, res) => {
     pendingPayoutsCount: pendingPayoutsCount,
     payouts: payouts,
     payoutsTotal: payoutsTotal,
-    months: months
+    months: months,
+    tab: req.query.tab || 'resumo'
   });
 });
 
