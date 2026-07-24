@@ -1,0 +1,51 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/campaigns' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-rocket"></i> Campanhas Multiplataforma</h1>
+    <p>Disparo simultâneo em todas as plataformas</p>
+    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <!-- Status das plataformas -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+    <div class="mini-status" style="border-left:4px solid #25D366;"><%= waReady ? '✅' : '❌' %> WhatsApp</div>
+    <div class="mini-status" style="border-left:4px solid #0088cc;"><%= telegramConfigured ? '✅' : '❌' %> Telegram</div>
+    <div class="mini-status" style="border-left:4px solid #5865F2;"><%= discordConfigured ? '✅' : '❌' %> Discord</div>
+    <div class="mini-status" style="border-left:4px solid #EA4335;"><%= emailConfigured ? '✅' : '❌' %> Email</div>
+  </div>
+
+  <div class="form-card">
+    <h3><i class="fas fa-bullhorn"></i> Nova Campanha</h3>
+    <form method="POST" action="/admin/marketing/campaigns/disparar">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-group">
+        <label>Plataformas</label>
+        <div style="display:flex;gap:15px;flex-wrap:wrap;margin:8px 0;">
+          <label><input type="checkbox" name="platforms" value="whatsapp" checked> WhatsApp</label>
+          <label><input type="checkbox" name="platforms" value="telegram" <%= telegramConfigured ? '' : 'disabled' %>> Telegram</label>
+          <label><input type="checkbox" name="platforms" value="discord" <%= discordConfigured ? '' : 'disabled' %>> Discord</label>
+          <label><input type="checkbox" name="platforms" value="email" <%= emailConfigured ? '' : 'disabled' %>> Email</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Público Alvo</label>
+        <select name="target" class="admin-input">
+          <option value="all">Todos (contatos + vendedores + compradores)</option>
+          <option value="sellers">Apenas Vendedores</option>
+          <option value="buyers">Apenas Compradores</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Mensagem</label>
+        <textarea name="message" class="admin-input" rows="6" required placeholder="Digite a mensagem da campanha..."></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="background:#FF6F00;border-color:#FF6F00;" onclick="return confirm('Iniciar disparo multiplataforma?')"><i class="fas fa-rocket"></i> Iniciar Campanha</button>
+    </form>
+  </div>
+</div>
+<style>
+.mini-status { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:6px; padding:10px 15px; font-size:13px; font-weight:600; }
+</style>
+<%- include('../../partials/admin-footer') %>

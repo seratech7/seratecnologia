@@ -11,6 +11,7 @@
   <div class="form-card" style="margin-bottom:20px;">
     <h4>Nova Mensagem Agendada</h4>
     <form method="POST" action="/admin/whatsapp/schedules/add">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group"><label>Telefone</label><input type="text" name="phone" class="admin-input" required placeholder="5521999999999"></div>
       <div class="form-group"><label>Mensagem</label><textarea name="message" class="admin-input" rows="3" required placeholder="Digite a mensagem..."></textarea></div>
       <div class="form-group"><label>Agendar para</label><input type="datetime-local" name="scheduled_for" class="admin-input" required></div>
@@ -33,7 +34,7 @@
             <td><%= s.scheduled_for %></td>
             <td><span class="badge badge-<%= s.status === 'pending' ? 'warning' : 'success' %>"><%= s.status %></span></td>
             <td>
-              <form method="POST" action="/admin/whatsapp/schedules/delete/<%= s.id %>" style="display:inline;" onsubmit="return confirm('Remover agendamento?')">
+              <form method="POST" action="/admin/whatsapp/schedules/delete/<%= s.id %>" style="display:inline;" onsubmit="return confirm('Remover agendamento?')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button type="submit" class="btn-small btn-danger"><i class="fas fa-trash"></i></button>
               </form>
             </td>

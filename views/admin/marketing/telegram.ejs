@@ -1,0 +1,36 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/telegram' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fab fa-telegram-plane"></i> Telegram</h1>
+    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-paper-plane"></i> Enviar Mensagem</h3>
+      <form method="POST" action="/admin/marketing/telegram/send">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group"><label>Mensagem (HTML suportado)</label><textarea name="message" class="admin-input" rows="6" required placeholder="Digite a mensagem... Use tags HTML: &lt;b&gt;, &lt;i&gt;, &lt;a&gt;"></textarea></div>
+        <button type="submit" class="btn-primary"><i class="fab fa-telegram-plane"></i> Enviar</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-cog"></i> Configuração</h3>
+      <p style="font-size:13px;color:#666;">Configure no arquivo <code>.env</code>:</p>
+      <div style="background:#f5f5f5;padding:15px;border-radius:6px;font-family:monospace;font-size:13px;margin:10px 0;">
+        TELEGRAM_BOT_TOKEN=<%= botToken ? botToken : 'seu_token_aqui' %><br>
+        TELEGRAM_CHAT_ID=<%= chatId ? chatId : 'seu_chat_id_aqui' %>
+      </div>
+      <p style="font-size:13px;color:#666;">Como criar um bot:</p>
+      <ol style="font-size:13px;line-height:1.8;margin:5px 0 0 15px;padding:0;">
+        <li>Abra o Telegram e procure <b>@BotFather</b></li>
+        <li>Envie <code>/newbot</code> e escolha um nome</li>
+        <li>Copie o token e coloque no <code>.env</code></li>
+        <li>Adicione o bot a um grupo e envie <code>/start</code></li>
+        <li>Acesse: <code>https://api.telegram.org/botSEU_TOKEN/getUpdates</code> para ver o chat_id</li>
+      </ol>
+    </div>
+  </div>
+</div>
+<%- include('../../partials/admin-footer') %>

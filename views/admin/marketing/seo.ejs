@@ -1,0 +1,32 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/seo' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-search"></i> SEO & Indexação</h1>
+    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="card">
+      <h3><i class="fas fa-sitemap"></i> Sitemap</h3>
+      <p style="font-size:13px;color:#666;">URL: <a href="<%= baseUrl %>/sitemap.xml" target="_blank"><%= baseUrl %>/sitemap.xml</a></p>
+      <div style="background:#f5f5f5;padding:15px;border-radius:6px;font-family:monospace;font-size:11px;max-height:300px;overflow:auto;white-space:pre-wrap;"><%= sitemapContent %></div>
+    </div>
+    <div>
+      <div class="form-card" style="margin-bottom:20px;">
+        <h3><i class="fas fa-globe"></i> Ping Search Engines</h3>
+        <p style="font-size:13px;color:#666;">Notifica Google e Bing sobre atualizações no sitemap</p>
+        <form method="POST" action="/admin/marketing/seo/ping">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn-primary"><i class="fas fa-bell"></i> Ping Google & Bing</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3><i class="fas fa-google"></i> Google Indexing API</h3>
+        <p style="font-size:13px;color:#666;">Chave: <strong><%= googleKey || 'Não configurada' %></strong></p>
+        <p style="font-size:13px;color:#666;">Configure <code>GOOGLE_INDEXING_KEY</code> no .env para usar a Indexing API do Google e submeter URLs diretamente.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../../partials/admin-footer') %>

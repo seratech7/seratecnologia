@@ -1,0 +1,46 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/email' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-envelope"></i> Email Marketing</h1>
+    <a href="/admin/marketing" class="btn-secondary" style="float:right;"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-paper-plane"></i> Enviar Newsletter</h3>
+      <form method="POST" action="/admin/marketing/email/send">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label>Enviar para</label>
+          <select name="target" class="admin-input">
+            <option value="all">Todos (<%= sellerCount + buyerCount %> contatos)</option>
+            <option value="sellers">Vendedores (<%= sellerCount %>)</option>
+            <option value="buyers">Compradores (<%= buyerCount %>)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Assunto</label><input type="text" name="subject" class="admin-input" required placeholder="Assunto do email"></div>
+        <div class="form-group"><label>Mensagem (HTML)</label><textarea name="html" class="admin-input" rows="8" required placeholder="&lt;h1&gt;Novidade!&lt;/h1&gt;&lt;p&gt;Confira...&lt;/p&gt;"></textarea></div>
+        <button type="submit" class="btn-primary" <%= sendgridKey ? '' : 'disabled' %>><i class="fas fa-paper-plane"></i> Enviar</button>
+        <% if (!sendgridKey) { %><p style="font-size:12px;color:#c62828;margin-top:5px;">Configure SENDGRID_API_KEY no .env</p><% } %>
+      </form>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-cog"></i> Configuração</h3>
+      <p style="font-size:13px;color:#666;">API Key: <strong><%= sendgridKey || 'Não configurada' %></strong></p>
+      <p style="font-size:13px;color:#666;">Como configurar:</p>
+      <ol style="font-size:13px;line-height:1.8;">
+        <li>Crie conta em <a href="https://sendgrid.com" target="_blank">sendgrid.com</a></li>
+        <li>Vá em Settings > API Keys</li>
+        <li>Crie uma chave e adicione no <code>.env</code>: <code>SENDGRID_API_KEY=...</code></li>
+      </ol>
+      <hr style="margin:15px 0;">
+      <h4>Destinatários disponíveis</h4>
+      <table class="admin-table" style="font-size:13px;">
+        <tr><td>Vendedores ativos</td><td><strong><%= sellerCount %></strong></td></tr>
+        <tr><td>Compradores</td><td><strong><%= buyerCount %></strong></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<%- include('../../partials/admin-footer') %>

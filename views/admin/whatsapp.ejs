@@ -24,11 +24,13 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <% if (!waReady) { %>
           <form method="POST" action="/admin/whatsapp/connect" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn-primary"><i class="fas fa-plug"></i> Conectar WhatsApp</button>
           </form>
         <% } %>
         <% if (waReady) { %>
           <form method="POST" action="/admin/whatsapp/disconnect" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn-danger" onclick="return confirm('Desconectar WhatsApp?')"><i class="fas fa-power-off"></i> Desconectar</button>
           </form>
         <% } %>
@@ -57,6 +59,7 @@
   <div class="form-card" style="margin-bottom:20px;">
     <h3><i class="fas fa-paper-plane"></i> Envio Rápido</h3>
     <form method="POST" action="/admin/whatsapp/send">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label>Número (com DDD, ex: 5521999999999)</label>
         <input type="text" name="phone" class="admin-input" required placeholder="5521999999999">

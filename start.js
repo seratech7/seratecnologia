@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const { initDb, get, run } = require('./database/db');
 
 const products = [
@@ -39,13 +40,15 @@ async function start() {
   let sellerId = null;
   if (!sellerCount || sellerCount.count === 0) {
     const bcrypt = require('bcryptjs');
-    const hash = bcrypt.hashSync('vendedor123', 12);
+    const sellerPass = 'seller' + crypto.randomBytes(3).toString('hex');
+    const hash = bcrypt.hashSync(sellerPass, 12);
     run("INSERT INTO sellers (name, email, phone, password_hash, bio, sales_count, whatsapp, status) VALUES (?,?,?,?,?,?,?,?)",
       ['SeraTecnologia Store', 'vendas@seratecnologia.com', '(11) 99999-8888', hash,
        'Loja oficial SeraTecnologia — especializada em hardware, componentes e periféricos. Qualidade e confiança desde 2026.',
        45, '5511999998888', 'active']);
     sellerId = get('SELECT id FROM sellers ORDER BY id DESC LIMIT 1').id;
-    console.log('👤 Vendedor padrão criado!');
+    console.log('👤 Vendedor padrão criado! Senha: ' + sellerPass);
+    console.log('⚠️  Anote esta senha! Ela não será mostrada novamente.');
   } else {
     sellerId = get('SELECT id FROM sellers ORDER BY id ASC LIMIT 1').id;
   }

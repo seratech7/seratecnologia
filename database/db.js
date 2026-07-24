@@ -131,9 +131,10 @@ async function initDb() {
     if (!fpNames.includes('flash_ends_at')) db.run("ALTER TABLE products ADD COLUMN flash_ends_at DATETIME DEFAULT NULL");
   }
 
-  const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
-  if (adminPass === 'admin123') {
-    console.warn('⚠️  AVISO: Use ADMIN_PASSWORD no .env para definir uma senha forte!');
+  const adminPass = process.env.ADMIN_PASSWORD;
+  if (!adminPass || adminPass === 'admin123') {
+    console.error('❌ ERRO: Defina ADMIN_PASSWORD no arquivo .env com uma senha forte!');
+    process.exit(1);
   }
   const hash = bcrypt.hashSync(adminPass, 12);
   run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
@@ -576,16 +577,6 @@ async function initDb() {
 
   var sellerCount = db.exec("SELECT COUNT(*) as c FROM sellers");
   var numSellers = sellerCount.length > 0 && sellerCount[0].values.length > 0 ? sellerCount[0].values[0][0] : 0;
-  if (numSellers < 2) {
-    var testHash = require('bcryptjs').hashSync('teste123', 10);
-    try {
-      run("INSERT INTO sellers (name, email, phone, password_hash, bio, status) VALUES (?,?,?,?,?,?)",
-        ['Vendedor Teste', 'teste@teste.com', '11999999999', testHash, 'Conta de teste.', 'active']);
-      console.log('[db] Vendedor teste criado: teste@teste.com / teste123');
-    } catch (e) {
-      // já existe
-    }
-  }
 
   var prodCount = get("SELECT COUNT(*) as c FROM products");
   if (prodCount && prodCount.c < 3) {
@@ -624,31 +615,7 @@ async function initDb() {
     }
   }
 
-  var testSale = get("SELECT COUNT(*) as c FROM sales WHERE buyer_email = 'comprador@teste.com'");
-  if (testSale && testSale.c === 0) {
-    var tsSeller = get("SELECT id FROM sellers WHERE email = 'teste@teste.com'") || get("SELECT id FROM sellers ORDER BY id ASC LIMIT 1");
-    var tsProd = get("SELECT id, code, name, price FROM products WHERE seller_id = ? AND code != '' LIMIT 1", [tsSeller ? tsSeller.id : 0]);
-    if (tsSeller && !tsProd) {
-      run("INSERT INTO products (name, description, price, seller_id, status) VALUES (?, ?, ?, ?, ?)",
-        ['Teclado Mecânico RGB', 'Teclado gamer switch azul ABNT2', 10, tsSeller.id, 'active']);
-      var tp = get("SELECT MAX(id) as id FROM products");
-      if (tp) run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [tp.id]);
-      tsProd = get("SELECT id, code, name, price FROM products WHERE seller_id = ? LIMIT 1", [tsSeller.id]);
-    }
-    if (tsSeller && tsProd) {
-      run("INSERT INTO sales (product_id, seller_id, product_code, product_name, product_price, buyer_name, buyer_document, buyer_phone, buyer_email, buyer_address, status, payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        [tsProd.id, tsSeller.id, tsProd.code, tsProd.name, tsProd.price, 'Comprador Teste', '000.000.000-00', '11988887777', 'comprador@teste.com', 'Rua Teste, 123', 'paid', 'pix']);
-      var tsSale = get("SELECT MAX(id) as id FROM sales");
-      var tsCode = gerarCodigoRastreio();
-      run("UPDATE sales SET tracking_code = ?, tracking_status = 'confirmed' WHERE id = ?", [tsCode, tsSale.id]);
-      createTrackingHistory(tsSale.id, 'confirmed', 'Pedido confirmado');
-      var tComm = getCommissionPct(tsSeller.id);
-      var tVal = 10;
-      addTransaction(tsSeller.id, 'sale', 'Venda ' + tsProd.code + ' - ' + tsProd.name, tVal - (tVal * tComm / 100), 'sale', tsSale.id);
-      addTransaction(0, 'commission', 'Comissão ' + tComm + '% - ' + tsProd.code, tVal * tComm / 100, 'commission', tsSale.id);
-      console.log('[db] Venda teste criada: R$ 10,00');
-    }
-  }
+  // Test sale removed for security
 
   saveDb();
 

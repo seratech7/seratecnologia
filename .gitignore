@@ -6,4 +6,9 @@ database/backups/
 
 server_out.txt
 server_err.txt
-database.sqlite
+
+# Generated files
+promote.log
+whatsapp-qr.png
+whatsapp-qr.html
+wa_session/

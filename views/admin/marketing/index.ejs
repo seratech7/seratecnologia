@@ -1,0 +1,82 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-bullhorn"></i> Marketing Central</h1>
+    <p>Gerencie todas as plataformas de divulgação em um só lugar</p>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px;margin-bottom:25px;">
+    <div class="stat-card"><div class="stat-value"><%= msgCount %></div><div class="stat-label">Mensagens WhatsApp</div></div>
+    <div class="stat-card"><div class="stat-value"><%= contactCount %></div><div class="stat-label">Contatos WhatsApp</div></div>
+    <div class="stat-card"><div class="stat-value"><%= sellerCount %></div><div class="stat-label">Vendedores</div></div>
+    <div class="stat-card"><div class="stat-value"><%= buyerCount %></div><div class="stat-label">Compradores</div></div>
+  </div>
+
+  <!-- Platform Cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-bottom:25px;">
+    <a href="/admin/marketing/whatsapp" class="platform-card" style="border-top:4px solid #25D366;">
+      <div class="platform-icon" style="color:#25D366;font-size:36px;margin-bottom:10px;"><i class="fab fa-whatsapp"></i></div>
+      <h3 style="margin:0 0 5px;">WhatsApp</h3>
+      <span class="status-badge <%= waReady ? 'status-on' : 'status-off' %>"><%= waReady ? 'Conectado' : 'Desconectado' %></span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Disparo em massa, contatos, agendamento</p>
+    </a>
+
+    <a href="/admin/marketing/telegram" class="platform-card" style="border-top:4px solid #0088cc;">
+      <div class="platform-icon" style="color:#0088cc;font-size:36px;margin-bottom:10px;"><i class="fab fa-telegram-plane"></i></div>
+      <h3 style="margin:0 0 5px;">Telegram</h3>
+      <span class="status-badge <%= telegramConfigured ? 'status-on' : 'status-off' %>"><%= telegramConfigured ? 'Configurado' : 'Não configurado' %></span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Postar em canais e grupos</p>
+    </a>
+
+    <a href="/admin/marketing/discord" class="platform-card" style="border-top:4px solid #5865F2;">
+      <div class="platform-icon" style="color:#5865F2;font-size:36px;margin-bottom:10px;"><i class="fab fa-discord"></i></div>
+      <h3 style="margin:0 0 5px;">Discord</h3>
+      <span class="status-badge <%= discordConfigured ? 'status-on' : 'status-off' %>"><%= discordConfigured ? 'Configurado' : 'Não configurado' %></span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Postar em servidores e canais</p>
+    </a>
+
+    <a href="/admin/marketing/email" class="platform-card" style="border-top:4px solid #EA4335;">
+      <div class="platform-icon" style="color:#EA4335;font-size:36px;margin-bottom:10px;"><i class="fas fa-envelope"></i></div>
+      <h3 style="margin:0 0 5px;">Email Marketing</h3>
+      <span class="status-badge <%= emailConfigured ? 'status-on' : 'status-off' %>"><%= emailConfigured ? 'Configurado' : 'Não configurado' %></span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Newsletter para vendedores e compradores</p>
+    </a>
+
+    <a href="/admin/marketing/seo" class="platform-card" style="border-top:4px solid #4285F4;">
+      <div class="platform-icon" style="color:#4285F4;font-size:36px;margin-bottom:10px;"><i class="fas fa-search"></i></div>
+      <h3 style="margin:0 0 5px;">SEO & Indexação</h3>
+      <span class="status-badge status-on">Ativo</span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Sitemap, Google, Bing</p>
+    </a>
+
+    <a href="/admin/marketing/campaigns" class="platform-card" style="border-top:4px solid #FF6F00;">
+      <div class="platform-icon" style="color:#FF6F00;font-size:36px;margin-bottom:10px;"><i class="fas fa-rocket"></i></div>
+      <h3 style="margin:0 0 5px;">Campanhas</h3>
+      <span class="status-badge status-on">Multiplataforma</span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Disparar em todas as plataformas de uma vez</p>
+    </a>
+
+    <a href="/admin/marketing/social" class="platform-card" style="border-top:4px solid #E1306C;">
+      <div class="platform-icon" style="color:#E1306C;font-size:36px;margin-bottom:10px;"><i class="fas fa-share-alt"></i></div>
+      <h3 style="margin:0 0 5px;">Links Sociais</h3>
+      <span class="status-badge status-on">Gerar Links</span>
+      <p style="font-size:13px;color:#666;margin-top:8px;">Facebook, Twitter, LinkedIn, Pinterest</p>
+    </a>
+  </div>
+</div>
+
+<style>
+.platform-card { display:block; background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:10px; padding:20px; text-decoration:none; color:inherit; transition:transform .15s,box-shadow .15s; }
+.platform-card:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(0,0,0,.1); }
+.status-badge { display:inline-block; padding:3px 12px; border-radius:12px; font-size:12px; font-weight:600; }
+.status-on { background:#e8f5e9; color:#2e7d32; }
+.status-off { background:#ffebee; color:#c62828; }
+.stat-card { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:8px; padding:20px; text-align:center; }
+.stat-value { font-size:28px; font-weight:700; color:#1565c0; }
+.stat-label { font-size:13px; color:#666; margin-top:4px; }
+</style>
+<%- include('../../partials/admin-footer') %>

@@ -21,6 +21,7 @@ const notificationRoutes = require('./routes/notifications');
 const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
 const { toggleMiddleware } = require('./middleware/toggles');
+const { csrfProtection } = require('./middleware/csrf');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -138,14 +139,13 @@ app.set('views', path.join(__dirname, 'views'));
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Erro:', err.message);
-  console.error(err.stack);
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).send('Arquivo muito grande. Máximo 5MB.');
   }
   if (err.message?.includes('Formato de imagem')) {
     return res.status(400).send(err.message);
   }
-  res.status(500).send('Erro: ' + err.message + '\n' + (err.stack || '').split('\n').slice(0,10).join('\n'));
+  res.status(500).send('Erro interno do servidor');
 });
 
 app.use((req, res, next) => {
@@ -163,6 +163,9 @@ app.use((req, res, next) => {
 });
 
 app.use(toggleMiddleware);
+
+// CSRF protection for all non-GET requests
+app.use(csrfProtection);
 
 // Inject custom CSS/JS from config
 app.use((req, res, next) => {
@@ -220,7 +223,7 @@ app.use(function(req, res, next) {
 app.use((req, res, next) => {
   if (req.path.startsWith('/admin')) return next();
   try {
-    var ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+    var ip = req.ip || req.connection.remoteAddress || 'unknown';
     var db = require('./database/db');
     if (db.isIpBlocked(ip)) {
       return res.status(403).send('Seu IP foi bloqueado.');
@@ -240,7 +243,7 @@ app.use((req, res, next) => {
       var userName = req.session.adminName || req.session.sellerName || '';
       var action = req.method + ' ' + req.path;
       if (!req.path.includes('/login') && !req.path.includes('/logout')) {
-        db.logActivity(userType, userId, userName, action, '', '', 0, req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '');
+        db.logActivity(userType, userId, userName, action, '', '', 0, req.ip || req.connection.remoteAddress || '');
       }
     }
     originalEnd.apply(res, arguments);
@@ -267,6 +270,7 @@ app.use('/api', apiLimiter);
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
 app.use('/admin', require('./routes/whatsapp')());
+app.use('/admin', require('./routes/marketing')());
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);

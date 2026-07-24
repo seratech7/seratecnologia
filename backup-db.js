@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, 'database', 'database.sqlite');
+const dbPath = path.join(__dirname, 'database.sqlite');
 const backupDir = path.join(__dirname, 'database', 'backups');
 
 function rotateBackups(maxKept = 7) {

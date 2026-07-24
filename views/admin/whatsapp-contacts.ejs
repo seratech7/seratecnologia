@@ -23,6 +23,7 @@
   <div id="addForm" class="form-card" style="display:none;margin-bottom:20px;">
     <h4>Novo Contato</h4>
     <form method="POST" action="/admin/whatsapp/contacts/add">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group"><label>Nome</label><input type="text" name="name" class="admin-input" placeholder="Nome do contato"></div>
       <div class="form-group"><label>Telefone *</label><input type="text" name="phone" class="admin-input" required placeholder="5521999999999"></div>
       <div class="form-group"><label>Observações</label><input type="text" name="notes" class="admin-input" placeholder="Observações"></div>
@@ -36,6 +37,7 @@
     <h4>Importar Contatos</h4>
     <p style="font-size:13px;color:#666;">Cole os dados no formato: <b>telefone,nome,observacoes</b> (um por linha)</p>
     <form method="POST" action="/admin/whatsapp/contacts/import">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <textarea name="csv" class="admin-input" rows="6" required placeholder="5521999999991,João,Cliente&#10;5521999999992,Maria,Fornecedor"></textarea>
       </div>
@@ -48,6 +50,7 @@
   <div id="blastForm" class="form-card" style="display:none;margin-bottom:20px;">
     <h4>Enviar Mensagem para Todos os Contatos</h4>
     <form method="POST" action="/admin/whatsapp/contacts/send-all">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
         <label>Mensagem</label>
         <textarea name="message" class="admin-input" rows="4" required placeholder="Digite a mensagem que será enviada para TODOS os contatos..."></textarea>
@@ -73,7 +76,7 @@
             <td><%= c.notes || '' %></td>
             <td style="font-size:12px;"><%= c.created_at %></td>
             <td>
-              <form method="POST" action="/admin/whatsapp/contacts/delete/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Remover <%= c.name || c.phone %>?')">
+              <form method="POST" action="/admin/whatsapp/contacts/delete/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Remover <%= c.name || c.phone %>?')"><input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <button type="submit" class="btn-small btn-danger"><i class="fas fa-trash"></i></button>
               </form>
             </td>
