@@ -628,6 +628,39 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      subject TEXT DEFAULT '',
+      last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS chat_participants (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      last_read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id),
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      sender_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      product_id INTEGER,
+      read_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id),
+      FOREIGN KEY (sender_id) REFERENCES sellers(id),
+      FOREIGN KEY (product_id) REFERENCES products(id)
+    )
+  `);
+
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
     var sn = sCols[0].values.map(function(r) { return r[1]; });
@@ -1374,4 +1407,50 @@ function addWaContactsToList(listId) {
   return count;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList, getWaAutoReplies, getWaAutoReply, saveWaAutoReply, deleteWaAutoReply, findWaAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getWaAccounts, getWaAccount, saveWaAccount, deleteWaAccount, setWaAccountStatus, setWaAccountPhone };
+// === SELLER CHAT ===
+function getSellerConversations(sellerId) {
+  var convs = query("SELECT c.*, cp.last_read_at, (SELECT content FROM chat_messages WHERE conversation_id = c.id ORDER BY id DESC LIMIT 1) as last_message, (SELECT COUNT(*) FROM chat_messages WHERE conversation_id = c.id AND id > COALESCE((SELECT last_read_at FROM chat_participants WHERE conversation_id = c.id AND seller_id = ?),0)) as unread FROM chat_conversations c INNER JOIN chat_participants cp ON cp.conversation_id = c.id AND cp.seller_id = ? ORDER BY c.last_message_at DESC", [sellerId, sellerId]);
+  convs.forEach(function(c) {
+    var parts = query("SELECT s.name FROM chat_participants cp INNER JOIN sellers s ON s.id = cp.seller_id WHERE cp.conversation_id = ? AND cp.seller_id != ?", [c.id, sellerId]);
+    c.participant_names = parts.map(function(p) { return p.name; }).join(', ');
+  });
+  return convs;
+}
+function getConversationParticipants(conversationId) {
+  return query("SELECT s.id, s.name, s.avatar FROM chat_participants cp INNER JOIN sellers s ON s.id = cp.seller_id WHERE cp.conversation_id = ?", [conversationId]);
+}
+function getConversationMessages(conversationId, sellerId, limit, offset) {
+  if (!limit) limit = 50;
+  if (!offset) offset = 0;
+  var msgs = query("SELECT m.*, s.name as sender_name, s.avatar as sender_avatar FROM chat_messages m INNER JOIN sellers s ON s.id = m.sender_id WHERE m.conversation_id = ? ORDER BY m.id DESC LIMIT ? OFFSET ?", [conversationId, limit, offset]);
+  run("UPDATE chat_participants SET last_read_at = datetime('now') WHERE conversation_id = ? AND seller_id = ?", [conversationId, sellerId]);
+  return msgs.reverse();
+}
+function sendMessage(conversationId, senderId, content, productId) {
+  run("INSERT INTO chat_messages (conversation_id, sender_id, content, product_id) VALUES (?,?,?,?)", [conversationId, senderId, content, productId || null]);
+  run("UPDATE chat_conversations SET last_message_at = datetime('now') WHERE id = ?", [conversationId]);
+  var msgId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  var msg = get("SELECT m.*, s.name as sender_name, s.avatar as sender_avatar FROM chat_messages m INNER JOIN sellers s ON s.id = m.sender_id WHERE m.id = ?", [msgId]);
+  return msg;
+}
+function createConversation(seller1Id, seller2Id, subject) {
+  run("INSERT INTO chat_conversations (subject) VALUES (?)", [subject || '']);
+  var convId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  run("INSERT INTO chat_participants (conversation_id, seller_id) VALUES (?,?)", [convId, seller1Id]);
+  run("INSERT INTO chat_participants (conversation_id, seller_id) VALUES (?,?)", [convId, seller2Id]);
+  return convId;
+}
+function getOrCreateConversation(seller1Id, seller2Id) {
+  var existing = get("SELECT cp1.conversation_id as id FROM chat_participants cp1 INNER JOIN chat_participants cp2 ON cp2.conversation_id = cp1.conversation_id WHERE cp1.seller_id = ? AND cp2.seller_id = ?", [seller1Id, seller2Id]);
+  if (existing) return existing.id;
+  return createConversation(seller1Id, seller2Id, '');
+}
+function getUnreadMessageCount(sellerId) {
+  var r = get("SELECT COUNT(*) as c FROM chat_messages m INNER JOIN chat_participants cp ON cp.conversation_id = m.conversation_id AND cp.seller_id = ? WHERE m.sender_id != ? AND m.id > COALESCE((SELECT last_read_at FROM chat_participants WHERE conversation_id = m.conversation_id AND seller_id = ?),0)", [sellerId, sellerId, sellerId]);
+  return r ? r.c : 0;
+}
+function searchSellers(query) {
+  return query("SELECT id, name, avatar, bio FROM sellers WHERE status = 'active' AND (name LIKE ? OR email LIKE ?) LIMIT 20", ['%' + query + '%', '%' + query + '%']);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList, getWaAutoReplies, getWaAutoReply, saveWaAutoReply, deleteWaAutoReply, findWaAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getWaAccounts, getWaAccount, saveWaAccount, deleteWaAccount, setWaAccountStatus, setWaAccountPhone, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers };

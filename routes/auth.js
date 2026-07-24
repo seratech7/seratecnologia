@@ -5,24 +5,24 @@ const db = require('../database/db');
 const { requireAdmin, redirectIfAdmin } = require('../middleware/auth');
 
 router.get('/login', redirectIfAdmin, (req, res) => {
-  res.render('admin/login', { title: 'Login - Painel Admin', error: null });
+  res.render('admin/login', { title: 'Login - Painel Admin', error: null, csrfToken: req.session.csrfToken });
 });
 
 router.post('/login', (req, res) => {
   if (req.body._csrf !== req.session.csrfToken) {
-    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Token inválido. Recarregue a página.' });
+    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Token inválido. Recarregue a página.', csrfToken: req.session.csrfToken });
   }
 
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Preencha todos os campos' });
+    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   }
 
   const admin = db.get('SELECT * FROM admins WHERE username = ?', [username]);
 
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
-    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Usuário ou senha inválidos' });
+    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Usuário ou senha inválidos', csrfToken: req.session.csrfToken });
   }
 
   req.session.adminId = admin.id;

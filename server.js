@@ -153,6 +153,9 @@ app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.session = req.session;
   res.locals.query = req.query;
+  if (req.session.sellerId && db.getUnreadMessageCount) {
+    res.locals.unreadChat = db.getUnreadMessageCount(req.session.sellerId);
+  }
   // Generate CSRF token
   if (!req.session.csrfToken) {
     req.session.csrfToken = crypto.randomBytes(24).toString('hex');

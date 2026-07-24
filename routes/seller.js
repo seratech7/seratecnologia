@@ -34,18 +34,18 @@ router.post('/profile', upload.single('avatar'), requireSeller, (req, res) => {
 });
 
 router.get('/login', redirectIfSeller, (req, res) => {
-  res.render('seller/login', { title: 'Login Vendedor', error: null });
+  res.render('seller/login', { title: 'Login Vendedor', error: null, csrfToken: req.session.csrfToken });
 });
 
 router.post('/login', (req, res) => {
   if (req.body._csrf !== req.session.csrfToken) {
-    return res.render('seller/login', { title: 'Login Vendedor', error: 'Token inválido. Recarregue a página.' });
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Token inválido. Recarregue a página.', csrfToken: req.session.csrfToken });
   }
   const { email, password } = req.body;
-  if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos' });
+  if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   const seller = db.get('SELECT * FROM sellers WHERE email = ?', [email]);
-  if (!seller || !bcrypt.compareSync(password, seller.password_hash)) return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos' });
-  if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.' });
+  if (!seller || !bcrypt.compareSync(password, seller.password_hash)) return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken });
+  if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.', csrfToken: req.session.csrfToken });
   req.session.sellerId = seller.id;
   req.session.sellerName = seller.name;
   req.session.sellerPhone = seller.whatsapp || seller.phone || '';
@@ -362,6 +362,72 @@ router.get('/placar', requireSeller, (req, res) => {
   var leaderboard = activeGoal ? db.getGoalLeaderboard(activeGoal.id) : [];
   var myProgress = activeGoal ? db.getSellerGoalProgress(req.session.sellerId, activeGoal) : null;
   res.render('seller/placar', { title: 'Placar de Metas', activeGoal, allGoals, leaderboard, myProgress });
+});
+
+// ========== SELLER CHAT ==========
+router.get('/chat', requireSeller, (req, res) => {
+  var conversations = db.getSellerConversations(req.session.sellerId);
+  var sellers = db.query("SELECT id, name, avatar FROM sellers WHERE id != ? AND status = 'active' ORDER BY name", [req.session.sellerId]);
+  var unreadCount = db.getUnreadMessageCount(req.session.sellerId);
+  res.render('seller/chat', { title: 'Chat entre Vendedores', conversations, sellers, unreadCount, conversation: null, messages: [], error: null, success: null });
+});
+
+router.get('/chat/nova/:sellerId', requireSeller, (req, res) => {
+  var targetId = parseInt(req.params.sellerId);
+  if (targetId === req.session.sellerId) return res.redirect('/seller/chat');
+  var convId = db.getOrCreateConversation(req.session.sellerId, targetId);
+  res.redirect('/seller/chat/' + convId);
+});
+
+router.get('/chat/:id', requireSeller, (req, res) => {
+  var convId = parseInt(req.params.id);
+  var conv = db.get("SELECT c.*, (SELECT COUNT(*) FROM chat_participants WHERE conversation_id = c.id) as participant_count FROM chat_conversations c WHERE c.id = ?", [convId]);
+  if (!conv) return res.redirect('/seller/chat');
+  var participants = db.getConversationParticipants(convId);
+  var isParticipant = participants.some(function(p) { return p.id === req.session.sellerId; });
+  if (!isParticipant) return res.redirect('/seller/chat');
+  var messages = db.getConversationMessages(convId, req.session.sellerId);
+  var conversations = db.getSellerConversations(req.session.sellerId);
+  var sellers = db.query("SELECT id, name, avatar FROM sellers WHERE id != ? AND status = 'active' ORDER BY name", [req.session.sellerId]);
+  var unreadCount = db.getUnreadMessageCount(req.session.sellerId);
+  res.render('seller/chat', { title: 'Chat entre Vendedores', conversations, sellers, unreadCount, conversation: conv, messages, participants, error: null, success: null });
+});
+
+router.post('/chat/:id/enviar', requireSeller, (req, res) => {
+  var convId = parseInt(req.params.id);
+  var content = (req.body.content || '').trim();
+  if (!content) return res.redirect('/seller/chat/' + convId);
+  var participants = db.getConversationParticipants(convId);
+  var isParticipant = participants.some(function(p) { return p.id === req.session.sellerId; });
+  if (!isParticipant) return res.redirect('/seller/chat');
+  var productId = req.body.product_id ? parseInt(req.body.product_id) : null;
+  db.sendMessage(convId, req.session.sellerId, content, productId);
+  res.redirect('/seller/chat/' + convId);
+});
+
+router.get('/chat/buscar-vendedores', requireSeller, (req, res) => {
+  var q = req.query.q || '';
+  if (q.length < 2) return res.json([]);
+  var results = db.searchSellers(q);
+  res.json(results);
+});
+
+router.get('/chat/api/mensagens/:id', requireSeller, (req, res) => {
+  var convId = parseInt(req.params.id);
+  var participants = db.getConversationParticipants(convId);
+  var isParticipant = participants.some(function(p) { return p.id === req.session.sellerId; });
+  if (!isParticipant) return res.json([]);
+  var since = req.query.since ? parseInt(req.query.since) : 0;
+  var msgs = db.query("SELECT m.*, s.name as sender_name, s.avatar as sender_avatar FROM chat_messages m INNER JOIN sellers s ON s.id = m.sender_id WHERE m.conversation_id = ? AND m.id > ? ORDER BY m.id ASC", [convId, since]);
+  if (msgs.length > 0) {
+    db.run("UPDATE chat_participants SET last_read_at = datetime('now') WHERE conversation_id = ? AND seller_id = ?", [convId, req.session.sellerId]);
+  }
+  res.json(msgs);
+});
+
+router.get('/chat/api/nao-lidas', requireSeller, (req, res) => {
+  var count = db.getUnreadMessageCount(req.session.sellerId);
+  res.json({ count: count });
 });
 
 return router;

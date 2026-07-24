@@ -1,0 +1,218 @@
+<%- include('../partials/seller-header') %>
+
+<div class="chat-layout">
+  <div class="chat-sidebar">
+    <div class="chat-sidebar-header">
+      <h2><i class="fas fa-comments"></i> Conversas</h2>
+      <button class="btn btn-sm btn-primary" onclick="toggleNovoChat()"><i class="fas fa-plus"></i> Nova</button>
+    </div>
+    <div class="chat-search">
+      <input type="text" id="chatSearch" placeholder="Buscar conversas..." oninput="filtrarConversas(this.value)">
+    </div>
+    <div class="chat-conversations" id="chatConversations">
+      <% if (conversations.length === 0) { %>
+        <div class="chat-empty">Nenhuma conversa ainda.<br><a href="#" onclick="toggleNovoChat();return false">Iniciar uma</a></div>
+      <% } else { %>
+        <% conversations.forEach(function(c) { %>
+          <a href="/seller/chat/<%= c.id %>" class="chat-conversation <%= conversation && conversation.id === c.id ? 'active' : '' %>" data-name="<%= (c.participant_names || '').toLowerCase() %>">
+            <div class="conv-avatar"><i class="fas fa-user-circle"></i></div>
+            <div class="conv-info">
+              <div class="conv-name"><%= c.participant_names || 'Conversa' %></div>
+              <div class="conv-preview"><%= c.last_message ? c.last_message.substring(0, 50) : 'Sem mensagens' %></div>
+            </div>
+            <% if (c.unread > 0) { %><span class="conv-badge"><%= c.unread %></span><% } %>
+          </a>
+        <% }); %>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="chat-main">
+    <% if (!conversation) { %>
+      <div class="chat-placeholder">
+        <i class="fas fa-comments"></i>
+        <h3>Chat entre Vendedores</h3>
+        <p>Selecione uma conversa ou inicie uma nova.</p>
+        <button class="btn btn-primary" onclick="toggleNovoChat()"><i class="fas fa-plus"></i> Nova Conversa</button>
+      </div>
+    <% } else { %>
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <h3>
+            <% participants.forEach(function(p, i) { %>
+              <% if (p.id !== session.sellerId) { %>
+                <%= p.name %><%= i < participants.length - 1 ? ', ' : '' %>
+              <% } %>
+            <% }); %>
+          </h3>
+          <span class="chat-header-meta"><%= participants.length %> participantes</span>
+        </div>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <% messages.forEach(function(m) { %>
+          <div class="chat-message <%= m.sender_id === session.sellerId ? 'mine' : 'theirs' %>">
+            <div class="msg-sender"><%= m.sender_name %></div>
+            <div class="msg-content">
+              <% if (m.product_id) { %>
+                <div class="msg-product" data-product-id="<%= m.product_id %>">
+                  <em>Produto anexado</em>
+                </div>
+              <% } %>
+              <%- m.content.replace(/\n/g, '<br>') %>
+            </div>
+            <div class="msg-time"><%= new Date(m.created_at).toLocaleString('pt-BR') %></div>
+          </div>
+        <% }); %>
+      </div>
+      <form class="chat-input" action="/seller/chat/<%= conversation.id %>/enviar" method="POST">
+        <input type="hidden" name="_csrf" value="<%= session.csrfToken %>">
+        <textarea name="content" rows="1" placeholder="Digite sua mensagem..." required></textarea>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+      </form>
+    <% } %>
+  </div>
+</div>
+
+<div class="modal-overlay" id="novoChatModal" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Nova Conversa</h3>
+      <button class="modal-close" onclick="toggleNovoChat()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Buscar vendedor</label>
+        <input type="text" id="searchVendedor" placeholder="Digite o nome..." oninput="buscarVendedores(this.value)">
+      </div>
+      <div class="seller-results" id="sellerResults">
+        <% sellers.forEach(function(s) { %>
+          <a href="/seller/chat/nova/<%= s.id %>" class="seller-result-item">
+            <i class="fas fa-user-circle"></i>
+            <div>
+              <strong><%= s.name %></strong>
+            </div>
+          </a>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.chat-layout { display:flex; height:calc(100vh - 140px); margin:-20px; background:#fff; }
+.chat-sidebar { width:320px; min-width:320px; border-right:1px solid #eee; display:flex; flex-direction:column; }
+.chat-sidebar-header { padding:16px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+.chat-sidebar-header h2 { font-size:16px; margin:0; }
+.chat-search { padding:10px 16px; border-bottom:1px solid #eee; }
+.chat-search input { width:100%; padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:13px; }
+.chat-conversations { flex:1; overflow-y:auto; }
+.chat-conversation { display:flex; align-items:center; padding:12px 16px; gap:12px; text-decoration:none; color:inherit; border-bottom:1px solid #f5f5f5; transition:background .15s; position:relative; }
+.chat-conversation:hover { background:#f8f9fa; }
+.chat-conversation.active { background:#e3f2fd; }
+.conv-avatar { width:40px; height:40px; border-radius:50%; background:#e9ecef; display:flex; align-items:center; justify-content:center; font-size:24px; color:#666; flex-shrink:0; }
+.conv-info { flex:1; min-width:0; }
+.conv-name { font-weight:600; font-size:14px; color:#333; }
+.conv-preview { font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.conv-badge { background:#e53935; color:#fff; border-radius:10px; padding:2px 7px; font-size:11px; font-weight:700; }
+.chat-main { flex:1; display:flex; flex-direction:column; }
+.chat-placeholder { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#999; gap:8px; }
+.chat-placeholder i { font-size:64px; opacity:.3; }
+.chat-header { padding:14px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; }
+.chat-header-info h3 { margin:0; font-size:16px; }
+.chat-header-meta { font-size:12px; color:#888; }
+.chat-messages { flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:10px; }
+.chat-message { max-width:70%; padding:10px 14px; border-radius:12px; font-size:14px; line-height:1.5; }
+.chat-message.mine { align-self:flex-end; background:#1a73e8; color:#fff; border-bottom-right-radius:4px; }
+.chat-message.theirs { align-self:flex-start; background:#f0f0f0; color:#333; border-bottom-left-radius:4px; }
+.msg-sender { font-size:11px; font-weight:600; margin-bottom:2px; opacity:.7; }
+.msg-content { word-wrap:break-word; }
+.msg-product { background:rgba(0,0,0,.08); padding:6px 10px; border-radius:6px; margin-bottom:6px; font-size:13px; cursor:pointer; }
+.msg-time { font-size:11px; opacity:.5; margin-top:4px; }
+.chat-input { display:flex; padding:12px 16px; border-top:1px solid #eee; gap:8px; align-items:flex-end; }
+.chat-input textarea { flex:1; border:1px solid #ddd; border-radius:8px; padding:10px 14px; font-size:14px; resize:none; min-height:42px; max-height:120px; font-family:inherit; }
+.chat-input button { height:42px; width:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.chat-empty { text-align:center; padding:40px 20px; color:#999; font-size:14px; }
+.chat-empty a { color:#1a73e8; }
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.5); z-index:1000; display:flex; align-items:center; justify-content:center; }
+.modal { background:#fff; border-radius:12px; width:480px; max-width:90vw; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,.2); }
+.modal-header { padding:16px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { margin:0; font-size:16px; }
+.modal-close { background:none; border:none; font-size:24px; cursor:pointer; color:#666; }
+.modal-body { padding:20px; }
+.seller-results { margin-top:12px; max-height:300px; overflow-y:auto; }
+.seller-result-item { display:flex; align-items:center; gap:10px; padding:10px 12px; text-decoration:none; color:inherit; border-radius:8px; transition:background .15s; }
+.seller-result-item:hover { background:#f5f5f5; }
+</style>
+
+<script>
+function toggleNovoChat() {
+  var modal = document.getElementById('novoChatModal');
+  modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+  if (modal.style.display === 'flex') document.getElementById('searchVendedor').focus();
+}
+
+function buscarVendedores(q) {
+  var container = document.getElementById('sellerResults');
+  if (q.length < 2) {
+    container.innerHTML = '<% sellers.forEach(function(s) { %><a href="/seller/chat/nova/<%= s.id %>" class="seller-result-item"><i class="fas fa-user-circle"></i><div><strong><%= s.name %></strong></div></a><% }); %>';
+    return;
+  }
+  fetch('/seller/chat/buscar-vendedores?q=' + encodeURIComponent(q))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.length === 0) { container.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Nenhum vendedor encontrado</div>'; return; }
+      container.innerHTML = data.map(function(s) {
+        return '<a href="/seller/chat/nova/' + s.id + '" class="seller-result-item"><i class="fas fa-user-circle"></i><div><strong>' + s.name + '</strong></div></a>';
+      }).join('');
+    });
+}
+
+function filtrarConversas(q) {
+  var items = document.querySelectorAll('.chat-conversation');
+  q = q.toLowerCase();
+  items.forEach(function(item) {
+    var name = item.getAttribute('data-name') || '';
+    item.style.display = name.includes(q) ? '' : 'none';
+  });
+}
+
+// Auto-scroll to bottom
+(function() {
+  var msgs = document.getElementById('chatMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+})();
+
+// Auto-refresh messages every 5 seconds
+<% if (conversation) { %>
+(function() {
+  var lastId = 0;
+  <% messages.forEach(function(m) { lastId = Math.max(lastId, m.id); }); %>
+  setInterval(function() {
+    fetch('/seller/chat/api/mensagens/<%= conversation.id %>?since=' + lastId)
+      .then(function(r) { return r.json(); })
+      .then(function(msgs) {
+        if (msgs.length === 0) return;
+        var container = document.getElementById('chatMessages');
+        msgs.forEach(function(m) {
+          if (m.id > lastId) {
+            var div = document.createElement('div');
+            div.className = 'chat-message ' + (m.sender_id === <%= session.sellerId %> ? 'mine' : 'theirs');
+            div.innerHTML = '<div class="msg-sender">' + m.sender_name + '</div><div class="msg-content">' + (m.content || '').replace(/\n/g, '<br>') + '</div><div class="msg-time">' + new Date(m.created_at).toLocaleString('pt-BR') + '</div>';
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            lastId = m.id;
+          }
+        });
+      });
+  }, 5000);
+})();
+
+// Auto-resize textarea
+document.querySelector('.chat-input textarea') && document.querySelector('.chat-input textarea').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+<% } %>
+</script>
+
+<%- include('../partials/seller-footer') %>
