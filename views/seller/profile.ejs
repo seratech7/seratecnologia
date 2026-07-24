@@ -32,6 +32,12 @@
       </div>
 
       <div class="form-group">
+        <label for="pix_key">Chave PIX (CPF, CNPJ, email, telefone ou aleatória)</label>
+        <input type="text" id="pix_key" name="pix_key" value="<%= seller.pix_key || '' %>" placeholder="CPF ou chave aleatória">
+        <span style="font-size:12px;color:#888;">Essa chave será usada para receber pagamentos dos produtos que vender</span>
+      </div>
+
+      <div class="form-group">
         <label for="website">Site / Loja online</label>
         <input type="text" id="website" name="website" value="<%= seller.website || '' %>" placeholder="https://meusite.com">
       </div>

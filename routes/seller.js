@@ -16,7 +16,7 @@ router.post('/profile', upload.single('avatar'), requireSeller, (req, res) => {
   const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
   if (!seller) return res.redirect('/seller/logout');
 
-  const { name, phone, bio, website, whatsapp, email } = req.body;
+  const { name, phone, bio, website, whatsapp, email, pix_key } = req.body;
 
   if (!name || !email) {
     return res.render('seller/profile', { title: 'Meu Perfil', seller, error: 'Nome e email são obrigatórios', success: null });
@@ -28,8 +28,8 @@ router.post('/profile', upload.single('avatar'), requireSeller, (req, res) => {
   }
 
   db.run(
-    'UPDATE sellers SET name = ?, email = ?, phone = ?, bio = ?, website = ?, whatsapp = ?, avatar = ? WHERE id = ?',
-    [name, email, phone || '', bio || '', website || '', whatsapp || '', avatar, req.session.sellerId]
+    'UPDATE sellers SET name = ?, email = ?, phone = ?, bio = ?, website = ?, whatsapp = ?, pix_key = ?, avatar = ? WHERE id = ?',
+    [name, email, phone || '', bio || '', website || '', whatsapp || '', pix_key || '', avatar, req.session.sellerId]
   );
 
   req.session.sellerName = name;
