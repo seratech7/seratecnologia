@@ -387,20 +387,20 @@ async function initDb() {
     cats.forEach(function(c) { catMap[c.slug] = c.id; });
 
     var defaultProds = [
-      ['SSD Kingston NV2 1TB', 'SSD NVMe M.2 Kingston NV2 1TB, leitura 3500MB/s', 349.90, catMap['ssds'], 'Novo', 'Brasil', 'active'],
-      ['HD Seagate Barracuda 2TB', 'HD interno Seagate 2TB 7200RPM SATA III', 289.90, catMap['hds-armazenamento'], 'Novo', 'Brasil', 'active'],
-      ['Memória DDR5 32GB Kingston', 'Kit 2x16GB DDR5 4800MHz Kingston Fury Beast', 589.90, catMap['memoria-ram'], 'Novo', 'Brasil', 'active'],
-      ['Processador Intel Core i7-13700K', 'Intel Core i7-13700K 16 núcleos LGA1700', 2199.90, catMap['processadores'], 'Novo', 'Brasil', 'active'],
-      ['Placa de Vídeo RTX 4060', 'NVIDIA GeForce RTX 4060 8GB GDDR6', 1799.90, catMap['placas-video'], 'Novo', 'Brasil', 'active'],
-      ['Placa-mãe B760M', 'ASUS TUF Gaming B760M-Plus D4 LGA1700', 899.90, catMap['placas-mae'], 'Novo', 'Brasil', 'active'],
-      ['Monitor Gamer 27" 165Hz', 'Monitor LG UltraGear 27" IPS 165Hz 1ms', 1499.90, catMap['monitores'], 'Novo', 'Brasil', 'active'],
-      ['Teclado Mecânico RGB', 'Teclado gamer switch azul ABNT2', 199.90, catMap['perifericos'], 'Novo', 'Brasil', 'active'],
-      ['Fonte Corsair 650W', 'Fonte ATX Corsair CV650 80 Plus Bronze', 349.90, catMap['fontes-gabinetes'], 'Novo', 'Brasil', 'active'],
-      ['Notebook Dell Inspiron 15', 'Dell Inspiron 15" i5 8GB 256GB SSD', 3299.90, catMap['notebooks-pcs'], 'Novo', 'Brasil', 'active'],
+      ['SSD Kingston NV2 1TB', 'SSD NVMe M.2 Kingston NV2 1TB, leitura 3500MB/s', 349.90, catMap['ssds'], 'Novo', 'Brasil', 'active', 1],
+      ['HD Seagate Barracuda 2TB', 'HD interno Seagate 2TB 7200RPM SATA III', 289.90, catMap['hds-armazenamento'], 'Novo', 'Brasil', 'active', 0],
+      ['Memória DDR5 32GB Kingston', 'Kit 2x16GB DDR5 4800MHz Kingston Fury Beast', 589.90, catMap['memoria-ram'], 'Novo', 'Brasil', 'active', 1],
+      ['Processador Intel Core i7-13700K', 'Intel Core i7-13700K 16 núcleos LGA1700', 2199.90, catMap['processadores'], 'Novo', 'Brasil', 'active', 0],
+      ['Placa de Vídeo RTX 4060', 'NVIDIA GeForce RTX 4060 8GB GDDR6', 1799.90, catMap['placas-video'], 'Novo', 'Brasil', 'active', 1],
+      ['Placa-mãe B760M', 'ASUS TUF Gaming B760M-Plus D4 LGA1700', 899.90, catMap['placas-mae'], 'Novo', 'Brasil', 'active', 0],
+      ['Monitor Gamer 27" 165Hz', 'Monitor LG UltraGear 27" IPS 165Hz 1ms', 1499.90, catMap['monitores'], 'Novo', 'Brasil', 'active', 0],
+      ['Teclado Mecânico RGB', 'Teclado gamer switch azul ABNT2', 199.90, catMap['perifericos'], 'Novo', 'Brasil', 'active', 1],
+      ['Fonte Corsair 650W', 'Fonte ATX Corsair CV650 80 Plus Bronze', 349.90, catMap['fontes-gabinetes'], 'Novo', 'Brasil', 'active', 0],
+      ['Notebook Dell Inspiron 15', 'Dell Inspiron 15" i5 8GB 256GB SSD', 3299.90, catMap['notebooks-pcs'], 'Novo', 'Brasil', 'active', 0],
     ];
     defaultProds.forEach(function(p) {
       run('INSERT INTO products (name, description, price, category_id, seller_id, condition, location, status, featured) VALUES (?,?,?,?,?,?,?,?,?)',
-        [p[0], p[1], p[2], p[3], defaultSellerId, p[4]||'new', p[5]||'Brasil', p[6]||'active', 1]);
+        [p[0], p[1], p[2], p[3], defaultSellerId, p[4]||'new', p[5]||'Brasil', p[6]||'active', p[7]||0]);
       var lp = get("SELECT MAX(id) as id FROM products");
       if (lp) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lp.id, lp.id]);
     });
