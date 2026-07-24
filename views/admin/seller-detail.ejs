@@ -141,6 +141,40 @@
 
   <div class="admin-section">
     <div class="section-header">
+      <h2><i class="fas fa-info-circle"></i> Informações do Vendedor</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+      <div style="padding:16px;background:#f9f9f9;border-radius:8px;">
+        <div style="font-size:13px;color:#999;">Email</div>
+        <div style="font-weight:600;"><%= seller.email %></div>
+      </div>
+      <div style="padding:16px;background:#f9f9f9;border-radius:8px;">
+        <div style="font-size:13px;color:#999;">Telefone</div>
+        <div style="font-weight:600;"><%= seller.phone || '-' %></div>
+      </div>
+      <div style="padding:16px;background:#f9f9f9;border-radius:8px;">
+        <div style="font-size:13px;color:#999;">WhatsApp</div>
+        <div style="font-weight:600;">
+          <% if (seller.whatsapp) { %>
+            <a href="https://wa.me/55<%= seller.whatsapp.replace(/\D/g, '') %>" target="_blank" style="color:#25D366;">
+              <i class="fab fa-whatsapp"></i> <%= seller.whatsapp %>
+            </a>
+          <% } else { %>-<% } %>
+        </div>
+      </div>
+      <div style="padding:16px;background:#f9f9f9;border-radius:8px;">
+        <div style="font-size:13px;color:#999;">Cadastro</div>
+        <div style="font-weight:600;"><%= new Date(seller.created_at).toLocaleDateString('pt-BR') %></div>
+      </div>
+      <div style="padding:16px;background:#f9f9f9;border-radius:8px;">
+        <div style="font-size:13px;color:#999;">Status</div>
+        <div style="font-weight:600;"><span class="status-badge <%= seller.status %>"><%= seller.status === 'active' ? 'Ativo' : 'Inativo' %></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
       <h2><i class="fas fa-cog"></i> Ações</h2>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">

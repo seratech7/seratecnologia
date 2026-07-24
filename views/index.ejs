@@ -308,6 +308,12 @@ function q(urlParams) {
               <div class="product-stats" style="display:flex;gap:12px;font-size:12px;color:#999;margin-top:6px;">
                 <span><i class="fas fa-eye"></i> <%= product.views || 0 %></span>
                 <span><i class="fas fa-shopping-cart"></i> <%= product.sales_count || 0 %></span>
+                <% if (product.seller_whatsapp) { %>
+                  <% var waNum = product.seller_whatsapp.replace(/\D/g, ''); %>
+                  <a href="https://wa.me/55<%= waNum %>?text=<%= encodeURIComponent('Olá! Tenho interesse em: ' + product.name) %>" target="_blank" style="color:#25D366;margin-left:auto;" title="Falar com vendedor">
+                    <i class="fab fa-whatsapp"></i>
+                  </a>
+                <% } %>
               </div>
             </div>
           </a>

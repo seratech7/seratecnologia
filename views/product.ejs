@@ -112,6 +112,13 @@
             </div>
             <i class="fas fa-chevron-right seller-card-arrow"></i>
           </a>
+          <% if (seller.whatsapp) { %>
+            <% var waNum = seller.whatsapp.replace(/\D/g, ''); %>
+            <% var waMsg = encodeURIComponent('Olá! Tenho interesse no produto: ' + product.name + ' (Cód: ' + (product.code || 'PROD-' + String(product.id).padStart(5, '0')) + ')'); %>
+            <a href="https://wa.me/55<%= waNum %>?text=<%= waMsg %>" target="_blank" class="btn-whatsapp-seller">
+              <i class="fab fa-whatsapp"></i> Falar com Vendedor
+            </a>
+          <% } %>
         </div>
       <% } %>
 
@@ -168,10 +175,18 @@
 
       <div class="contact-seller">
         <h3><i class="fas fa-comment"></i> Entrar em contato</h3>
-        <p>Interessado neste produto? Entre em contato com o vendedor.</p>
-        <button class="btn-contact" onclick="alert('Funcionalidade de chat em desenvolvimento')">
-          <i class="fas fa-envelope"></i> Enviar mensagem
-        </button>
+        <p>Interessado neste produto? Fale diretamente com o vendedor.</p>
+        <% if (seller && seller.whatsapp) { %>
+          <% var waNum = seller.whatsapp.replace(/\D/g, ''); %>
+          <% var waMsg = encodeURIComponent('Olá! Tenho interesse no produto: ' + product.name + ' (Cód: ' + (product.code || 'PROD-' + String(product.id).padStart(5, '0')) + ')'); %>
+          <a href="https://wa.me/55<%= waNum %>?text=<%= waMsg %>" target="_blank" class="btn-whatsapp-seller" style="display:inline-flex;">
+            <i class="fab fa-whatsapp"></i> Falar no WhatsApp
+          </a>
+        <% } else { %>
+          <button class="btn-contact" onclick="alert('Vendedor não disponível no momento')">
+            <i class="fas fa-envelope"></i> Enviar mensagem
+          </button>
+        <% } %>
       </div>
     </div>
   </div>

@@ -3011,6 +3011,27 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* =========================================
+   WHATSAPP BUTTON
+   ========================================= */
+.btn-whatsapp-seller {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 12px; padding: 12px 16px;
+  background: #25D366; color: #fff; border-radius: 8px;
+  font-size: 15px; font-weight: 700; text-decoration: none;
+  transition: background .2s;
+}
+.btn-whatsapp-seller:hover { background: #1da851; color: #fff; }
+.btn-whatsapp-seller i { font-size: 20px; }
+
+.btn-whatsapp-large {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 32px; background: #25D366; color: #fff;
+  border: none; border-radius: 10px; font-size: 18px; font-weight: 700;
+  cursor: pointer; text-decoration: none; transition: background .2s;
+}
+.btn-whatsapp-large:hover { background: #1da851; color: #fff; }
+
+/* =========================================
    STAT BADGES (Views, Sales)
    ========================================= */
 .stat-badge {

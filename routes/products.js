@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
   const categories = db.query('SELECT * FROM categories ORDER BY name');
   const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location");
 
-  let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?";
+  let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
   let params = ['active'];
 
   if (search) {
@@ -74,7 +74,7 @@ router.get('/produto/:id', (req, res) => {
   let seller = null;
   if (product.seller_id) {
     seller = db.get(
-      'SELECT id, name, avatar, sales_count FROM sellers WHERE id = ? AND status = ?',
+      'SELECT id, name, avatar, sales_count, whatsapp FROM sellers WHERE id = ? AND status = ?',
       [product.seller_id, 'active']
     );
   }

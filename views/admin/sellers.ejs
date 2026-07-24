@@ -23,6 +23,11 @@
           <input type="text" name="phone" placeholder="Telefone">
         </div>
         <div class="form-group">
+          <input type="text" name="whatsapp" placeholder="WhatsApp (com DDD, ex: 11999999999)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
           <input type="password" name="password" placeholder="Senha" required>
         </div>
       </div>
@@ -37,6 +42,7 @@
           <th>Nome</th>
           <th>Email</th>
           <th>Telefone</th>
+          <th>WhatsApp</th>
           <th>Status</th>
           <th>Produtos</th>
           <th>Ativos</th>
@@ -50,6 +56,7 @@
             <td><strong><a href="/admin/sellers/<%= s.id %>" style="color:var(--accent);"><%= s.name %></a></strong></td>
             <td><%= s.email %></td>
             <td><%= s.phone || '-' %></td>
+            <td><% if (s.whatsapp) { %><a href="https://wa.me/55<%= s.whatsapp.replace(/\D/g, '') %>" target="_blank" style="color:#25D366;font-weight:600;"><i class="fab fa-whatsapp"></i> <%= s.whatsapp %></a><% } else { %>-<% } %></td>
             <td><span class="status-badge <%= s.status %>"><%= s.status === 'active' ? 'Ativo' : 'Inativo' %></span></td>
             <td><%= s.product_count || 0 %></td>
             <td><%= s.active_count || 0 %></td>

@@ -295,14 +295,14 @@ router.get('/sellers', (req, res) => {
 });
 
 router.post('/sellers/new', (req, res) => {
-  const { name, email, phone, password } = req.body;
+  const { name, email, phone, whatsapp, password } = req.body;
   if (!name || !email || !password) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
     return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios' });
   }
   const hash = bcrypt.hashSync(password, 10);
   try {
-    db.run("INSERT INTO sellers (name, email, phone, password_hash, status) VALUES (?, ?, ?, ?, 'active')", [name, email, phone || '', hash]);
+    db.run("INSERT INTO sellers (name, email, phone, whatsapp, password_hash, status) VALUES (?, ?, ?, ?, ?, 'active')", [name, email, phone || '', whatsapp || '', hash]);
   } catch (e) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
     return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Email já cadastrado' });
