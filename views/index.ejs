@@ -6,6 +6,7 @@ function q(urlParams) {
   if (search) p.push('search=' + encodeURIComponent(search));
   if (selectedCategory) p.push('category=' + encodeURIComponent(selectedCategory));
   if (selectedCondition) p.push('condition=' + encodeURIComponent(selectedCondition));
+  if (selectedLocation) p.push('location=' + encodeURIComponent(selectedLocation));
   if (priceMin) p.push('price_min=' + encodeURIComponent(priceMin));
   if (priceMax) p.push('price_max=' + encodeURIComponent(priceMax));
   if (selectedSort) p.push('sort=' + encodeURIComponent(selectedSort));
@@ -17,7 +18,7 @@ function q(urlParams) {
   <button class="filter-toggle" id="filterToggle">
     <i class="fas fa-filter"></i>
     <span>Filtros</span>
-    <% var activeFilters = (selectedCategory ? 1 : 0) + (selectedCondition ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (selectedSort ? 1 : 0); %>
+    <% var activeFilters = (selectedCategory ? 1 : 0) + (selectedCondition ? 1 : 0) + (selectedLocation ? 1 : 0) + (priceMin || priceMax ? 1 : 0) + (selectedSort ? 1 : 0); %>
     <% if (activeFilters > 0) { %><span class="filter-badge"><%= activeFilters %></span><% } %>
   </button>
 
@@ -75,6 +76,22 @@ function q(urlParams) {
               <input type="radio" name="condition" value="refurbished" <%= selectedCondition === 'refurbished' ? 'checked' : '' %>>
               <span class="cond-dot refurbished"></span> Recondicionado
             </label>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h4>Localização</h4>
+          <div class="filter-options-grid">
+            <label class="filter-chip <%= !selectedLocation ? 'active' : '' %>">
+              <input type="radio" name="location" value="" <%= !selectedLocation ? 'checked' : '' %>>
+              <i class="fas fa-globe"></i> Todas
+            </label>
+            <% locations.forEach(function(loc) { %>
+              <label class="filter-chip <%= selectedLocation === loc.location ? 'active' : '' %>">
+                <input type="radio" name="location" value="<%= loc.location %>" <%= selectedLocation === loc.location ? 'checked' : '' %>>
+                <i class="fas fa-map-marker-alt"></i> <%= loc.location %>
+              </label>
+            <% }) %>
           </div>
         </div>
 
@@ -173,6 +190,26 @@ function q(urlParams) {
               <span class="cond-dot refurbished"></span> Recondicionado
             </label>
           </li>
+        </ul>
+      </div>
+
+      <div class="filter-section">
+        <h4>Localização</h4>
+        <ul class="category-list">
+          <li>
+            <label class="filter-label <%= !selectedLocation ? 'active' : '' %>">
+              <input type="radio" name="location" value="" <%= !selectedLocation ? 'checked' : '' %>>
+              <i class="fas fa-globe"></i> Todas
+            </label>
+          </li>
+          <% locations.forEach(function(loc) { %>
+            <li>
+              <label class="filter-label <%= selectedLocation === loc.location ? 'active' : '' %>">
+                <input type="radio" name="location" value="<%= loc.location %>" <%= selectedLocation === loc.location ? 'checked' : '' %>>
+                <i class="fas fa-map-marker-alt"></i> <%= loc.location %>
+              </label>
+            </li>
+          <% }) %>
         </ul>
       </div>
 

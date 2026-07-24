@@ -3,8 +3,9 @@ const router = express.Router();
 const db = require('../database/db');
 
 router.get('/', (req, res) => {
-  const { search, category, condition: cond, price_min, price_max, sort } = req.query;
+  const { search, category, condition: cond, price_min, price_max, sort, location } = req.query;
   const categories = db.query('SELECT * FROM categories ORDER BY name');
+  const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location");
 
   let sql = 'SELECT p.*, c.name as category_name, c.icon as category_icon FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?';
   let params = ['active'];
@@ -22,6 +23,11 @@ router.get('/', (req, res) => {
   if (cond) {
     sql += ' AND p.condition = ?';
     params.push(cond);
+  }
+
+  if (location) {
+    sql += ' AND p.location = ?';
+    params.push(location);
   }
 
   if (price_min) {
@@ -46,9 +52,11 @@ router.get('/', (req, res) => {
     title: 'SeraTecnologia',
     products,
     categories,
+    locations,
     search: search || '',
     selectedCategory: category || '',
     selectedCondition: cond || '',
+    selectedLocation: location || '',
     priceMin: price_min || '',
     priceMax: price_max || '',
     selectedSort: sort || ''
