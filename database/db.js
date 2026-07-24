@@ -377,6 +377,32 @@ async function initDb() {
     }
   }
 
+  var testSale = get("SELECT COUNT(*) as c FROM sales WHERE buyer_email = 'comprador@teste.com'");
+  if (testSale && testSale.c === 0) {
+    var tsSeller = get("SELECT id FROM sellers WHERE email = 'teste@teste.com'");
+    var tsProd = get("SELECT id FROM products WHERE seller_id = ? LIMIT 1", [tsSeller ? tsSeller.id : 0]);
+    if (tsSeller && !tsProd) {
+      run("INSERT INTO products (name, description, price, seller_id, status, code) VALUES (?, ?, ?, ?, ?, ?)",
+        ['Teclado Mecânico RGB', 'Teclado gamer switch azul', 10, tsSeller.id, 'active', 'PROD-TESTE']);
+      var tp = get("SELECT MAX(id) as id FROM products");
+      if (tp) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [tp.id, tp.id]);
+      tsProd = get("SELECT id, code, name, price FROM products WHERE seller_id = ? LIMIT 1", [tsSeller.id]);
+    }
+    if (tsSeller && tsProd) {
+      run("INSERT INTO sales (product_id, seller_id, product_code, product_name, product_price, buyer_name, buyer_document, buyer_phone, buyer_email, buyer_address, status, payment_method) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        [tsProd.id, tsSeller.id, tsProd.code, tsProd.name, tsProd.price, 'Comprador Teste', '000.000.000-00', '11988887777', 'comprador@teste.com', 'Rua Teste, 123', 'paid', 'pix']);
+      var tsSale = get("SELECT MAX(id) as id FROM sales");
+      var tsCode = gerarCodigoRastreio();
+      run("UPDATE sales SET tracking_code = ?, tracking_status = 'confirmed' WHERE id = ?", [tsCode, tsSale.id]);
+      createTrackingHistory(tsSale.id, 'confirmed', 'Pedido confirmado');
+      var tComm = getCommissionPct(tsSeller.id);
+      var tVal = 10;
+      addTransaction(tsSeller.id, 'sale', 'Venda ' + tsProd.code + ' - ' + tsProd.name, tVal - (tVal * tComm / 100), 'sale', tsSale.id);
+      addTransaction(0, 'commission', 'Comissão ' + tComm + '% - ' + tsProd.code, tVal * tComm / 100, 'commission', tsSale.id);
+      console.log('[db] Venda teste criada: R$ 10,00');
+    }
+  }
+
   saveDb();
 
   return db;
