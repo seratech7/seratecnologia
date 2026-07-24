@@ -25,6 +25,13 @@
   <% } %>
 
   <% if (produto) { %>
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:16px 24px;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <i class="fas fa-ticket-alt" style="color:#9c27b0;"></i>
+    <span style="font-size:14px;font-weight:600;color:#555;">Tem um cupom?</span>
+    <input type="text" id="cupomInput" value="<%= cupom || '' %>" placeholder="DIGITE O CÓDIGO" style="flex:1;min-width:140px;padding:8px 12px;border:2px solid #ddd;border-radius:6px;font-size:14px;font-family:monospace;text-transform:uppercase;letter-spacing:1px;max-width:200px;">
+    <button onclick="aplicarCupom()" style="padding:8px 16px;background:#9c27b0;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;"><i class="fas fa-check"></i> Aplicar</button>
+  </div>
+
   <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
     <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
       <% if (produto.image) { %>
@@ -42,11 +49,20 @@
           <i class="fas fa-store"></i> <%= produto.seller_name || 'Vendedor' %>
           <% if (produto.seller_pix) { %> &middot; <i class="fas fa-pix" style="color:#00a844;"></i> PIX disponível<% } %>
         </div>
-        <div style="margin-top:4px;font-size:14px;color:#666;">
-          <i class="fas fa-map-marker-alt"></i> <%= produto.location || 'Brasil' %>
-        </div>
+      <div style="margin-top:4px;font-size:14px;color:#666;">
+        <i class="fas fa-map-marker-alt"></i> <%= produto.location || 'Brasil' %>
       </div>
+      <% if (desconto > 0) { %>
+        <div style="margin-top:8px;padding:8px 12px;background:#e8f5e9;border-radius:6px;font-size:14px;">
+          <i class="fas fa-tag" style="color:#2e7d32;"></i> <strong>Desconto aplicado!</strong><br>
+          <span style="font-size:12px;color:#555;">Original: <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.price) %></span><br>
+          <span style="font-size:18px;font-weight:800;color:#2e7d32;">
+            <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.price - desconto) %>
+          </span>
+        </div>
+      <% } %>
     </div>
+  </div>
   </div>
 
   <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
@@ -118,6 +134,14 @@
 </div>
 
 <script>
+function aplicarCupom() {
+  var cupomInput = document.getElementById('cupomInput');
+  var codigo = '<%= produto ? produto.code : "" %>';
+  if (cupomInput && cupomInput.value.trim()) {
+    window.location.href = '/comprar?codigo=' + codigo + '&cupom=' + encodeURIComponent(cupomInput.value.trim());
+  }
+}
+
 var ultimoPayload = '';
 
 function gerarPagamento(e) {
@@ -128,13 +152,15 @@ function gerarPagamento(e) {
   document.getElementById('pixErro').style.display = 'none';
 
   var form = document.getElementById('buyerForm');
+  var cupomEl = document.getElementById('cupomInput');
   var dados = {
     codigo: '<%= produto ? produto.code : "" %>',
     nome: form.nome.value,
     documento: form.documento.value,
     telefone: form.telefone.value,
     email: form.email.value,
-    endereco: form.endereco.value
+    endereco: form.endereco.value,
+    cupom: cupomEl ? cupomEl.value : ''
   };
 
   fetch('/api/gerar-pix', {

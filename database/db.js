@@ -379,10 +379,16 @@ async function initDb() {
       max_uses INTEGER DEFAULT 0,
       used_count INTEGER DEFAULT 0,
       active INTEGER DEFAULT 1,
+      seller_id INTEGER DEFAULT NULL,
       expires_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  var couponCols = db.exec("PRAGMA table_info(coupons)");
+  if (couponCols.length > 0) {
+    var cc = couponCols[0].values.map(function(r) { return r[1]; });
+    if (!cc.includes('seller_id')) db.run("ALTER TABLE coupons ADD COLUMN seller_id INTEGER DEFAULT NULL");
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS banners (
@@ -751,17 +757,17 @@ function getCoupon(code) {
 }
 
 function getAllCoupons() {
-  return query("SELECT * FROM coupons ORDER BY created_at DESC");
+  return query("SELECT c.*, s.name as seller_name FROM coupons c LEFT JOIN sellers s ON c.seller_id = s.id ORDER BY c.created_at DESC");
 }
 
-function saveCoupon(code, type, value, minOrder, maxUses, expiresAt) {
+function saveCoupon(code, type, value, minOrder, maxUses, expiresAt, sellerId) {
   var existing = get("SELECT id FROM coupons WHERE code = ?", [code]);
   if (existing) {
-    run("UPDATE coupons SET type = ?, value = ?, min_order = ?, max_uses = ?, expires_at = ? WHERE code = ?",
-      [type, value, minOrder || 0, maxUses || 0, expiresAt || null, code]);
+    run("UPDATE coupons SET type = ?, value = ?, min_order = ?, max_uses = ?, expires_at = ?, seller_id = ? WHERE code = ?",
+      [type, value, minOrder || 0, maxUses || 0, expiresAt || null, sellerId || null, code]);
   } else {
-    run("INSERT INTO coupons (code, type, value, min_order, max_uses, expires_at) VALUES (?, ?, ?, ?, ?, ?)",
-      [code, type, value, minOrder || 0, maxUses || 0, expiresAt || null]);
+    run("INSERT INTO coupons (code, type, value, min_order, max_uses, expires_at, seller_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [code, type, value, minOrder || 0, maxUses || 0, expiresAt || null, sellerId || null]);
   }
 }
 

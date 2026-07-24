@@ -306,5 +306,27 @@ router.post('/sales/status/:id', requireSeller, upload.array('proof_photos', 5),
   res.redirect('/seller/sales');
 });
 
+// ========== SELLER COUPONS ==========
+router.get('/coupons', requireSeller, (req, res) => {
+  var coupons = db.query("SELECT c.* FROM coupons c WHERE c.seller_id = ? ORDER BY c.created_at DESC", [req.session.sellerId]);
+  res.render('seller/coupons', { title: 'Meus Cupons', coupons, error: null });
+});
+
+router.post('/coupons/new', requireSeller, (req, res) => {
+  var { code, type, value, min_order, max_uses, expires_at } = req.body;
+  if (!code || !value) return res.redirect('/seller/coupons');
+  try {
+    db.run("INSERT INTO coupons (code, type, value, min_order, max_uses, expires_at, seller_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [code.toUpperCase(), type || 'percentage', parseFloat(value), parseFloat(min_order) || 0, parseInt(max_uses) || 0, expires_at || null, req.session.sellerId]);
+    db.logActivity('seller', req.session.sellerId, req.session.sellerName, 'create_coupon', 'Cupom criado: ' + code, 'coupon', 0, req.ip);
+  } catch(e) { return res.redirect('/seller/coupons?erro=Código já existe'); }
+  res.redirect('/seller/coupons');
+});
+
+router.post('/coupons/delete/:id', requireSeller, (req, res) => {
+  db.run("DELETE FROM coupons WHERE id = ? AND seller_id = ?", [req.params.id, req.session.sellerId]);
+  res.redirect('/seller/coupons');
+});
+
 return router;
 };

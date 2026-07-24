@@ -6,10 +6,29 @@ const { gerarPixPayload, gerarQRCodeBase64 } = require('../utils/pix');
 router.get('/comprar', function(req, res) {
   var produto = null;
   var codigo = req.query.codigo || '';
+  var cupom = req.query.cupom || '';
+  var desconto = 0;
+
   if (codigo) {
     produto = db.get("SELECT p.*, c.name as category_name, c.icon as category_icon, s.name as seller_name, s.pix_key as seller_pix, s.phone as seller_phone, s.whatsapp as seller_whatsapp, s.id as sid FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [codigo]);
+
+    if (produto && cupom) {
+      var coupon = db.getCoupon(cupom);
+      if (coupon && (!coupon.seller_id || coupon.seller_id === produto.sid) && produto.price >= (coupon.min_order || 0)) {
+        desconto = coupon.type === 'percentage' ? produto.price * (coupon.value / 100) : coupon.value;
+        if (desconto > produto.price) desconto = produto.price;
+      }
+    }
   }
-  res.render('comprar', { title: 'Compra Online', produto: produto, codigo: codigo, error: codigo && !produto ? 'Produto não encontrado' : null });
+
+  res.render('comprar', {
+    title: 'Compra Online',
+    produto: produto,
+    codigo: codigo,
+    cupom: cupom,
+    desconto: desconto,
+    error: codigo && !produto ? 'Produto não encontrado' : null
+  });
 });
 
 router.get('/api/produto/:codigo', function(req, res) {
@@ -20,7 +39,7 @@ router.get('/api/produto/:codigo', function(req, res) {
 
 router.post('/api/finalizar-compra', function(req, res) {
   try {
-    var { codigo, nome, documento, telefone, email, endereco } = req.body;
+    var { codigo, nome, documento, telefone, email, endereco, cupom } = req.body;
     if (!codigo || !nome || !documento || !telefone || !email || !endereco) {
       return res.status(400).json({ error: 'Preencha todos os campos' });
     }
@@ -37,9 +56,21 @@ router.post('/api/finalizar-compra', function(req, res) {
     if (!produto) return res.status(404).json({ error: 'Produto não encontrado' });
     if (!produto.seller_id) return res.status(400).json({ error: 'Produto sem vendedor' });
 
+    // Apply coupon discount
+    var finalPrice = produto.price;
+    if (cupom) {
+      var coupon = db.getCoupon(cupom);
+      if (coupon && (!coupon.seller_id || coupon.seller_id === produto.seller_id) && finalPrice >= (coupon.min_order || 0)) {
+        var disc = coupon.type === 'percentage' ? finalPrice * (coupon.value / 100) : coupon.value;
+        if (disc > finalPrice) disc = finalPrice;
+        finalPrice = Math.round((finalPrice - disc) * 100) / 100;
+        db.incrementCoupon(coupon.id);
+      }
+    }
+
     db.run(
       'INSERT INTO sales (product_id, seller_id, product_code, product_name, product_price, buyer_name, buyer_document, buyer_phone, buyer_email, buyer_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [produto.id, produto.seller_id, produto.code, produto.name, produto.price, nome, documento, telefone, email, endereco]
+      [produto.id, produto.seller_id, produto.code, produto.name, finalPrice, nome, documento, telefone, email, endereco]
     );
 
     var lastSale = db.get('SELECT MAX(id) as id FROM sales');
@@ -50,14 +81,14 @@ router.post('/api/finalizar-compra', function(req, res) {
     db.createTrackingHistory(saleId, 'confirmed', 'Pedido confirmado e pagamento recebido');
 
     var commPct = db.getCommissionPct(produto.seller_id);
-    var commValue = produto.price * (commPct / 100);
-    var sellerValue = produto.price - commValue;
+    var commValue = Math.round(finalPrice * (commPct / 100) * 100) / 100;
+    var sellerValue = Math.round((finalPrice - commValue) * 100) / 100;
     db.addTransaction(produto.seller_id, 'sale', 'Venda ' + produto.code + ' - ' + produto.name, sellerValue, 'sale', saleId);
     db.addTransaction(0, 'commission', 'Comissão ' + commPct + '% - ' + produto.code, commValue, 'commission', saleId);
 
-    var vendaMsg = '🛒 NOVA VENDA!\nProduto: ' + produto.name + '\nCódigo: ' + produto.code + '\nValor: R$ ' + produto.price.toFixed(2) + '\nComprador: ' + nome + '\nWhatsApp: ' + telefone + '\nEmail: ' + email;
+    var vendaMsg = '🛒 NOVA VENDA!\nProduto: ' + produto.name + '\nCódigo: ' + produto.code + '\nValor: R$ ' + finalPrice.toFixed(2) + '\nComprador: ' + nome + '\nWhatsApp: ' + telefone + '\nEmail: ' + email;
 
-    db.addNotification(produto.seller_id.toString(), 'sale', 'Nova venda: ' + produto.name + ' - R$ ' + produto.price.toFixed(2), 'shopping-cart', '/seller/sales');
+    db.addNotification(produto.seller_id.toString(), 'sale', 'Nova venda: ' + produto.name + ' - R$ ' + finalPrice.toFixed(2), 'shopping-cart', '/seller/sales');
 
     if (produto.notify_whatsapp) {
       var waNum = produto.notify_whatsapp.replace(/\D/g, '');
