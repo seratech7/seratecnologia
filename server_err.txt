@@ -1,1 +1,0 @@
-⚠️  AVISO: Use ADMIN_PASSWORD no .env para definir uma senha forte!

@@ -1,4 +1,0 @@
-🚀 SeraTecnologia rodando em http://localhost:3000
-📊 Painel Admin: http://localhost:3000/admin/login
-🛒 Painel Vendedor: http://localhost:3000/seller/login
-[backup] database.sqlite não encontrado
