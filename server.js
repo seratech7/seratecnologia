@@ -136,16 +136,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Global error handler
+// Upload error handler
 app.use((err, req, res, next) => {
-  console.error('Erro:', err.message);
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).send('Arquivo muito grande. Máximo 5MB.');
   }
   if (err.message?.includes('Formato de imagem')) {
     return res.status(400).send(err.message);
   }
-  res.status(500).send('Erro interno do servidor');
+  next(err);
 });
 
 app.use((req, res, next) => {
@@ -323,11 +322,11 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+  console.error('Error:', err.message, err.stack);
   if (req.xhr || req.headers['content-type']?.includes('json')) {
-    return res.status(500).json({ error: 'Erro interno do servidor' });
+    return res.status(500).json({ error: 'Erro interno do servidor', detail: err.message });
   }
-  res.status(500).send('Erro interno do servidor');
+  res.status(500).send('Erro interno do servidor: ' + err.message);
 });
 
 async function start() {
