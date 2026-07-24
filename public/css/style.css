@@ -413,6 +413,143 @@ img { max-width: 100%; height: auto; display: block; }
   .sort-select-mobile { display: inline-block; }
 }
 
+/* ========== BANNER CAROUSEL (OLX-style) ========== */
+.banner-carousel {
+  grid-column: 1 / -1;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f5f5f5;
+}
+
+.banner-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.banner-slide {
+  min-width: 100%;
+  position: relative;
+}
+
+.banner-slide a {
+  display: block;
+}
+
+.banner-slide img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.banner-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.75));
+  padding: 48px 32px 24px;
+  color: #fff;
+  pointer-events: none;
+}
+
+.banner-overlay h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  line-height: 1.3;
+}
+
+.banner-overlay p {
+  margin: 6px 0 0;
+  font-size: 15px;
+  opacity: 0.9;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Arrows */
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+  color: #333;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s, background 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  z-index: 2;
+  line-height: 1;
+}
+
+.banner-carousel:hover .banner-arrow {
+  opacity: 1;
+}
+
+.banner-arrow:hover {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+}
+
+.banner-arrow-left { left: 12px; }
+.banner-arrow-right { right: 12px; }
+
+/* Dots */
+.banner-dots {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.banner-dot.active {
+  background: #fff;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.banner-dot:hover {
+  background: rgba(255,255,255,0.75);
+}
+
+@media (max-width: 768px) {
+  .banner-slide img { height: 180px; }
+  .banner-overlay h2 { font-size: 18px; }
+  .banner-overlay p { font-size: 13px; }
+  .banner-overlay { padding: 32px 16px 16px; }
+  .banner-arrow { display: none; }
+}
+
+@media (max-width: 480px) {
+  .banner-slide img { height: 140px; }
+  .banner-overlay h2 { font-size: 15px; }
+  .banner-overlay p { font-size: 12px; }
+  .banner-overlay { padding: 24px 12px 12px; }
+}
+
 /* =========================================
    PRODUCTS GRID
    ========================================= */

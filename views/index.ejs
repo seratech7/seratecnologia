@@ -238,16 +238,16 @@ function q(urlParams) {
   </aside>
 
   <% if (banners && banners.length > 0) { %>
-  <section class="banner-carousel" style="grid-column:1/-1;margin-bottom:20px;position:relative;overflow:hidden;border-radius:12px;">
-    <div class="banner-track" style="display:flex;transition:transform .5s ease;">
+  <section class="banner-carousel">
+    <div class="banner-track">
       <% banners.forEach(function(b, i) { %>
-        <div class="banner-slide" style="min-width:100%;position:relative;">
-          <a href="<%= b.link || '#' %>" target="<%= b.link ? '_blank' : '_self' %>" style="display:block;">
-            <img src="<%= b.image %>" alt="<%= b.title %>" style="width:100%;height:280px;object-fit:cover;display:block;">
+        <div class="banner-slide">
+          <a href="<%= b.link || '#' %>" target="<%= b.link ? '_blank' : '_self' %>">
+            <img src="<%= b.image %>" alt="<%= b.title %>" loading="lazy">
             <% if (b.title || b.subtitle) { %>
-            <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));padding:40px 24px 20px;color:#fff;">
-              <% if (b.title) { %><h2 style="margin:0;font-size:24px;"><%= b.title %></h2><% } %>
-              <% if (b.subtitle) { %><p style="margin:4px 0 0;font-size:14px;opacity:0.9;"><%= b.subtitle %></p><% } %>
+            <div class="banner-overlay">
+              <% if (b.title) { %><h2><%= b.title %></h2><% } %>
+              <% if (b.subtitle) { %><p><%= b.subtitle %></p><% } %>
             </div>
             <% } %>
           </a>
@@ -255,9 +255,11 @@ function q(urlParams) {
       <% }) %>
     </div>
     <% if (banners.length > 1) { %>
-    <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:6px;">
+    <button class="banner-arrow banner-arrow-left" data-dir="-1">&#10094;</button>
+    <button class="banner-arrow banner-arrow-right" data-dir="1">&#10095;</button>
+    <div class="banner-dots">
       <% banners.forEach(function(b, i) { %>
-        <span class="banner-dot" data-index="<%= i %>" style="width:10px;height:10px;border-radius:50%;background:<%= i === 0 ? '#fff' : 'rgba(255,255,255,0.4)' %>;cursor:pointer;transition:background .3s;"></span>
+        <span class="banner-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>"></span>
       <% }) %>
     </div>
     <% } %>
@@ -394,22 +396,35 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Banner carousel
-  var track = document.querySelector('.banner-track');
-  var dots = document.querySelectorAll('.banner-dot');
+  var carousel = document.querySelector('.banner-carousel');
+  var track = carousel ? carousel.querySelector('.banner-track') : null;
+  var dots = carousel ? carousel.querySelectorAll('.banner-dot') : [];
+  var arrows = carousel ? carousel.querySelectorAll('.banner-arrow') : [];
   if (track && dots.length > 0) {
     var current = 0;
     var total = dots.length;
+    var autoTimer = null;
     function goTo(index) {
+      if (index < 0) index = total - 1;
+      if (index >= total) index = 0;
       current = index;
       track.style.transform = 'translateX(-' + (current * 100) + '%)';
       dots.forEach(function(d, i) {
-        d.style.background = i === current ? '#fff' : 'rgba(255,255,255,0.4)';
+        d.classList.toggle('active', i === current);
       });
+      resetAuto();
+    }
+    function resetAuto() {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = setInterval(function() { goTo(current + 1); }, 5000);
     }
     dots.forEach(function(dot) {
       dot.addEventListener('click', function() { goTo(parseInt(this.dataset.index)); });
     });
-    setInterval(function() { goTo((current + 1) % total); }, 5000);
+    arrows.forEach(function(arrow) {
+      arrow.addEventListener('click', function() { goTo(current + parseInt(this.dataset.dir)); });
+    });
+    resetAuto();
   }
 });
 </script>
