@@ -3,3 +3,7 @@ node_modules/
 database.sqlite
 database/backups/
 *.sqlite
+
+server_out.txt
+server_err.txt
+database.sqlite

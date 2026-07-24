@@ -558,6 +558,10 @@ img { max-width: 100%; height: auto; display: block; }
   min-height: 300px;
 }
 
+@media (min-width: 1025px) {
+  .products-section { grid-column: 2; }
+}
+
 .products-header {
   display: flex;
   justify-content: space-between;
@@ -1904,6 +1908,7 @@ img { max-width: 100%; height: auto; display: block; }
   .marketplace-container {
     grid-template-columns: 1fr;
   }
+  .products-section { grid-column: auto; }
 
   .sidebar-filters {
     position: static;
