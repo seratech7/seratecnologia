@@ -224,7 +224,9 @@ router.get('/wallet', requireSeller, (req, res) => {
     title: 'Minha Carteira',
     balance, txns, totalVendas: totalVendas ? totalVendas.c : 0,
     commPct, page, totalPages, period, startDate, endDate,
-    summary, chartData, payouts, sellerInfo
+    summary, chartData, payouts, sellerInfo,
+    sucesso: req.query.sucesso || '',
+    erro: req.query.erro || ''
   });
 });
 
