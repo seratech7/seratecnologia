@@ -34,11 +34,18 @@ router.post('/api/finalizar-compra', function(req, res) {
       [produto.id, produto.seller_id, produto.code, produto.name, produto.price, nome, documento, telefone, email, endereco]
     );
 
+    var lastSale = db.get('SELECT MAX(id) as id FROM sales');
+    var saleId = lastSale ? lastSale.id : 0;
+
+    var trackingCode = db.gerarCodigoRastreio();
+    db.run("UPDATE sales SET tracking_code = ?, tracking_status = 'confirmed' WHERE id = ?", [trackingCode, saleId]);
+    db.createTrackingHistory(saleId, 'confirmed', 'Pedido confirmado e pagamento recebido');
+
     var commPct = db.getCommissionPct();
     var commValue = produto.price * (commPct / 100);
     var sellerValue = produto.price - commValue;
-    db.addTransaction(produto.seller_id, 'sale', 'Venda ' + produto.code + ' - ' + produto.name, sellerValue, 'sale', produto.id);
-    db.addTransaction(0, 'commission', 'Comissão ' + commPct + '% - ' + produto.code, commValue, 'commission', produto.id);
+    db.addTransaction(produto.seller_id, 'sale', 'Venda ' + produto.code + ' - ' + produto.name, sellerValue, 'sale', saleId);
+    db.addTransaction(0, 'commission', 'Comissão ' + commPct + '% - ' + produto.code, commValue, 'commission', saleId);
 
     var vendaMsg = '🛒 NOVA VENDA!\nProduto: ' + produto.name + '\nCódigo: ' + produto.code + '\nValor: R$ ' + produto.price.toFixed(2) + '\nComprador: ' + nome + '\nWhatsApp: ' + telefone + '\nEmail: ' + email;
 
@@ -60,10 +67,28 @@ router.post('/api/finalizar-compra', function(req, res) {
       }
     }
 
-    res.json({ success: true, message: 'Compra registrada com sucesso!' });
+    res.json({ success: true, message: 'Compra registrada com sucesso!', trackingCode: trackingCode, saleId: saleId });
   } catch (e) {
     res.status(500).json({ error: 'Erro ao registrar compra' });
   }
+});
+
+router.get('/rastreio', function(req, res) {
+  var code = req.query.codigo || '';
+  var sale = null;
+  var history = [];
+  if (code) {
+    sale = db.getSaleByTrackingCode(code);
+    if (sale) history = db.getTrackingHistory(sale.id);
+  }
+  res.render('rastreio', { title: 'Rastrear Pedido', sale: sale, history: history, code: code, error: code && !sale ? 'Código de rastreio não encontrado' : null });
+});
+
+router.get('/api/rastreio/:codigo', function(req, res) {
+  var sale = db.getSaleByTrackingCode(req.params.codigo);
+  if (!sale) return res.status(404).json({ error: 'Não encontrado' });
+  var history = db.getTrackingHistory(sale.id);
+  res.json({ sale: sale, history: history });
 });
 
 router.post('/api/gerar-pix', async function(req, res) {

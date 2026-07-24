@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../database/db');
 const { requireSeller, redirectIfSeller } = require('../middleware/auth');
+const { sendTrackingUpdate } = require('../utils/email');
 
 module.exports = function(upload) {
 const router = express.Router();
@@ -211,10 +212,40 @@ router.get('/wallet', requireSeller, (req, res) => {
 });
 
 router.post('/sales/status/:id', requireSeller, (req, res) => {
-  const { status } = req.body;
-  if (['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+  var { status, tracking_message } = req.body;
+  var sale = db.get('SELECT * FROM sales WHERE id = ? AND seller_id = ?', [req.params.id, req.session.sellerId]);
+  if (!sale) return res.redirect('/seller/sales');
+
+  var validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+  var trackingMap = { 'paid': 'preparing', 'shipped': 'shipped', 'delivered': 'delivered', 'cancelled': 'cancelled' };
+  var statusLabels = { 'pending': 'Pendente', 'paid': 'Pago', 'shipped': 'Enviado', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
+  var trackingLabels = { 'pending': 'Pendente', 'confirmed': 'Confirmado', 'preparing': 'Em separação', 'shipped': 'Despachado', 'in_transit': 'Em trânsito', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
+
+  if (validStatuses.includes(status)) {
     db.run("UPDATE sales SET status = ? WHERE id = ? AND seller_id = ?", [status, req.params.id, req.session.sellerId]);
+
+    var trackingStatus = trackingMap[status] || sale.tracking_status;
+    var msg = tracking_message || 'Status atualizado para: ' + (statusLabels[status] || status);
+
+    if (trackingStatus !== sale.tracking_status) {
+      db.run("UPDATE sales SET tracking_status = ? WHERE id = ?", [trackingStatus, req.params.id]);
+    }
+    db.createTrackingHistory(req.params.id, trackingStatus, msg);
+
+    var seller = db.get('SELECT name FROM sellers WHERE id = ?', [req.session.sellerId]);
+    var notifyMsg = '📦 ' + (seller ? seller.name : 'Vendedor') + ' atualizou seu pedido ' + sale.product_code + '!\n\nStatus: ' + (trackingLabels[trackingStatus] || trackingStatus) + '\nMensagem: ' + msg + '\n\nAcompanhe: https://seratecnologia-1.onrender.com/rastreio?codigo=' + sale.tracking_code;
+
+    db.addNotification('customer_' + sale.id, 'tracking', notifyMsg, 'truck', '/rastreio?codigo=' + sale.tracking_code);
+
+    var waNum = sale.buyer_phone.replace(/\D/g, '');
+    if (waNum) {
+      var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(notifyMsg);
+      db.addNotification('customer_' + sale.id, 'whatsapp', 'Clique para notificar ' + sale.buyer_name + ' via WhatsApp', 'whatsapp', waLink);
+    }
+
+    sendTrackingUpdate(sale, trackingLabels[trackingStatus] || trackingStatus, msg);
   }
+
   res.redirect('/seller/sales');
 });
 

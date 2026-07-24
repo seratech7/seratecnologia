@@ -1,0 +1,86 @@
+<%- include('partials/header') %>
+
+<div class="container" style="max-width:720px;margin:0 auto;padding:40px 16px;">
+  <div style="text-align:center;margin-bottom:32px;">
+    <i class="fas fa-truck" style="font-size:48px;color:var(--primary);opacity:0.5;"></i>
+    <h1 style="margin:8px 0 4px;">Rastrear Pedido</h1>
+    <p style="color:#666;">Digite o código de rastreio enviado no seu email/WhatsApp</p>
+  </div>
+
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+    <form method="GET" action="/rastreio" style="display:flex;gap:8px;">
+      <input type="text" name="codigo" value="<%= code %>" placeholder="Ex: ST20260723-00001" style="flex:1;padding:12px 16px;border:2px solid #ddd;border-radius:8px;font-size:15px;" required>
+      <button type="submit" class="btn-primary" style="padding:12px 24px;border-radius:8px;font-size:15px;white-space:nowrap;">
+        <i class="fas fa-search"></i> Buscar
+      </button>
+    </form>
+  </div>
+
+  <% if (error) { %>
+  <div style="background:#fff3e0;color:#e65100;padding:16px;border-radius:8px;text-align:center;">
+    <i class="fas fa-exclamation-circle"></i> <%= error %>
+  </div>
+  <% } %>
+
+  <% if (sale) { %>
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:24px;margin-bottom:24px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <h2 style="margin:0 0 4px;font-size:18px;"><%= sale.product_name %></h2>
+        <span style="font-size:12px;color:#999;">Pedido: <strong><%= sale.tracking_code %></strong></span><br>
+        <span style="font-size:12px;color:#999;">Vendedor: <strong><%= sale.seller_name || '—' %></strong></span>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:24px;font-weight:800;color:var(--primary);">
+          <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sale.product_price) %>
+        </div>
+        <div style="font-size:13px;color:#666;">
+          <% var sl = {'pending':'Pendente','confirmed':'Confirmado','preparing':'Em separação','shipped':'Despachado','in_transit':'Em trânsito','delivered':'Entregue','cancelled':'Cancelado'}; %>
+          <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-weight:600;font-size:12px;
+            <%= sale.tracking_status === 'delivered' ? 'background:#e8f5e9;color:#2e7d32;' :
+               sale.tracking_status === 'cancelled' ? 'background:#fce4ec;color:#c62828;' :
+               'background:#e3f2fd;color:#1565c0;' %>">
+            <%= sl[sale.tracking_status] || sale.tracking_status %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid #eee;padding-top:20px;">
+      <h3 style="font-size:15px;margin:0 0 16px;"><i class="fas fa-clock"></i> Histórico de Atualizações</h3>
+      
+      <% if (history.length === 0) { %>
+      <p style="color:#999;text-align:center;padding:16px;">Nenhuma atualização ainda</p>
+      <% } else { %>
+      <div style="position:relative;">
+        <div style="position:absolute;left:15px;top:8px;bottom:8px;width:2px;background:#e0e0e0;"></div>
+        <% history.forEach(function(h, idx) { %>
+        <div style="display:flex;gap:16px;margin-bottom:20px;position:relative;">
+          <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1;
+            <% if (h.status === 'delivered') { %>background:#e8f5e9;color:#2e7d32;
+            <% } else if (h.status === 'cancelled') { %>background:#fce4ec;color:#c62828;
+            <% } else { %>background:#e3f2fd;color:#1565c0;<% } %>">
+            <i class="fas <%= h.status === 'delivered' ? 'fa-check-circle' : h.status === 'shipped' || h.status === 'in_transit' ? 'fa-truck' : h.status === 'preparing' ? 'fa-box' : h.status === 'cancelled' ? 'fa-times-circle' : 'fa-circle' %>"></i>
+          </div>
+          <div style="flex:1;padding-top:4px;">
+            <div style="font-weight:600;font-size:14px;">
+              <% var tl = {'pending':'Pendente','confirmed':'Confirmado','preparing':'Em separação','shipped':'Despachado','in_transit':'Em trânsito','delivered':'Entregue','cancelled':'Cancelado'}; %>
+              <%= tl[h.status] || h.status %>
+            </div>
+            <div style="font-size:13px;color:#666;margin-top:2px;"><%= h.message %></div>
+            <div style="font-size:11px;color:#999;margin-top:2px;"><%= new Date(h.created_at).toLocaleString('pt-BR') %></div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <div style="background:#f5f5f5;border-radius:12px;padding:20px;font-size:13px;color:#666;">
+    <i class="fas fa-info-circle"></i> Dúvidas sobre seu pedido? Entre em contato com o vendedor pelo WhatsApp ou email.
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

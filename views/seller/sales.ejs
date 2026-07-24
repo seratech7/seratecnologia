@@ -19,6 +19,7 @@
       <th>Valor</th>
       <th>Comprador</th>
       <th>Contato</th>
+      <th>Rastreio</th>
       <th>Status</th>
       <th>Data</th>
       <th>Ações</th>
@@ -27,7 +28,7 @@
   <tbody>
     <% sales.forEach(function(v) { %>
     <tr>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
         <strong><%= v.product_code %></strong><br>
         <span style="font-size:13px;color:#666;"><%= v.product_name %></span>
       </td>
@@ -46,16 +47,34 @@
           <i class="fas fa-envelope"></i>
         </a>
       </td>
+      <td style="font-size:12px;">
+        <% if (v.tracking_code) { %>
+        <span style="font-weight:600;color:#1565c0;"><%= v.tracking_code %></span><br>
+        <a href="/rastreio?codigo=<%= v.tracking_code %>" target="_blank" style="font-size:11px;color:var(--primary);">Acompanhar</a>
+        <% } else { %>
+        <span style="color:#999;">—</span>
+        <% } %>
+      </td>
       <td>
-        <form method="POST" action="/seller/sales/status/<%= v.id %>" style="display:flex;align-items:center;gap:4px;">
-          <select name="status" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;" onchange="this.form.submit()">
-            <option value="pending" <%= v.status === 'pending' ? 'selected' : '' %>>Pendente</option>
-            <option value="paid" <%= v.status === 'paid' ? 'selected' : '' %>>Pago</option>
-            <option value="shipped" <%= v.status === 'shipped' ? 'selected' : '' %>>Enviado</option>
-            <option value="delivered" <%= v.status === 'delivered' ? 'selected' : '' %>>Entregue</option>
-            <option value="cancelled" <%= v.status === 'cancelled' ? 'selected' : '' %>>Cancelado</option>
-          </select>
-        </form>
+        <details style="position:relative;">
+          <summary style="cursor:pointer;padding:4px 8px;background:#f5f5f5;border-radius:4px;font-size:12px;display:inline-block;">
+            <% var labels = { 'pending':'Pendente','paid':'Pago','shipped':'Enviado','delivered':'Entregue','cancelled':'Cancelado' }; %>
+            <%= labels[v.status] || v.status %>
+          </summary>
+          <div style="position:absolute;top:100%;left:0;z-index:10;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;width:260px;box-shadow:0 4px 12px rgba(0,0,0,0.15);margin-top:4px;">
+            <form method="POST" action="/seller/sales/status/<%= v.id %>" style="display:flex;flex-direction:column;gap:8px;">
+              <select name="status" style="padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+                <option value="pending" <%= v.status === 'pending' ? 'selected' : '' %>>Pendente</option>
+                <option value="paid" <%= v.status === 'paid' ? 'selected' : '' %>>Pago</option>
+                <option value="shipped" <%= v.status === 'shipped' ? 'selected' : '' %>>Enviado</option>
+                <option value="delivered" <%= v.status === 'delivered' ? 'selected' : '' %>>Entregue</option>
+                <option value="cancelled" <%= v.status === 'cancelled' ? 'selected' : '' %>>Cancelado</option>
+              </select>
+              <input type="text" name="tracking_message" placeholder="Mensagem pro comprador (ex: saiu pra entrega)" style="padding:6px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+              <button type="submit" class="btn-small" style="justify-content:center;font-size:12px;padding:6px;"><i class="fas fa-save"></i> Atualizar</button>
+            </form>
+          </div>
+        </details>
       </td>
       <td style="font-size:12px;color:#666;white-space:nowrap;"><%= v.created_at %></td>
       <td>

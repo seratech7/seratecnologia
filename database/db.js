@@ -281,6 +281,31 @@ async function initDb() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS tracking_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      message TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sale_id) REFERENCES sales(id)
+    )
+  `);
+
+  var salesCols = db.exec("PRAGMA table_info(sales)");
+  if (salesCols.length > 0) {
+    var colNames = salesCols[0].values.map(function(r) { return r[1]; });
+    if (!colNames.includes('tracking_code')) {
+      db.run("ALTER TABLE sales ADD COLUMN tracking_code TEXT DEFAULT ''");
+    }
+    if (!colNames.includes('tracking_status')) {
+      db.run("ALTER TABLE sales ADD COLUMN tracking_status TEXT DEFAULT 'pending'");
+    }
+    if (!colNames.includes('tracking_estimated_days')) {
+      db.run("ALTER TABLE sales ADD COLUMN tracking_estimated_days INTEGER DEFAULT 10");
+    }
+  }
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT DEFAULT 'info',
@@ -405,4 +430,23 @@ function getCommissionPct() {
   return r ? parseFloat(r.value) || 10 : 10;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct };
+function gerarCodigoRastreio() {
+  var prefix = 'ST';
+  var datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  var seq = Math.floor(Math.random() * 99999).toString().padStart(5, '0');
+  return prefix + datePart + '-' + seq;
+}
+
+function createTrackingHistory(saleId, status, message) {
+  run('INSERT INTO tracking_history (sale_id, status, message) VALUES (?, ?, ?)', [saleId, status, message || '']);
+}
+
+function getTrackingHistory(saleId) {
+  return query('SELECT * FROM tracking_history WHERE sale_id = ? ORDER BY created_at ASC', [saleId]);
+}
+
+function getSaleByTrackingCode(code) {
+  return get("SELECT s.*, p.name as product_name, p.image as product_image, p.price as product_price, s2.name as seller_name FROM sales s LEFT JOIN products p ON s.product_id = p.id LEFT JOIN sellers s2 ON s.seller_id = s2.id WHERE s.tracking_code = ?", [code]);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode };
