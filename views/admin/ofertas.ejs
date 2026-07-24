@@ -1,0 +1,77 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/ofertas' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-bolt"></i> Ofertas Relâmpago</h1>
+    <p>Gerencie promoções por tempo limitado</p>
+  </div>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+
+  <div class="form-card" style="margin-bottom:20px;">
+    <h3>Nova Oferta</h3>
+    <form method="POST" action="/admin/ofertas/novo" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label>Produto</label>
+        <select name="product_id" class="admin-select" required>
+          <option value="">Selecione...</option>
+          <% allProducts.forEach(function(p) { %>
+            <option value="<%= p.id %>"><%= p.name %> - <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.price) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Preço Flash (R$)</label>
+        <input type="number" name="flash_price" class="admin-input" step="0.01" min="0.01" required placeholder="49.90">
+      </div>
+      <div class="form-group">
+        <label>Duração (horas)</label>
+        <input type="number" name="flash_hours" class="admin-input" value="24" min="1" max="720">
+      </div>
+      <div style="grid-column:1/-1;"><button type="submit" class="btn-primary"><i class="fas fa-bolt"></i> Ativar Oferta</button></div>
+    </form>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="admin-table">
+      <thead><tr><th>Produto</th><th>Preço Original</th><th>Preço Flash</th><th>Desconto</th><th>Expira em</th><th>Tempo Restante</th><th>Ações</th></tr></thead>
+      <tbody>
+        <% if (flashProducts.length === 0) { %><tr><td colspan="7" class="empty-row">Nenhuma oferta ativa</td></tr><% } %>
+        <% flashProducts.forEach(function(p) { %>
+          <% var desconto = Math.round((1 - p.flash_price / p.price) * 100); %>
+          <tr>
+            <td><strong><%= p.name %></strong></td>
+            <td><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.price) %></td>
+            <td style="color:#ff5722;font-weight:700;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.flash_price) %></td>
+            <td><span style="background:#ff5722;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700;font-size:13px;">-<%= desconto %>%</span></td>
+            <td><%= new Date(p.flash_ends_at).toLocaleString('pt-BR') %></td>
+            <td><span class="flash-countdown-admin" data-ends="<%= new Date(p.flash_ends_at).getTime() %>" style="font-family:monospace;font-weight:700;color:#e65100;"></span></td>
+            <td>
+              <form method="POST" action="/admin/ofertas/remover/<%= p.id %>" style="display:inline;" onsubmit="return confirm('Remover oferta?')">
+                <button class="btn-icon" style="color:#c62828;"><i class="fas fa-times"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var els = document.querySelectorAll('.flash-countdown-admin');
+  function tick() {
+    var now = Date.now();
+    els.forEach(function(el) {
+      var end = parseInt(el.dataset.ends);
+      var diff = Math.max(0, end - now);
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      if (diff <= 0) el.textContent = 'ENCERRADA';
+    });
+  }
+  if (els.length) { tick(); setInterval(tick, 1000); }
+});
+</script>
+<%- include('../partials/admin-footer') %>

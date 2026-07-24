@@ -944,6 +944,29 @@ router.post('/products/flash/remove/:id', requireSuperAdmin, (req, res) => {
   res.redirect('/admin/products');
 });
 
+// ========== FLASH SALES MANAGEMENT ==========
+router.get('/ofertas', requireSuperAdmin, (req, res) => {
+  var flashProducts = db.getFlashSales();
+  var allProducts = db.query("SELECT id, name, price, status FROM products WHERE status = 'active' ORDER BY name");
+  res.render('admin/ofertas', { title: 'Ofertas Relâmpago', flashProducts, allProducts, success: null, error: null });
+});
+
+router.post('/ofertas/novo', requireSuperAdmin, (req, res) => {
+  var { product_id, flash_price, flash_hours } = req.body;
+  if (!product_id || !flash_price || !flash_hours) return res.redirect('/admin/ofertas');
+  var p = db.get("SELECT name FROM products WHERE id = ?", [product_id]);
+  if (!p) return res.redirect('/admin/ofertas');
+  var endsAt = new Date(Date.now() + parseInt(flash_hours) * 3600000).toISOString().slice(0, 19).replace('T', ' ');
+  db.setFlashSale(product_id, parseFloat(flash_price), endsAt);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'flash_sale', 'Flash: ' + p.name + ' - R$ ' + flash_price);
+  res.redirect('/admin/ofertas');
+});
+
+router.post('/ofertas/remover/:id', requireSuperAdmin, (req, res) => {
+  db.removeFlashSale(req.params.id);
+  res.redirect('/admin/ofertas');
+});
+
 // ========== BULK ACTIONS ==========
 router.post('/products/bulk', requireAdmin, (req, res) => {
   var { action, ids } = req.body;

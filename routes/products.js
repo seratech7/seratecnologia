@@ -41,14 +41,19 @@ router.get('/', (req, res) => {
       params.push(parseFloat(price_max));
     }
 
+    if (sort === 'flash') {
+      sql += " AND p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now')";
+    }
     let orderBy = 'p.featured DESC, p.created_at DESC';
     if (sort === 'price_asc') orderBy = 'p.price ASC';
     else if (sort === 'price_desc') orderBy = 'p.price DESC';
     else if (sort === 'oldest') orderBy = 'p.created_at ASC';
+    else if (sort === 'flash') orderBy = 'p.flash_ends_at ASC';
     sql += ' ORDER BY ' + orderBy;
 
     const products = db.query(sql, params) || [];
     const banners = db.getActiveBanners() || [];
+    const flashProducts = db.getFlashSales() || [];
 
     res.render('index', {
       title: 'SeraTecnologia',
@@ -56,6 +61,7 @@ router.get('/', (req, res) => {
       categories,
       locations,
       banners,
+      flashProducts,
       search: search || '',
       selectedCategory: category || '',
       selectedCondition: cond || '',
@@ -72,6 +78,7 @@ router.get('/', (req, res) => {
       categories: [],
       locations: [],
       banners: [],
+      flashProducts: [],
       search: '', selectedCategory: '', selectedCondition: '',
       selectedLocation: '', priceMin: '', priceMax: '', selectedSort: ''
     });

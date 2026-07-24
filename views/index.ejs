@@ -258,6 +258,7 @@ function q(urlParams) {
         <h4>Ordenar</h4>
         <select name="sort" class="sort-select" onchange="this.form.submit()">
           <option value="" <%= !selectedSort ? 'selected' : '' %>>Mais recentes</option>
+          <option value="flash" <%= selectedSort === 'flash' ? 'selected' : '' %>>⚡ Ofertas</option>
           <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
           <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
           <option value="oldest" <%= selectedSort === 'oldest' ? 'selected' : '' %>>Mais antigos</option>
@@ -265,6 +266,43 @@ function q(urlParams) {
       </div>
     </form>
   </aside>
+
+  <% if (flashProducts && flashProducts.length > 0) { %>
+  <section class="flash-section">
+    <div class="flash-header">
+      <div class="flash-header-left">
+        <i class="fas fa-bolt"></i>
+        <h2>Ofertas Relâmpago</h2>
+      </div>
+      <div class="flash-timer" id="flashTimer">
+        <i class="fas fa-clock"></i>
+        <span id="flashCountdown"></span>
+      </div>
+      <a href="/?sort=flash" class="flash-ver-todas">Ver todas <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="flash-grid">
+      <% flashProducts.forEach(function(p) { %>
+        <a href="/produto/<%= p.id %>" class="flash-card">
+          <div class="flash-card-image">
+            <img src="<%= p.image || '' %>" alt="<%= p.name %>" loading="lazy">
+            <span class="flash-card-badge"><i class="fas fa-bolt"></i> -<%= Math.round((1 - p.flash_price / p.price) * 100) %>%</span>
+          </div>
+          <div class="flash-card-info">
+            <h3><%= p.name %></h3>
+            <div class="flash-card-pricing">
+              <span class="flash-card-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.flash_price) %></span>
+              <span class="flash-card-original"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></span>
+            </div>
+            <div class="flash-card-timer" data-ends="<%= new Date(p.flash_ends_at).getTime() %>">
+              <i class="fas fa-hourglass-half"></i>
+              <span class="flash-remaining"></span>
+            </div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
 
   <section class="products-section">
     <div class="products-header">
@@ -280,11 +318,12 @@ function q(urlParams) {
       </h2>
       <div class="products-header-info">
         <span class="products-count"><%= products.length %> produto(s)</span>
-        <select class="sort-select-mobile" onchange="var p=new URLSearchParams(location.search);p.set('sort',this.value);location='?'+p.toString()">
-          <option value="" <%= !selectedSort ? 'selected' : '' %>>Recentes</option>
-          <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
-          <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
-        </select>
+          <select class="sort-select-mobile" onchange="var p=new URLSearchParams(location.search);p.set('sort',this.value);location='?'+p.toString()">
+            <option value="" <%= !selectedSort ? 'selected' : '' %>>Recentes</option>
+            <option value="flash" <%= selectedSort === 'flash' ? 'selected' : '' %>><i class="fas fa-bolt"></i> Ofertas</option>
+            <option value="price_asc" <%= selectedSort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
+            <option value="price_desc" <%= selectedSort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
+          </select>
       </div>
     </div>
 
@@ -439,6 +478,35 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     resetAuto();
   }
+
+  // Flash sale countdown timers
+  var flashTimers = document.querySelectorAll('.flash-card-timer');
+  var globalTimer = document.getElementById('flashCountdown');
+  var earliestEnd = Infinity;
+
+  function updateFlashTimers() {
+    var now = Date.now();
+    flashTimers.forEach(function(el) {
+      var end = parseInt(el.dataset.ends);
+      var diff = Math.max(0, end - now);
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      el.querySelector('.flash-remaining').textContent =
+        String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      if (diff <= 0) el.closest('.flash-card').style.display = 'none';
+    });
+    if (globalTimer && flashTimers.length) {
+      var earliest = Infinity;
+      flashTimers.forEach(function(el) { var e = parseInt(el.dataset.ends); if (e < earliest) earliest = e; });
+      var diff = Math.max(0, earliest - now);
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      var s = Math.floor((diff % 60000) / 1000);
+      globalTimer.textContent = 'Encerra em ' + String(h).padStart(2,'0') + 'h ' + String(m).padStart(2,'0') + 'm ' + String(s).padStart(2,'0') + 's';
+    }
+  }
+  if (flashTimers.length) { updateFlashTimers(); setInterval(updateFlashTimers, 1000); }
 });
 </script>
 
