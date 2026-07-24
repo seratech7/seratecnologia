@@ -2,78 +2,215 @@
 <div class="admin-content">
   <div class="admin-header-bar">
     <h1><i class="fas fa-bolt"></i> Auto-Promo</h1>
-    <p style="font-size:13px;color:#666;margin:0;">Gere divulgação automática dos seus produtos</p>
+    <p style="font-size:13px;color:#666;margin:0;">Crie divulgações irresistíveis para seus produtos</p>
     <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
   </div>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
   <div class="form-card" style="margin-bottom:20px;">
-    <h3><i class="fas fa-box"></i> Selecione o Produto</h3>
+    <h3><i class="fas fa-box"></i> 1. Selecione o Produto</h3>
     <select id="productSelect" class="admin-input" style="max-width:100%;">
       <option value="">-- Escolha um produto --</option>
       <% products.forEach(function(p) { %>
-        <option value="<%= p.id %>" data-name="<%= p.name %>" data-price="<%= p.price %>" data-url="<%= baseUrl %>/produto/<%= p.id %>" data-cat="<%= p.category_name || '' %>"><%= p.name %> - R$ <%= Number(p.price).toFixed(2) %></option>
+        <option value="<%= p.id %>" data-name="<%= p.name %>" data-price="<%= Number(p.price).toFixed(2) %>" data-url="<%= baseUrl %>/produto/<%= p.id %>" data-cat="<%= p.category_name || '' %>" data-desc="<%= (p.description || '').replace(/\n/g,' ').slice(0,120) %>" data-sales="<%= p.sales_count || 0 %>"><%= p.name %> — R$ <%= Number(p.price).toFixed(2) %><%= p.sales_count ? ' (' + p.sales_count + ' vendas)' : '' %></option>
       <% }) %>
     </select>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
     <div class="form-card">
-      <h3><i class="fas fa-comment"></i> Mensagem Gerada</h3>
-      <textarea id="promoMessage" class="admin-input" rows="8" readonly placeholder="Selecione um produto para gerar a mensagem..."></textarea>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-        <button type="button" class="btn-secondary" onclick="gerarMsg('formal')">Formal</button>
-        <button type="button" class="btn-secondary" onclick="gerarMsg('emoji')">Com Emojis</button>
-        <button type="button" class="btn-secondary" onclick="gerarMsg('urgente')">Urgente</button>
-        <button type="button" class="btn-secondary" onclick="gerarMsg('desconto')">Desconto</button>
+      <h3><i class="fas fa-comment"></i> 2. Mensagem Gerada</h3>
+      <div style="margin-bottom:10px;display:flex;gap:5px;flex-wrap:wrap;">
+        <button type="button" class="style-btn" style="border-color:#1565c0;color:#1565c0;" onclick="gerarMsg('profissional')">Profissional</button>
+        <button type="button" class="style-btn" style="border-color:#e91e63;color:#e91e63;" onclick="gerarMsg('convincente')">Convincente</button>
+        <button type="button" class="style-btn" style="border-color:#ff6f00;color:#ff6f00;" onclick="gerarMsg('urgente')">Urgente</button>
+        <button type="button" class="style-btn" style="border-color:#4caf50;color:#4caf50;" onclick="gerarMsg('prova')">Prova Social</button>
+        <button type="button" class="style-btn" style="border-color:#9c27b0;color:#9c27b0;" onclick="gerarMsg('exclusivo')">Exclusivo</button>
+        <button type="button" class="style-btn" style="border-color:#00bcd4;color:#00bcd4;" onclick="gerarMsg('historias')">História</button>
+        <button type="button" class="style-btn" style="border-color:#f44336;color:#f44336;" onclick="gerarMsg('comparacao')">Comparação</button>
+      </div>
+      <textarea id="promoMessage" class="admin-input" rows="10" placeholder="Selecione um produto e escolha um estilo acima..." style="font-size:14px;line-height:1.6;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button type="button" class="btn-secondary" onclick="copiarMsg()"><i class="fas fa-copy"></i> Copiar</button>
+        <button type="button" class="btn-secondary" onclick="editarMsg()"><i class="fas fa-pen"></i> Editar</button>
       </div>
     </div>
     <div class="form-card">
-      <h3><i class="fas fa-paper-plane"></i> Enviar</h3>
+      <h3><i class="fas fa-paper-plane"></i> 3. Enviar</h3>
       <form method="POST" action="/admin/marketing/autopromo/send" id="sendForm">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="hidden" name="productId" id="selectedProductId" value="">
         <input type="hidden" name="message" id="selectedMessage" value="">
         <div class="form-group">
-          <label>Plataforma</label>
+          <label>Plataforma de envio</label>
           <select name="platform" class="admin-input">
-            <option value="whatsapp" <%= waReady ? '' : 'disabled' %>>WhatsApp (<%= waReady ? 'conectado' : 'desconectado' %>)</option>
-            <option value="telegram">Telegram</option>
-            <option value="discord">Discord</option>
+            <optgroup label="WhatsApp">
+              <option value="whatsapp" <%= waReady ? '' : 'disabled' %>>WhatsApp — todos os contatos (<%= waReady ? 'conectado' : 'desconectado' %>)</option>
+            </optgroup>
+            <optgroup label="Redes">
+              <option value="telegram">Telegram</option>
+              <option value="discord">Discord</option>
+            </optgroup>
           </select>
         </div>
-        <button type="submit" class="btn-primary" onclick="return confirm('Enviar divulgação?')"><i class="fas fa-rocket"></i> Enviar Agora</button>
+        <button type="submit" class="btn-primary" style="width:100%;padding:14px;font-size:16px;" onclick="return confirm('Enviar divulgação?')"><i class="fas fa-rocket"></i> Enviar Agora</button>
       </form>
+      <div class="dicas">
+        <h4><i class="fas fa-lightbulb"></i> Dicas para melhores resultados</h4>
+        <ul>
+          <li><strong>Urgente</strong> — use para liquidar estoque parado</li>
+          <li><strong>Prova Social</strong> — ideal para produtos mais vendidos</li>
+          <li><strong>Exclusivo</strong> — perfeito para clientes VIP</li>
+          <li><strong>História</strong> — funciona bem para produtos com propósito</li>
+          <li><strong>Comparação</strong> — mostre o valor antes e depois</li>
+        </ul>
+      </div>
     </div>
   </div>
 </div>
 <script>
 let selectedProduct = null;
+
 document.getElementById('productSelect').addEventListener('change', function() {
   const opt = this.options[this.selectedIndex];
   if (!opt.value) { selectedProduct = null; document.getElementById('promoMessage').value = ''; return; }
-  selectedProduct = { id: opt.value, name: opt.dataset.name, price: opt.dataset.price, url: opt.dataset.url, cat: opt.dataset.cat };
+  selectedProduct = {
+    id: opt.value, name: opt.dataset.name, price: opt.dataset.price,
+    url: opt.dataset.url, cat: opt.dataset.cat,
+    desc: opt.dataset.desc || '', sales: parseInt(opt.dataset.sales) || 0
+  };
   document.getElementById('selectedProductId').value = opt.value;
-  gerarMsg('formal');
+  gerarMsg('profissional');
 });
-function gerarMsg(style) {
+
+function gerarMsg(estilo) {
   if (!selectedProduct) return alert('Selecione um produto primeiro');
   const p = selectedProduct;
   const preco = 'R$ ' + parseFloat(p.price).toFixed(2).replace('.', ',');
-  const msgs = {
-    formal: '*[' + '<%= siteName %>' + ']* \n\n' + p.name + '\n💰 ' + preco + '\n\nAcesse: ' + p.url,
-    emoji: '🔥 *' + p.name + '* 🔥\n\n💵 Apenas ' + preco + '\n⭐ Oferta imperdível!\n\n👉 ' + p.url,
-    urgente: '⚡ *ÚLTIMAS UNIDADES* ⚡\n\n' + p.name + '\nDe *' + preco + '*\n\nCorra e garanta o seu! 🏃\n' + p.url,
-    desconto: '🎉 *PROMOÇÃO RELÂMPAGO* 🎉\n\n' + p.name + '\n💰 *' + preco + '*\n\n📦 Estoque limitado!\n👇\n' + p.url,
+  const site = '<%= siteName %>';
+  const link = p.url;
+  const cat = p.cat || 'categoria';
+
+  const templates = {
+    profissional: [
+      '*[' + site + ']* \n\n',
+      'Olá! 👋\n\n',
+      'Temos um produto que pode interessar você:\n\n',
+      '*' + p.name + '*\n',
+      '💰 *' + preco + '*\n\n',
+      p.desc ? '📌 ' + p.desc + '\n\n' : '',
+      '✅ Qualidade garantida\n',
+      '✅ Entrega rápida\n',
+      '✅ Parcelamos no cartão\n\n',
+      '👉 ' + link
+    ].join(''),
+
+    convincente: [
+      '🔥 *ATENÇÃO: ÚLTIMA CHANCE* 🔥\n\n',
+      'Você ainda não conferiu o *' + p.name + '*?\n\n',
+      '💥 Pelo preço de *' + preco + '*, você leva:\n',
+      '   ✅ Produto de altíssima qualidade\n',
+      '   ✅ Suporte completo pós-venda\n',
+      '   ✅ Garantia de satisfação\n\n',
+      '⏳ Essa oportunidade não dura para sempre.\n',
+      '🚀 Clique e garanta o seu agora:\n',
+      link + '\n\n',
+      'Não deixe para depois — você merece o melhor! 💪'
+    ].join(''),
+
+    urgente: [
+      '⚡⚡⚡ *PROMOÇÃO RELÂMPAGO* ⚡⚡⚡\n\n',
+      '‼️ *ÚLTIMAS UNIDADES* ‼️\n\n',
+      '*' + p.name + '*\n',
+      'De *' + preco + '*\n\n',
+      '⏰ Oferta por tempo limitado!\n',
+      '📦 Estoque se esgotando!\n\n',
+      'Não fique de fora dessa! 🏃‍♂️💨\n\n',
+      '👉 ' + link + '\n\n',
+      '⚠️ *Garanta o seu antes que acabe!*'
+    ].join(''),
+
+    prova: [
+      '⭐ *PRODUTO MAIS QUERIDO* ⭐\n\n',
+      '*' + p.name + '*\n',
+      '💰 *' + preco + '*\n\n',
+      p.sales > 0 ? '📊 ' + p.sales + ' pessoas já compraram e aprovam!\n\n' : '',
+      '🗣️ Veja o que estão falando:\n',
+      '"Produto incrível, superou minhas expectativas!" ⭐⭐⭐⭐⭐\n',
+      '"Entrega rápida e qualidade impecável!" ⭐⭐⭐⭐⭐\n\n',
+      cat !== 'categoria' ? '🏆 Destaque em ' + cat + '\n\n' : '',
+      'Faça como centenas de clientes satisfeitos:\n',
+      '👉 ' + link
+    ].join(''),
+
+    exclusivo: [
+      '👑 *OFERTA EXCLUSIVA* 👑\n\n',
+      'Preparamos algo especial para você:\n\n',
+      '*' + p.name + '*\n',
+      '💎 *' + preco + '*\n\n',
+      '🔸 Condição especial para você\n',
+      '🔸 Frete rápido e seguro\n',
+      '🔸 Garantia total\n\n',
+      'Essa oferta é pessoal e intransferível 💌\n\n',
+      '👉 Aproveite agora:\n' + link
+    ].join(''),
+
+    historias: [
+      '📖 *A HISTÓRIA POR TRÁS DESTE PRODUTO* 📖\n\n',
+      'Você sabia que o *' + p.name + '* foi desenvolvido pensando em cada detalhe?\n\n',
+      p.desc ? '💡 ' + p.desc + '\n\n' : '',
+      '🎯 Perfeito para quem busca:\n',
+      '   ✅ Qualidade excepcional\n',
+      '   ✅ Custo-benefício incomparável\n',
+      '   ✅ Satisfação garantida\n\n',
+      '💰 Tudo isso por apenas *' + preco + '*\n\n',
+      '🔗 Garanta o seu e faça parte dessa história:\n' + link
+    ].join(''),
+
+    comparacao: [
+      '🧮 *VALE A PENA?* 🧮\n\n',
+      'Vamos fazer as contas:\n\n',
+      '❌ Em outros lugares: preços muito mais altos\n',
+      '❌ Qualidade duvidosa\n',
+      '❌ Sem garantia\n\n',
+      '✅ No ' + site + ': *' + preco + '*\n',
+      '✅ Qualidade garantida\n',
+      '✅ Suporte completo\n\n',
+      'A escolha é óbvia! 🎯\n\n',
+      '*' + p.name + '*\n',
+      '👉 ' + link + '\n\n',
+      'Invista em qualidade. Você merece! 💪'
+    ].join('')
   };
-  const msg = msgs[style] || msgs.formal;
+
+  const msg = templates[estilo] || templates.profissional;
   document.getElementById('promoMessage').value = msg;
   document.getElementById('selectedMessage').value = msg;
+}
+
+function copiarMsg() {
+  const el = document.getElementById('promoMessage');
+  el.select(); el.setSelectionRange(0, 99999);
+  try { document.execCommand('copy'); } catch(e) { navigator.clipboard?.writeText(el.value); }
+}
+
+function editarMsg() {
+  document.getElementById('promoMessage').removeAttribute('readonly');
+  document.getElementById('promoMessage').focus();
+  document.getElementById('promoMessage').addEventListener('input', function() {
+    document.getElementById('selectedMessage').value = this.value;
+  });
 }
 </script>
 <style>
 .btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
 .btn-secondary:hover { background:#e0e0e0; }
+.style-btn { background:#fff; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid; }
+.style-btn:hover { opacity:.8; }
+.dicas { background:#fff8e1; border:1px solid #ffe082; border-radius:8px; padding:15px; margin-top:20px; font-size:13px; }
+.dicas h4 { margin:0 0 8px 0; color:#e65100; font-size:14px; }
+.dicas ul { margin:0; padding-left:16px; line-height:1.8; }
+.dicas ul li { margin-bottom:2px; }
 </style>
 <%- include('../../partials/admin-footer') %>

@@ -456,7 +456,7 @@ module.exports = function() {
   //  AUTO-PROMO (Gerar divulgação de produtos)
   // ============================================================
   router.get('/marketing/autopromo', (req, res) => {
-    const products = db.query("SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 30");
+    const products = db.query("SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM sales s WHERE s.product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 30");
     res.render('admin/marketing/autopromo', {
       title: 'Auto-Promo', currentPath: '/admin/marketing/autopromo',
       products, waReady: WA_READY, baseUrl: getBaseUrl(),
