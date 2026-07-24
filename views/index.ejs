@@ -4,7 +4,7 @@
 <section class="banner-carousel">
   <div class="banner-track">
     <% banners.forEach(function(b, i) { %>
-      <div class="banner-slide">
+      <div class="banner-slide" data-duration="<%= b.display_duration || 10 %>">
         <a href="<%= b.link || '#' %>" target="<%= b.link ? '_blank' : '_self' %>">
           <img src="<%= b.image %>" alt="<%= b.title %>" loading="lazy">
           <% if (b.title || b.subtitle) { %>
@@ -398,12 +398,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Banner carousel
   var carousel = document.querySelector('.banner-carousel');
   var track = carousel ? carousel.querySelector('.banner-track') : null;
+  var slides = carousel ? carousel.querySelectorAll('.banner-slide') : [];
   var dots = carousel ? carousel.querySelectorAll('.banner-dot') : [];
   var arrows = carousel ? carousel.querySelectorAll('.banner-arrow') : [];
   if (track && dots.length > 0) {
     var current = 0;
     var total = dots.length;
     var autoTimer = null;
+    function getDuration(index) {
+      var slide = slides[index];
+      return (slide ? parseInt(slide.dataset.duration) : 10) * 1000;
+    }
     function goTo(index) {
       if (index < 0) index = total - 1;
       if (index >= total) index = 0;
@@ -415,8 +420,8 @@ document.addEventListener('DOMContentLoaded', function() {
       resetAuto();
     }
     function resetAuto() {
-      if (autoTimer) clearInterval(autoTimer);
-      autoTimer = setInterval(function() { goTo(current + 1); }, 5000);
+      if (autoTimer) clearTimeout(autoTimer);
+      autoTimer = setTimeout(function() { goTo(current + 1); }, getDuration(current));
     }
     dots.forEach(function(dot) {
       dot.addEventListener('click', function() { goTo(parseInt(this.dataset.index)); });

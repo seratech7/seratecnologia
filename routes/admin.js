@@ -780,20 +780,20 @@ router.get('/banners', (req, res) => {
 });
 
 router.post('/banners/novo', upload.single('image'), (req, res) => {
-  var { title, subtitle, link, sort_order, active } = req.body;
+  var { title, subtitle, link, sort_order, active, display_duration } = req.body;
   var image = req.file ? '/uploads/' + req.file.filename : '';
   if (!image) return res.redirect('/admin/banners');
-  db.saveBanner(null, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1');
+  db.saveBanner(null, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10);
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'create_banner', 'Banner criado: ' + (title || ''), 'banner', 0, req.ip);
   res.redirect('/admin/banners');
 });
 
 router.post('/banners/editar/:id', upload.single('image'), (req, res) => {
-  var { title, subtitle, link, sort_order, active } = req.body;
+  var { title, subtitle, link, sort_order, active, display_duration } = req.body;
   var existing = db.get("SELECT * FROM banners WHERE id = ?", [req.params.id]);
   if (!existing) return res.redirect('/admin/banners');
   var image = req.file ? '/uploads/' + req.file.filename : existing.image;
-  db.saveBanner(req.params.id, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1');
+  db.saveBanner(req.params.id, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10);
   res.redirect('/admin/banners');
 });
 

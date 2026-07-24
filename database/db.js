@@ -399,10 +399,15 @@ async function initDb() {
       link TEXT DEFAULT '',
       sort_order INTEGER DEFAULT 0,
       active INTEGER DEFAULT 1,
+      display_duration INTEGER DEFAULT 10,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
+  var bannerCols = db.exec("PRAGMA table_info(banners)");
+  if (bannerCols.length > 0) {
+    var bc = bannerCols[0].values.map(function(r) { return r[1]; });
+    if (!bc.includes('display_duration')) db.run("ALTER TABLE banners ADD COLUMN display_duration INTEGER DEFAULT 10");
+  }
   db.run(`
     CREATE TABLE IF NOT EXISTS activity_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -788,13 +793,13 @@ function getAllBanners() {
   return query("SELECT * FROM banners ORDER BY sort_order ASC, id ASC");
 }
 
-function saveBanner(id, title, subtitle, image, link, sortOrder, active) {
+function saveBanner(id, title, subtitle, image, link, sortOrder, active, displayDuration) {
   if (id) {
-    run("UPDATE banners SET title = ?, subtitle = ?, image = ?, link = ?, sort_order = ?, active = ? WHERE id = ?",
-      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, id]);
+    run("UPDATE banners SET title = ?, subtitle = ?, image = ?, link = ?, sort_order = ?, active = ?, display_duration = ? WHERE id = ?",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10, id]);
   } else {
-    run("INSERT INTO banners (title, subtitle, image, link, sort_order, active) VALUES (?, ?, ?, ?, ?, ?)",
-      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0]);
+    run("INSERT INTO banners (title, subtitle, image, link, sort_order, active, display_duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10]);
   }
 }
 

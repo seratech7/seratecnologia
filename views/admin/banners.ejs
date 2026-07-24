@@ -10,6 +10,7 @@
       <div class="form-group"><label>Subtítulo</label><input type="text" name="subtitle" class="admin-input"></div>
       <div class="form-group"><label>Link</label><input type="text" name="link" class="admin-input" placeholder="https://..."></div>
       <div class="form-group"><label>Ordem</label><input type="number" name="sort_order" class="admin-input" value="0" min="0"></div>
+      <div class="form-group"><label>Duração (segundos)</label><input type="number" name="display_duration" class="admin-input" value="10" min="3" max="60"></div>
       <div class="form-group" style="grid-column:1/-1;"><label>Imagem *</label><input type="file" name="image" accept="image/*" required></div>
       <div class="form-group" style="grid-column:1/-1;"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" name="active" value="1" checked> Ativo</label></div>
       <div style="grid-column:1/-1;"><button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Adicionar Banner</button></div>
@@ -31,6 +32,7 @@
                 <input type="text" name="title" value="<%= b.title %>" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
                 <input type="text" name="subtitle" value="<%= b.subtitle %>" style="width:80px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
                 <input type="number" name="sort_order" value="<%= b.sort_order %>" style="width:50px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;">
+                <input type="number" name="display_duration" value="<%= b.display_duration || 10 %>" style="width:50px;padding:4px;border:1px solid #ddd;border-radius:4px;font-size:11px;" min="3" max="60" title="Duração (s)">
                 <input type="file" name="image" accept="image/*" style="width:80px;font-size:11px;">
                 <label style="font-size:11px;"><input type="checkbox" name="active" value="1" <%= b.active ? 'checked' : '' %>> Ativo</label>
                 <button class="btn-icon" style="font-size:11px;padding:4px;" title="Salvar"><i class="fas fa-save"></i></button>
