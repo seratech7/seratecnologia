@@ -253,7 +253,7 @@ router.post('/wallet/solicitar-saque', requireSeller, (req, res) => {
   res.redirect('/seller/wallet?sucesso=Saque solicitado com sucesso');
 });
 
-router.post('/sales/status/:id', requireSeller, (req, res) => {
+router.post('/sales/status/:id', requireSeller, upload.array('proof_photos', 5), (req, res) => {
   var { status, tracking_message } = req.body;
   var sale = db.get('SELECT * FROM sales WHERE id = ? AND seller_id = ?', [req.params.id, req.session.sellerId]);
   if (!sale) return res.redirect('/seller/sales');
@@ -263,8 +263,23 @@ router.post('/sales/status/:id', requireSeller, (req, res) => {
   var statusLabels = { 'pending': 'Pendente', 'paid': 'Pago', 'shipped': 'Enviado', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
   var trackingLabels = { 'pending': 'Pendente', 'confirmed': 'Confirmado', 'preparing': 'Em separação', 'shipped': 'Despachado', 'in_transit': 'Em trânsito', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
 
+  // Require photo proof for shipped, delivered, paid status changes
+  var requireProof = ['shipped', 'delivered', 'paid'];
+  var needsPhoto = requireProof.includes(status) && (!req.files || req.files.length === 0);
+  if (needsPhoto) {
+    return res.redirect('/seller/sales?error=prova_foto');
+  }
+
   if (validStatuses.includes(status)) {
     db.run("UPDATE sales SET status = ? WHERE id = ? AND seller_id = ?", [status, req.params.id, req.session.sellerId]);
+
+    // Save proof photos
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(function(file) {
+        var imagePath = '/uploads/' + file.filename;
+        db.addSaleProof(req.params.id, req.session.sellerId, imagePath, tracking_message || '', sale.status, status);
+      });
+    }
 
     var trackingStatus = trackingMap[status] || sale.tracking_status;
     var msg = tracking_message || 'Status atualizado para: ' + (statusLabels[status] || status);

@@ -126,6 +126,11 @@ router.get('/sales', (req, res) => {
   });
 });
 
+router.get('/sales/provas/:id', (req, res) => {
+  var proofs = db.getSaleProofs(req.params.id);
+  res.json(proofs);
+});
+
 router.post('/sales/cancel/:id', (req, res) => {
   const sale = db.get("SELECT * FROM sales WHERE id = ?", [req.params.id]);
   if (sale && sale.status !== 'cancelled' && sale.status !== 'delivered') {

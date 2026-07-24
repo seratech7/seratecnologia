@@ -342,6 +342,21 @@ async function initDb() {
   }
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS sale_proofs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sale_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      image_path TEXT NOT NULL,
+      caption TEXT DEFAULT '',
+      status_from TEXT DEFAULT '',
+      status_to TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (sale_id) REFERENCES sales(id),
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS notifications (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT DEFAULT 'info',
@@ -631,4 +646,13 @@ function getFinanceChart(sellerId, days) {
   return chart;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart };
+function addSaleProof(saleId, sellerId, imagePath, caption, statusFrom, statusTo) {
+  run('INSERT INTO sale_proofs (sale_id, seller_id, image_path, caption, status_from, status_to) VALUES (?, ?, ?, ?, ?, ?)',
+    [saleId, sellerId, imagePath, caption || '', statusFrom || '', statusTo || '']);
+}
+
+function getSaleProofs(saleId) {
+  return query('SELECT * FROM sale_proofs WHERE sale_id = ? ORDER BY created_at DESC', [saleId]);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs };
