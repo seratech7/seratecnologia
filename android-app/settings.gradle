@@ -1,0 +1,2 @@
+rootProject.name = 'SeraTecnologia'
+include ':app'
