@@ -38,6 +38,24 @@
       </div>
 
       <div style="border-top:1px solid #eee;margin:16px 0;"></div>
+      <h4 style="margin:0 0 12px;"><i class="fas fa-credit-card"></i> Mercado Pago</h4>
+      <% if (seller.mp_connected) { %>
+        <div style="background:#e8f5e9;color:#2e7d32;padding:12px 16px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span><i class="fas fa-check-circle"></i> Conta Mercado Pago conectada</span>
+          <form method="POST" action="/seller/mercadopago/disconnect" style="margin:0;">
+            <button type="submit" class="btn-small" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;">Desconectar</button>
+          </form>
+        </div>
+      <% } else { %>
+        <div style="background:#fff3e0;padding:12px 16px;border-radius:8px;">
+          <p style="margin:0 0 8px;font-size:14px;"><i class="fas fa-info-circle"></i> Conecte sua conta Mercado Pago para receber pagamentos direto pelo marketplace.</p>
+          <a href="/seller/mercadopago/auth" class="btn-small" style="background:#009ee3;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+            <i class="fas fa-link"></i> Conectar Mercado Pago
+          </a>
+        </div>
+      <% } %>
+
+      <div style="border-top:1px solid #eee;margin:16px 0;"></div>
       <h4 style="margin:0 0 12px;"><i class="fas fa-bell"></i> Notificações de Vendas</h4>
 
       <div class="form-group">

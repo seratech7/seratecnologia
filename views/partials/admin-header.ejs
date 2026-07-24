@@ -50,9 +50,15 @@
       <a href="/admin/notifications" class="<%= currentPath.startsWith('/admin/notifications') ? 'active' : '' %>">
         <i class="fas fa-bell"></i> Notificações
       </a>
+      <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
+        <i class="fas fa-coins"></i> Financeiro
+      </a>
       <% if (!admin && seller) { %>
       <a href="/seller/sales" class="<%= currentPath === '/seller/sales' ? 'active' : '' %>">
         <i class="fas fa-shopping-bag"></i> Vendas
+      </a>
+      <a href="/seller/wallet" class="<%= currentPath === '/seller/wallet' ? 'active' : '' %>">
+        <i class="fas fa-wallet"></i> Carteira
       </a>
       <% } %>
     </nav>

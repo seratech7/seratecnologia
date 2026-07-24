@@ -217,6 +217,49 @@ async function initDb() {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS wallet_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      seller_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      amount REAL NOT NULL,
+      balance REAL DEFAULT 0,
+      reference_type TEXT DEFAULT '',
+      reference_id INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mp_connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      seller_id INTEGER UNIQUE NOT NULL,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT DEFAULT '',
+      expires_at TEXT,
+      mp_user_id TEXT,
+      connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+  var hasCommission = db.get("SELECT value FROM config WHERE key = 'commission_pct'");
+  if (!hasCommission) {
+    db.run("INSERT INTO config (key, value) VALUES ('commission_pct', '10')");
+  }
+  var hasMpToken = db.get("SELECT value FROM config WHERE key = 'mp_access_token'");
+  if (!hasMpToken) {
+    db.run("INSERT INTO config (key, value) VALUES ('mp_access_token', '')");
+  }
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       product_id INTEGER NOT NULL,
@@ -335,4 +378,31 @@ function getNotificationCount(ip) {
   return r ? r.c : 0;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount };
+function addTransaction(sellerId, type, description, amount, referenceType, referenceId) {
+  var last = get("SELECT balance FROM wallet_transactions WHERE seller_id = ? ORDER BY id DESC LIMIT 1", [sellerId]);
+  var balance = (last ? last.balance : 0) + amount;
+  run('INSERT INTO wallet_transactions (seller_id, type, description, amount, balance, reference_type, reference_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [sellerId, type, description, amount, balance, referenceType || '', referenceId || 0]);
+}
+
+function getWalletBalance(sellerId) {
+  var r = get("SELECT balance FROM wallet_transactions WHERE seller_id = ? ORDER BY id DESC LIMIT 1", [sellerId]);
+  return r ? r.balance : 0;
+}
+
+function getWalletTransactions(sellerId, limit, offset) {
+  return query("SELECT * FROM wallet_transactions WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+    [sellerId, limit || 50, offset || 0]);
+}
+
+function getAllTransactions(limit, offset) {
+  return query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id ORDER BY w.created_at DESC LIMIT ? OFFSET ?",
+    [limit || 50, offset || 0]);
+}
+
+function getCommissionPct() {
+  var r = get("SELECT value FROM config WHERE key = 'commission_pct'");
+  return r ? parseFloat(r.value) || 10 : 10;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct };

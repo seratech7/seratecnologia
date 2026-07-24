@@ -34,6 +34,12 @@ router.post('/api/finalizar-compra', function(req, res) {
       [produto.id, produto.seller_id, produto.code, produto.name, produto.price, nome, documento, telefone, email, endereco]
     );
 
+    var commPct = db.getCommissionPct();
+    var commValue = produto.price * (commPct / 100);
+    var sellerValue = produto.price - commValue;
+    db.addTransaction(produto.seller_id, 'sale', 'Venda ' + produto.code + ' - ' + produto.name, sellerValue, 'sale', produto.id);
+    db.addTransaction(0, 'commission', 'Comissão ' + commPct + '% - ' + produto.code, commValue, 'commission', produto.id);
+
     var vendaMsg = '🛒 NOVA VENDA!\nProduto: ' + produto.name + '\nCódigo: ' + produto.code + '\nValor: R$ ' + produto.price.toFixed(2) + '\nComprador: ' + nome + '\nWhatsApp: ' + telefone + '\nEmail: ' + email;
 
     db.addNotification(produto.seller_id.toString(), 'sale', 'Nova venda: ' + produto.name + ' - R$ ' + produto.price.toFixed(2), 'shopping-cart', '/seller/sales');

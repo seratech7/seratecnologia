@@ -465,6 +465,53 @@ router.post('/notifications/new', (req, res) => {
   res.redirect('/admin/notifications');
 });
 
+router.get('/financeiro', (req, res) => {
+  var search = req.query.search || '';
+  var page = parseInt(req.query.page) || 1;
+  var limit = 50;
+  var offset = (page - 1) * limit;
+  var txns, totalCount;
+
+  if (search) {
+    txns = db.query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE s.name LIKE ? OR w.description LIKE ? ORDER BY w.created_at DESC LIMIT ? OFFSET ?", ['%' + search + '%', '%' + search + '%', limit, offset]);
+    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE s.name LIKE ? OR w.description LIKE ?", ['%' + search + '%', '%' + search + '%']);
+  } else {
+    txns = db.getAllTransactions(limit, offset);
+    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions");
+  }
+
+  var totalPages = Math.ceil((totalCount ? totalCount.c : 0) / limit);
+  var allSellers = db.query("SELECT s.id, s.name, s.email, (SELECT COALESCE(balance,0) FROM wallet_transactions WHERE seller_id = s.id ORDER BY id DESC LIMIT 1) as balance, (SELECT COUNT(*) FROM sales WHERE seller_id = s.id) as sales_count FROM sellers s ORDER BY s.name");
+
+  var commPct = db.getCommissionPct();
+  var totalComissoes = db.get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'commission'");
+  var totalVendas = db.get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'sale'");
+
+  res.render('admin/financeiro', {
+    title: 'Financeiro - Painel Admin',
+    txns, search, page, totalPages, allSellers, commPct,
+    totalComissoes: totalComissoes ? totalComissoes.total : 0,
+    totalVendas: totalVendas ? totalVendas.total : 0
+  });
+});
+
+router.post('/financeiro/comissao', (req, res) => {
+  var pct = parseFloat(req.body.commission_pct);
+  if (pct >= 0 && pct <= 100) {
+    db.run("UPDATE config SET value = ? WHERE key = 'commission_pct'", [pct.toString()]);
+  }
+  res.redirect('/admin/financeiro');
+});
+
+router.post('/financeiro/ajuste', (req, res) => {
+  var { seller_id, amount, description } = req.body;
+  var val = parseFloat(amount);
+  if (seller_id && val && description) {
+    db.addTransaction(parseInt(seller_id), 'adjustment', description, val, 'adjustment', 0);
+  }
+  res.redirect('/admin/financeiro');
+});
+
 router.post('/notifications/edit/:id', (req, res) => {
   const n = db.get('SELECT * FROM notifications WHERE id = ?', [req.params.id]);
   if (!n) return res.redirect('/admin/notifications');

@@ -9,6 +9,8 @@ const router = express.Router();
 router.get('/profile', requireSeller, (req, res) => {
   const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
   if (!seller) return res.redirect('/seller/logout');
+  const mpConn = db.get('SELECT id FROM mp_connections WHERE seller_id = ?', [req.session.sellerId]);
+  seller.mp_connected = !!mpConn;
   res.render('seller/profile', { title: 'Meu Perfil', seller, error: null, success: null });
 });
 
@@ -193,6 +195,19 @@ router.get('/sales', requireSeller, (req, res) => {
   const sales = db.query('SELECT * FROM sales WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [req.session.sellerId, limit, offset]);
   const totalPages = Math.ceil((total ? total.c : 0) / limit);
   res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages });
+});
+
+router.get('/wallet', requireSeller, (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 30;
+  const offset = (page - 1) * limit;
+  const balance = db.getWalletBalance(req.session.sellerId);
+  const txns = db.getWalletTransactions(req.session.sellerId, limit, offset);
+  const totalVendas = db.get("SELECT COUNT(*) as c FROM sales WHERE seller_id = ?", [req.session.sellerId]);
+  const commPct = db.getCommissionPct();
+  const totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions WHERE seller_id = ?", [req.session.sellerId]);
+  const totalPages = Math.ceil((totalCount ? totalCount.c : 0) / limit);
+  res.render('seller/wallet', { title: 'Minha Carteira', balance, txns, totalVendas: totalVendas ? totalVendas.c : 0, commPct, page, totalPages });
 });
 
 router.post('/sales/status/:id', requireSeller, (req, res) => {
