@@ -250,13 +250,13 @@ async function initDb() {
       value TEXT NOT NULL
     )
   `);
-  var hasCommission = db.get("SELECT value FROM config WHERE key = 'commission_pct'");
+  var hasCommission = get("SELECT value FROM config WHERE key = 'commission_pct'");
   if (!hasCommission) {
-    db.run("INSERT INTO config (key, value) VALUES ('commission_pct', '10')");
+    run("INSERT INTO config (key, value) VALUES ('commission_pct', '10')");
   }
-  var hasMpToken = db.get("SELECT value FROM config WHERE key = 'mp_access_token'");
+  var hasMpToken = get("SELECT value FROM config WHERE key = 'mp_access_token'");
   if (!hasMpToken) {
-    db.run("INSERT INTO config (key, value) VALUES ('mp_access_token', '')");
+    run("INSERT INTO config (key, value) VALUES ('mp_access_token', '')");
   }
 
   db.run(`
