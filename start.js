@@ -69,7 +69,7 @@ async function start() {
     }
     console.log(`✅ ${products.length} produtos inseridos!`);
   }
-  await require('./lib/ensure-chrome')();
+  require('./lib/ensure-chrome')();
   require('./server');
 }
 start().catch(e => { console.error('Fatal:', e); process.exit(1); });
