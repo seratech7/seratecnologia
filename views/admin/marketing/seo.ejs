@@ -29,10 +29,10 @@
       </div>
       <div class="card" style="margin-top:15px;">
         <h3><i class="fas fa-file-export"></i> SEO Check</h3>
-        <ul style="font-size:13px;line-height:2;margin:0;padding-left:16px;">
-          <li>✅ Sitemap gerado com <%= sitemapContent.split('<url>').length - 1 %> URLs</li>
-          <li><%= googleKey ? '✅' : '❌' %> Google Indexing API</li>
-          <li>📊 Robots.txt: <a href="<%= baseUrl %>/robots.txt" target="_blank" style="color:#1565c0;">verificar</a></li>
+        <ul style="font-size:13px;line-height:2;margin:0;padding-left:16px;list-style:none;">
+          <li><i class="fas fa-check-circle" style="color:#2e7d32;"></i> Sitemap gerado com <%= sitemapContent.split('<url>').length - 1 %> URLs</li>
+          <li><i class="fas fa-<%= googleKey ? 'check-circle' : 'times-circle' %>" style="color:<%= googleKey ? '#2e7d32' : '#c62828' %>;"></i> Google Indexing API</li>
+          <li><i class="fas fa-file-code"></i> Robots.txt: <a href="<%= baseUrl %>/robots.txt" target="_blank" style="color:#1565c0;">verificar</a></li>
         </ul>
       </div>
     </div>

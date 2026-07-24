@@ -9,10 +9,10 @@
 
   <!-- Status Platforms -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
-    <div class="pstat" style="border-left:4px solid #25D366;"><%= waReady ? '🟢' : '🔴' %> WhatsApp</div>
-    <div class="pstat" style="border-left:4px solid #0088cc;"><%= telegramConfigured ? '🟢' : '🔴' %> Telegram</div>
-    <div class="pstat" style="border-left:4px solid #5865F2;"><%= discordConfigured ? '🟢' : '🔴' %> Discord</div>
-    <div class="pstat" style="border-left:4px solid #EA4335;"><%= emailConfigured ? '🟢' : '🔴' %> Email</div>
+    <div class="pstat" style="border-left:4px solid #25D366;"><i class="fas fa-circle" style="color:<%= waReady ? '#25D366' : '#999' %>;font-size:10px;"></i> WhatsApp</div>
+    <div class="pstat" style="border-left:4px solid #0088cc;"><i class="fas fa-circle" style="color:<%= telegramConfigured ? '#0088cc' : '#999' %>;font-size:10px;"></i> Telegram</div>
+    <div class="pstat" style="border-left:4px solid #5865F2;"><i class="fas fa-circle" style="color:<%= discordConfigured ? '#5865F2' : '#999' %>;font-size:10px;"></i> Discord</div>
+    <div class="pstat" style="border-left:4px solid #EA4335;"><i class="fas fa-circle" style="color:<%= emailConfigured ? '#EA4335' : '#999' %>;font-size:10px;"></i> Email</div>
   </div>
 
   <!-- Nova Campanha -->

@@ -15,7 +15,7 @@
   <div class="card" style="margin-bottom:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:15px;">
       <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:32px;"><%= waReady ? '🟢' : (waQr ? '🟡' : '🔴') %></span>
+        <span style="font-size:32px;"><i class="fas fa-circle" style="color:<%= waReady ? '#25D366' : (waQr ? '#FFA500' : '#999') %>;"></i></span>
         <div><strong style="font-size:16px;"><%= waReady ? 'Conectado' : (waQr ? 'Aguardando QR' : 'Desconectado') %></strong>
         <span style="font-size:12px;color:#666;display:block;"><%= waReady ? 'WhatsApp ativo e pronto para enviar' : (waQr ? 'Escaneie o QR abaixo para conectar' : 'Clique em Conectar para iniciar') %></span></div>
       </div>

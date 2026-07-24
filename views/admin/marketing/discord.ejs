@@ -9,7 +9,7 @@
 
   <div class="card" style="margin-bottom:20px;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-size:28px;"><%= webhookUrl ? '🟢' : '🔴' %></span>
+      <span style="font-size:28px;"><i class="fas fa-circle" style="color:<%= webhookUrl ? '#5865F2' : '#999' %>;"></i></span>
       <div><strong style="font-size:16px;"><%= webhookUrl ? 'Discord Configurado' : 'Discord Não Configurado' %></strong>
       <span style="font-size:12px;color:#666;display:block;"><%= webhookUrl ? 'Webhook ativo' : 'Configure DISCORD_WEBHOOK_URL no .env' %></span></div>
     </div>
@@ -62,7 +62,7 @@ async function testDiscord() {
   try {
     const r = await fetch('/admin/marketing/discord/test', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': '<%= csrfToken %>' } });
     const d = await r.json();
-    el.innerHTML = d.ok ? '<span style="color:#2e7d32;">✅ Webhook válido</span>' : '<span style="color:#c62828;">❌ ' + (d.error||'Erro') + '</span>';
+    el.innerHTML = d.ok ? '<span style="color:#2e7d32;"><i class="fas fa-check-circle"></i> Webhook válido</span>' : '<span style="color:#c62828;"><i class="fas fa-times-circle"></i> ' + (d.error||'Erro') + '</span>';
   } catch(e) { el.innerHTML = '<span style="color:#c62828;">Erro: ' + e.message + '</span>'; }
 }
 </script>
