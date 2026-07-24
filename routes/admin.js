@@ -467,31 +467,58 @@ router.post('/notifications/new', (req, res) => {
 
 router.get('/financeiro', (req, res) => {
   var search = req.query.search || '';
+  var period = req.query.period || 'all';
+  var startDate = req.query.start_date || '';
+  var endDate = req.query.end_date || '';
   var page = parseInt(req.query.page) || 1;
   var limit = 50;
   var offset = (page - 1) * limit;
   var txns, totalCount;
 
+  if (!startDate) {
+    if (period === '7d') startDate = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+    else if (period === '30d') startDate = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+    else if (period === '90d') startDate = new Date(Date.now() - 90*86400000).toISOString().slice(0,10);
+    else if (period === '12m') startDate = new Date(Date.now() - 365*86400000).toISOString().slice(0,10);
+    else startDate = '';
+  }
+  if (!endDate) endDate = new Date().toISOString().slice(0,10);
+
   if (search) {
-    txns = db.query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE s.name LIKE ? OR w.description LIKE ? ORDER BY w.created_at DESC LIMIT ? OFFSET ?", ['%' + search + '%', '%' + search + '%', limit, offset]);
-    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE s.name LIKE ? OR w.description LIKE ?", ['%' + search + '%', '%' + search + '%']);
+    txns = db.query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE (s.name LIKE ? OR w.description LIKE ?) AND date(w.created_at) >= ? AND date(w.created_at) <= ? ORDER BY w.created_at DESC LIMIT ? OFFSET ?", ['%' + search + '%', '%' + search + '%', startDate || '2000-01-01', endDate || '2100-01-01', limit, offset]);
+    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE (s.name LIKE ? OR w.description LIKE ?) AND date(w.created_at) >= ? AND date(w.created_at) <= ?", ['%' + search + '%', '%' + search + '%', startDate || '2000-01-01', endDate || '2100-01-01']);
   } else {
-    txns = db.getAllTransactions(limit, offset);
-    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions");
+    txns = db.getTransactionsByPeriod(null, startDate || '2000-01-01', endDate || '2100-01-01', limit, offset);
+    totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions WHERE date(created_at) >= ? AND date(created_at) <= ?", [startDate || '2000-01-01', endDate || '2100-01-01']);
   }
 
   var totalPages = Math.ceil((totalCount ? totalCount.c : 0) / limit);
-  var allSellers = db.query("SELECT s.id, s.name, s.email, (SELECT COALESCE(balance,0) FROM wallet_transactions WHERE seller_id = s.id ORDER BY id DESC LIMIT 1) as balance, (SELECT COUNT(*) FROM sales WHERE seller_id = s.id) as sales_count FROM sellers s ORDER BY s.name");
+  var allSellers = db.query("SELECT s.id, s.name, s.email, s.commission_pct, s.bank_info, (SELECT COALESCE(balance,0) FROM wallet_transactions WHERE seller_id = s.id ORDER BY id DESC LIMIT 1) as balance, (SELECT COUNT(*) FROM sales WHERE seller_id = s.id) as sales_count FROM sellers s ORDER BY s.name");
 
   var commPct = db.getCommissionPct();
-  var totalComissoes = db.get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'commission'");
-  var totalVendas = db.get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'sale'");
+  var summary = db.getFinanceSummary(null, startDate || '2000-01-01', endDate || '2100-01-01');
+  var chartData = db.getFinanceChart(null, 30);
+  var pendingPayoutsCount = db.getPendingPayoutsCount();
+  var payouts = db.getPayouts(null, 20, 0);
+  var payoutsTotal = db.getPayoutCount(null);
+
+  var months = [];
+  var now = new Date();
+  for (var m = 11; m >= 0; m--) {
+    var d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    var label = d.toLocaleString('pt-BR', { month: 'short', year: '2-digit' });
+    months.push({ label: label, value: d.toISOString().slice(0,7) });
+  }
 
   res.render('admin/financeiro', {
     title: 'Financeiro - Painel Admin',
-    txns, search, page, totalPages, allSellers, commPct,
-    totalComissoes: totalComissoes ? totalComissoes.total : 0,
-    totalVendas: totalVendas ? totalVendas.total : 0
+    txns, search, period, startDate, endDate, page, totalPages, allSellers, commPct,
+    summary: summary,
+    chartData: chartData,
+    pendingPayoutsCount: pendingPayoutsCount,
+    payouts: payouts,
+    payoutsTotal: payoutsTotal,
+    months: months
   });
 });
 
@@ -503,11 +530,53 @@ router.post('/financeiro/comissao', (req, res) => {
   res.redirect('/admin/financeiro');
 });
 
+router.post('/financeiro/comissao-seller', (req, res) => {
+  var { seller_id, commission_pct } = req.body;
+  var pct = commission_pct !== '' ? parseFloat(commission_pct) : null;
+  if (seller_id && (pct === null || (pct >= 0 && pct <= 100))) {
+    db.run("UPDATE sellers SET commission_pct = ? WHERE id = ?", [pct, seller_id]);
+  }
+  res.redirect('/admin/financeiro');
+});
+
 router.post('/financeiro/ajuste', (req, res) => {
   var { seller_id, amount, description } = req.body;
   var val = parseFloat(amount);
   if (seller_id && val && description) {
     db.addTransaction(parseInt(seller_id), 'adjustment', description, val, 'adjustment', 0);
+  }
+  res.redirect('/admin/financeiro');
+});
+
+router.get('/financeiro/exportar-csv', (req, res) => {
+  var search = req.query.search || '';
+  var startDate = req.query.start_date || '2000-01-01';
+  var endDate = req.query.end_date || '2100-01-01';
+  var txns;
+  if (search) {
+    txns = db.query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE (s.name LIKE ? OR w.description LIKE ?) AND date(w.created_at) >= ? AND date(w.created_at) <= ? ORDER BY w.created_at DESC", ['%' + search + '%', '%' + search + '%', startDate, endDate]);
+  } else {
+    txns = db.query("SELECT w.*, s.name as seller_name FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE date(w.created_at) >= ? AND date(w.created_at) <= ? ORDER BY w.created_at DESC", [startDate, endDate]);
+  }
+  var csv = 'sep=;\nData;Vendedor;Descricao;Tipo;Valor;Saldo\n';
+  txns.forEach(function(t) {
+    csv += t.created_at + ';' + (t.seller_name || 'Admin') + ';' + (t.description || '').replace(/;/g,',') + ';' + t.type + ';' + (t.amount || 0).toFixed(2) + ';' + (t.balance || 0).toFixed(2) + '\n';
+  });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename=transacoes.csv');
+  res.send('\uFEFF' + csv);
+});
+
+router.post('/financeiro/payout/aprovar/:id', (req, res) => {
+  db.run("UPDATE payouts SET status = 'approved', approved_by = ?, approved_at = datetime('now') WHERE id = ? AND status = 'pending'", [req.session.adminId || 0, req.params.id]);
+  res.redirect('/admin/financeiro');
+});
+
+router.post('/financeiro/payout/rejeitar/:id', (req, res) => {
+  var p = db.get('SELECT * FROM payouts WHERE id = ? AND status = ?', [req.params.id, 'pending']);
+  if (p) {
+    db.run("UPDATE payouts SET status = 'rejected', notes = 'Rejeitado pelo admin' WHERE id = ?", [req.params.id]);
+    db.addTransaction(p.seller_id, 'adjustment', 'Estorno saque rejeitado - R$ ' + p.amount.toFixed(2), p.amount, 'payout_refund', p.id);
   }
   res.redirect('/admin/financeiro');
 });

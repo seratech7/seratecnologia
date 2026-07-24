@@ -291,6 +291,32 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS payouts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      seller_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      fee REAL DEFAULT 0,
+      net_amount REAL NOT NULL,
+      status TEXT DEFAULT 'pending',
+      bank_info TEXT DEFAULT '',
+      payment_method TEXT DEFAULT 'pix',
+      notes TEXT DEFAULT '',
+      approved_by INTEGER,
+      approved_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
+    )
+  `);
+
+  var sellerCols = db.exec("PRAGMA table_info(sellers)");
+  if (sellerCols.length > 0) {
+    var sc = sellerCols[0].values.map(function(r) { return r[1]; });
+    if (!sc.includes('commission_pct')) db.run("ALTER TABLE sellers ADD COLUMN commission_pct REAL DEFAULT NULL");
+    if (!sc.includes('bank_info')) db.run("ALTER TABLE sellers ADD COLUMN bank_info TEXT DEFAULT ''");
+    if (!sc.includes('pix_key_recebimento')) db.run("ALTER TABLE sellers ADD COLUMN pix_key_recebimento TEXT DEFAULT ''");
+  }
+
   var salesCols = db.exec("PRAGMA table_info(sales)");
   if (salesCols.length > 0) {
     var colNames = salesCols[0].values.map(function(r) { return r[1]; });
@@ -438,7 +464,13 @@ function getAllTransactions(limit, offset) {
     [limit || 50, offset || 0]);
 }
 
-function getCommissionPct() {
+function getCommissionPct(sellerId) {
+  if (sellerId) {
+    var seller = get("SELECT commission_pct FROM sellers WHERE id = ?", [sellerId]);
+    if (seller && seller.commission_pct !== null && seller.commission_pct !== undefined) {
+      return parseFloat(seller.commission_pct);
+    }
+  }
   var r = get("SELECT value FROM config WHERE key = 'commission_pct'");
   return r ? parseFloat(r.value) || 10 : 10;
 }
@@ -462,4 +494,64 @@ function getSaleByTrackingCode(code) {
   return get("SELECT s.*, p.name as product_name, p.image as product_image, p.price as product_price, s2.name as seller_name FROM sales s LEFT JOIN products p ON s.product_id = p.id LEFT JOIN sellers s2 ON s.seller_id = s2.id WHERE s.tracking_code = ?", [code]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode };
+function getPayouts(sellerId, limit, offset) {
+  if (sellerId) return query("SELECT * FROM payouts WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?", [sellerId, limit || 50, offset || 0]);
+  return query("SELECT p.*, s.name as seller_name, s.email as seller_email FROM payouts p LEFT JOIN sellers s ON p.seller_id = s.id ORDER BY p.created_at DESC LIMIT ? OFFSET ?", [limit || 50, offset || 0]);
+}
+
+function getPayoutCount(sellerId) {
+  if (sellerId) { var r = get("SELECT COUNT(*) as c FROM payouts WHERE seller_id = ?", [sellerId]); return r ? r.c : 0; }
+  var r = get("SELECT COUNT(*) as c FROM payouts"); return r ? r.c : 0;
+}
+
+function getPendingPayoutsCount() {
+  var r = get("SELECT COUNT(*) as c FROM payouts WHERE status = 'pending'"); return r ? r.c : 0;
+}
+
+function createPayout(sellerId, amount, bankInfo, paymentMethod) {
+  var fee = Math.max(0, amount * 0.01);
+  var net = amount - fee;
+  run("INSERT INTO payouts (seller_id, amount, fee, net_amount, bank_info, payment_method) VALUES (?, ?, ?, ?, ?, ?)",
+    [sellerId, amount, fee, net, bankInfo || '', paymentMethod || 'pix']);
+  db.addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', 0);
+}
+
+function getTransactionsByPeriod(sellerId, startDate, endDate, limit, offset) {
+  if (sellerId) {
+    return query("SELECT * FROM wallet_transactions WHERE seller_id = ? AND date(created_at) >= ? AND date(created_at) <= ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      [sellerId, startDate, endDate, limit || 500, offset || 0]);
+  }
+  return query("SELECT w.*, s.name as seller_name FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id WHERE date(w.created_at) >= ? AND date(w.created_at) <= ? ORDER BY w.created_at DESC LIMIT ? OFFSET ?",
+    [startDate, endDate, limit || 500, offset || 0]);
+}
+
+function getFinanceSummary(sellerId, startDate, endDate) {
+  var where = sellerId ? "seller_id = " + sellerId + " AND" : "";
+  if (!startDate) startDate = '2000-01-01';
+  if (!endDate) endDate = '2100-01-01';
+  var sales = get("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM wallet_transactions WHERE " + where + " type = 'sale' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
+  var commissions = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'commission' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
+  var payouts = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'payout' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
+  var adjustments = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'adjustment' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
+  return {
+    salesTotal: sales ? sales.total : 0,
+    salesCount: sales ? sales.count : 0,
+    commissionsTotal: commissions ? commissions.total : 0,
+    payoutsTotal: payouts ? payouts.total : 0,
+    adjustmentsTotal: adjustments ? adjustments.total : 0
+  };
+}
+
+function getFinanceChart(sellerId, days) {
+  days = days || 30;
+  var where = sellerId ? "AND seller_id = " + sellerId : "";
+  var data = query("SELECT date(created_at) as day, type, COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE created_at >= date('now', '-' || ? || ' days') " + where + " GROUP BY day, type ORDER BY day ASC", [days]);
+  var chart = {};
+  data.forEach(function(r) {
+    if (!chart[r.day]) chart[r.day] = { sale: 0, commission: 0, payout: 0, adjustment: 0 };
+    chart[r.day][r.type] = r.total;
+  });
+  return chart;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart };

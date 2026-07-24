@@ -1,45 +1,106 @@
 <%- include('../partials/admin-header') %>
 
+<style>
+.fin-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.08); padding:20px; }
+.fin-card h3 { margin:0 0 12px; font-size:15px; display:flex; align-items:center; gap:6px; }
+.fin-stat { font-size:28px; font-weight:800; }
+.fin-stat-label { font-size:12px; color:#888; margin-top:2px; }
+.fin-tab { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+.fin-tab a { padding:6px 14px; border-radius:6px; font-size:13px; text-decoration:none; background:#f5f5f5; color:#555; }
+.fin-tab a.active { background:var(--primary); color:#fff; }
+</style>
+
 <div class="dashboard-header">
   <h1><i class="fas fa-coins"></i> Financeiro</h1>
-  <p>Controle de comissões e saldo dos vendedores</p>
+  <p>Controle financeiro completo</p>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px;">
   <div style="background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border-radius:12px;padding:20px;">
-    <div style="font-size:13px;opacity:0.8;">Total em Vendas</div>
-    <div style="font-size:26px;font-weight:800;margin-top:4px;">
-      <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalVendas) %>
-    </div>
+    <div class="fin-stat-label">Vendas (período)</div>
+    <div class="fin-stat"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.salesTotal || 0) %></div>
+    <div style="font-size:13px;opacity:0.8;margin-top:4px;"><%= summary.salesCount %> venda(s)</div>
   </div>
   <div style="background:linear-gradient(135deg,#e65100,#bf360c);color:#fff;border-radius:12px;padding:20px;">
-    <div style="font-size:13px;opacity:0.8;">Total Comissões</div>
-    <div style="font-size:26px;font-weight:800;margin-top:4px;">
-      <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalComissoes) %>
+    <div class="fin-stat-label">Comissões (período)</div>
+    <div class="fin-stat"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.commissionsTotal || 0) %></div>
+  </div>
+  <div style="background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border-radius:12px;padding:20px;">
+    <div class="fin-stat-label">Saques (período)</div>
+    <div class="fin-stat"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.payoutsTotal || 0) %></div>
+  </div>
+  <div style="background:linear-gradient(135deg,#6a1b9a,#4a148c);color:#fff;border-radius:12px;padding:20px;">
+    <div class="fin-stat-label">Ajustes (período)</div>
+    <div class="fin-stat"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.adjustmentsTotal || 0) %></div>
+  </div>
+</div>
+
+<div class="fin-tab">
+  <a href="/admin/financeiro" class="<%= period === 'all' ? 'active' : '' %>">Tudo</a>
+  <a href="/admin/financeiro?period=7d" class="<%= period === '7d' ? 'active' : '' %>">7 dias</a>
+  <a href="/admin/financeiro?period=30d" class="<%= period === '30d' ? 'active' : '' %>">30 dias</a>
+  <a href="/admin/financeiro?period=90d" class="<%= period === '90d' ? 'active' : '' %>">90 dias</a>
+  <a href="/admin/financeiro?period=12m" class="<%= period === '12m' ? 'active' : '' %>">12 meses</a>
+  <form method="GET" action="/admin/financeiro" style="display:flex;gap:4px;margin-left:auto;align-items:center;">
+    <input type="date" name="start_date" value="<%= startDate %>" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+    <span style="color:#999;">até</span>
+    <input type="date" name="end_date" value="<%= endDate %>" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+    <button type="submit" class="btn-small" style="font-size:11px;padding:4px 10px;">Filtrar</button>
+  </form>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+  <div class="fin-card">
+    <h3><i class="fas fa-chart-bar"></i> Últimos 30 dias</h3>
+    <div style="display:flex;gap:4px;align-items:end;height:100px;padding:8px 0;">
+      <% var days = Object.keys(chartData); if (days.length === 0) { %><p style="color:#999;font-size:13px;">Sem dados no período</p><% } %>
+      <% days.forEach(function(d) { %>
+        <% var max = 0; Object.values(chartData[d]).forEach(function(v) { max = Math.max(max, Math.abs(v)); }); %>
+        <% if (max === 0) max = 1; %>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100px;justify-content:end;">
+          <div style="width:100%;background:#e8f5e9;border-radius:2px 2px 0 0;height:<%= Math.abs(chartData[d].sale || 0) / max * 70 %>px;min-height:2px;" title="Vendas <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(chartData[d].sale || 0) %>"></div>
+          <div style="width:100%;background:#fff3e0;border-radius:2px 2px 0 0;height:<%= Math.abs(chartData[d].commission || 0) / max * 40 %>px;min-height:2px;" title="Comissões <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(chartData[d].commission || 0) %>"></div>
+          <span style="font-size:8px;color:#999;writing-mode:vertical-lr;text-orientation:mixed;height:16px;overflow:hidden;"><%= d.slice(5) %></span>
+        </div>
+      <% }); %>
     </div>
   </div>
-  <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-    <div style="font-size:13px;color:#666;">Comissão Atual</div>
-    <div style="font-size:26px;font-weight:800;color:#1565c0;margin-top:4px;"><%= commPct %>%</div>
-    <form method="POST" action="/admin/financeiro/comissao" style="display:flex;gap:4px;margin-top:8px;">
-      <input type="number" name="commission_pct" value="<%= commPct %>" min="0" max="100" step="0.5" style="width:70px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
-      <button type="submit" class="btn-small" style="padding:4px 10px;font-size:12px;">Alterar</button>
+
+  <div class="fin-card">
+    <h3><i class="fas fa-percentage"></i> Comissão Global</h3>
+    <form method="POST" action="/admin/financeiro/comissao" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+      <span style="font-size:24px;font-weight:800;color:#1565c0;"><%= commPct %>%</span>
+      <input type="number" name="commission_pct" value="<%= commPct %>" min="0" max="100" step="0.5" style="width:80px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:14px;">
+      <button type="submit" class="btn-small">Alterar</button>
     </form>
+    <hr style="border:none;border-top:1px solid #eee;margin:12px 0;">
+    <h4 style="font-size:14px;margin:0 0 8px;">Comissão por Vendedor</h4>
+    <div style="max-height:200px;overflow-y:auto;">
+    <% allSellers.forEach(function(s) { %>
+      <form method="POST" action="/admin/financeiro/comissao-seller" style="display:flex;gap:6px;align-items:center;margin-bottom:4px;padding:4px 0;border-bottom:1px solid #f5f5f5;">
+        <span style="flex:1;font-size:13px;"><%= s.name %></span>
+        <input type="hidden" name="seller_id" value="<%= s.id %>">
+        <input type="number" name="commission_pct" value="<%= s.commission_pct !== null && s.commission_pct !== undefined ? s.commission_pct : '' %>" placeholder="<%= commPct %>% (global)" min="0" max="100" step="0.5" style="width:70px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;">
+        <button type="submit" class="btn-small" style="font-size:11px;padding:3px 8px;"><i class="fas fa-check"></i></button>
+      </form>
+    <% }); %>
+    </div>
   </div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
-  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;">
-    <h3 style="margin:0 0 12px;font-size:16px;"><i class="fas fa-store"></i> Saldo dos Vendedores</h3>
+  <div class="fin-card">
+    <h3><i class="fas fa-store"></i> Saldo dos Vendedores</h3>
     <div style="overflow-x:auto;">
-    <table class="admin-table" style="font-size:13px;">
-      <thead><tr><th>Vendedor</th><th>Vendas</th><th>Saldo</th></tr></thead>
+    <table class="admin-table" style="font-size:12px;">
+      <thead><tr><th>Vendedor</th><th>Vendas</th><th>Com%</th><th>Saldo</th></tr></thead>
       <tbody>
         <% allSellers.forEach(function(s) { %>
         <tr>
           <td><%= s.name %></td>
           <td><%= s.sales_count %></td>
-          <td style="font-weight:700;color:<%= s.balance >= 0 ? '#2e7d32' : '#c62828' %>;">
+          <td><%= s.commission_pct !== null && s.commission_pct !== undefined ? s.commission_pct + '%' : '- ' + commPct + '%' %></td>
+          <td style="font-weight:700;color:<%= (s.balance || 0) >= 0 ? '#2e7d32' : '#c62828' %>;">
             <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.balance || 0) %>
           </td>
         </tr>
@@ -49,70 +110,135 @@
     </div>
   </div>
 
-  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;">
-    <h3 style="margin:0 0 12px;font-size:16px;"><i class="fas fa-adjust"></i> Ajuste Manual</h3>
-    <form method="POST" action="/admin/financeiro/ajuste">
-      <div style="margin-bottom:8px;">
-        <select name="seller_id" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-          <option value="">Selecione o vendedor</option>
-          <% allSellers.forEach(function(s) { %>
-            <option value="<%= s.id %>"><%= s.name %></option>
-          <% }); %>
-        </select>
+  <div class="fin-card">
+    <h3><i class="fas fa-hand-holding-usd"></i> Saques Pendentes <span style="background:#e65100;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;"><%= pendingPayoutsCount %></span></h3>
+    <% if (payouts.length === 0) { %><p style="color:#999;font-size:13px;">Nenhum saque pendente</p><% } %>
+    <% payouts.filter(function(p) { return p.status === 'pending'; }).forEach(function(p) { %>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f5f5f5;">
+      <div>
+        <strong style="font-size:14px;"><%= p.seller_name %></strong><br>
+        <span style="font-size:12px;color:#666;">
+          <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %>
+          <span style="color:#999;">(taxa: <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.fee) %>)</span>
+        </span>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input type="number" name="amount" step="0.01" placeholder="Valor (+/-)" required style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+      <div style="display:flex;gap:4px;">
+        <form method="POST" action="/admin/financeiro/payout/aprovar/<%= p.id %>">
+          <button type="submit" class="btn-small" style="background:#2e7d32;color:#fff;padding:4px 10px;font-size:11px;"><i class="fas fa-check"></i></button>
+        </form>
+        <form method="POST" action="/admin/financeiro/payout/rejeitar/<%= p.id %>">
+          <button type="submit" class="btn-small" style="background:#c62828;color:#fff;padding:4px 10px;font-size:11px;"><i class="fas fa-times"></i></button>
+        </form>
       </div>
-      <div style="margin-bottom:8px;">
-        <input type="text" name="description" placeholder="Descrição do ajuste" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-      </div>
-      <button type="submit" class="btn-small" style="background:var(--primary);color:#fff;width:100%;justify-content:center;"><i class="fas fa-save"></i> Aplicar Ajuste</button>
-    </form>
+    </div>
+    <% }); %>
+    <% payouts.filter(function(p) { return p.status !== 'pending'; }).slice(0,5).forEach(function(p) { %>
+    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:1px solid #f5f5f5;color:#888;">
+      <span><%= p.seller_name %> — <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %></span>
+      <span style="<%= p.status === 'approved' ? 'color:#2e7d32;' : 'color:#c62828;' %>"><%= p.status === 'approved' ? 'Aprovado' : 'Rejeitado' %></span>
+    </div>
+    <% }); %>
+    <% if (payouts.length > 0) { %><div style="text-align:right;margin-top:8px;"><a href="#" onclick="document.getElementById('payoutSection').scrollIntoView({behavior:'smooth'});return false;" style="font-size:12px;color:var(--primary);">Ver todos</a></div><% } %>
   </div>
 </div>
 
-<div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;margin-bottom:20px;">
+<div class="fin-card" style="margin-bottom:20px;">
+  <h3><i class="fas fa-adjust"></i> Ajuste Manual</h3>
+  <form method="POST" action="/admin/financeiro/ajuste" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+    <div style="flex:1;min-width:150px;">
+      <label style="font-size:12px;color:#666;display:block;">Vendedor</label>
+      <select name="seller_id" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+        <option value="">Selecione</option>
+        <% allSellers.forEach(function(s) { %>
+          <option value="<%= s.id %>"><%= s.name %></option>
+        <% }); %>
+      </select>
+    </div>
+    <div style="flex:0 0 120px;">
+      <label style="font-size:12px;color:#666;display:block;">Valor (+/-)</label>
+      <input type="number" name="amount" step="0.01" placeholder="R$" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+    </div>
+    <div style="flex:2;min-width:200px;">
+      <label style="font-size:12px;color:#666;display:block;">Descrição</label>
+      <input type="text" name="description" placeholder="Motivo do ajuste" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+    </div>
+    <button type="submit" class="btn-small" style="background:var(--primary);color:#fff;padding:8px 16px;"><i class="fas fa-save"></i> Aplicar</button>
+  </form>
+</div>
+
+<div class="fin-card" style="margin-bottom:20px;">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-    <h3 style="margin:0;font-size:16px;"><i class="fas fa-history"></i> Histórico de Transações</h3>
-    <form method="GET" action="/admin/financeiro" style="display:flex;gap:4px;">
-      <input type="text" name="search" value="<%= search %>" placeholder="Buscar por vendedor..." style="padding:6px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
-      <button type="submit" class="btn-small" style="font-size:12px;"><i class="fas fa-search"></i></button>
-    </form>
+    <h3 style="margin:0;"><i class="fas fa-history"></i> Histórico de Transações</h3>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <form method="GET" action="/admin/financeiro" style="display:flex;gap:4px;">
+        <input type="text" name="search" value="<%= search %>" placeholder="Buscar..." style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;">
+        <% if (startDate) { %><input type="hidden" name="start_date" value="<%= startDate %>"><% } %>
+        <% if (endDate) { %><input type="hidden" name="end_date" value="<%= endDate %>"><% } %>
+        <button type="submit" class="btn-small" style="font-size:11px;"><i class="fas fa-search"></i></button>
+      </form>
+      <a href="/admin/financeiro/exportar-csv?start_date=<%= startDate || '' %>&end_date=<%= endDate || '' %>&search=<%= search %>" class="btn-small" style="font-size:11px;"><i class="fas fa-download"></i> CSV</a>
+    </div>
   </div>
   <div style="overflow-x:auto;">
   <table class="admin-table">
     <thead><tr><th>Data</th><th>Vendedor</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Saldo</th></tr></thead>
     <tbody>
       <% if (txns.length === 0) { %>
-      <tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">Nenhuma transação</td></tr>
+      <tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">Nenhuma transação neste período</td></tr>
       <% } %>
       <% txns.forEach(function(t) { %>
       <tr>
-        <td style="font-size:12px;color:#666;white-space:nowrap;"><%= t.created_at %></td>
-        <td><%= t.seller_name || 'Admin' %></td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= t.description %></td>
+        <td style="font-size:11px;color:#666;white-space:nowrap;"><%= t.created_at %></td>
+        <td style="font-size:13px;"><%= t.seller_name || 'Admin' %></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;"><%= t.description %></td>
         <td>
-          <% if (t.type === 'sale') { %><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:12px;">Venda</span>
-          <% } else if (t.type === 'commission') { %><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:12px;">Comissão</span>
-          <% } else if (t.type === 'adjustment') { %><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:4px;font-size:12px;">Ajuste</span>
-          <% } else { %><span style="background:#f5f5f5;color:#666;padding:2px 8px;border-radius:4px;font-size:12px;"><%= t.type %></span><% } %>
+          <% if (t.type === 'sale') { %><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">Venda</span>
+          <% } else if (t.type === 'commission') { %><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:11px;">Comissão</span>
+          <% } else if (t.type === 'payout') { %><span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px;">Saque</span>
+          <% } else if (t.type === 'adjustment') { %><span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:4px;font-size:11px;">Ajuste</span>
+          <% } else { %><span style="background:#f5f5f5;color:#666;padding:2px 8px;border-radius:4px;font-size:11px;"><%= t.type %></span><% } %>
         </td>
-        <td style="font-weight:700;color:<%= t.amount >= 0 ? '#2e7d32' : '#c62828' %>;">
-          <%= t.amount >= 0 ? '+' : '' %><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount) %>
+        <td style="font-weight:700;font-size:13px;color:<%= (t.amount || 0) >= 0 ? '#2e7d32' : '#c62828' %>;">
+          <%= (t.amount || 0) >= 0 ? '+' : '' %><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.amount || 0) %>
         </td>
-        <td><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.balance || 0) %></td>
+        <td style="font-size:13px;"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(t.balance || 0) %></td>
       </tr>
       <% }); %>
     </tbody>
   </table>
   </div>
   <% if (totalPages > 1) { %>
-  <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
+  <div style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;">
     <% for(var p=1;p<=totalPages;p++){ %>
-      <a href="/admin/financeiro?page=<%= p %><%= search ? '&search='+search : '' %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;"><%= p %></a>
+      <a href="/admin/financeiro?page=<%= p %><%= search ? '&search='+search : '' %><%= startDate ? '&start_date='+startDate : '' %><%= endDate ? '&end_date='+endDate : '' %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:32px;text-align:center;text-decoration:none;font-size:12px;"><%= p %></a>
     <% } %>
   </div>
   <% } %>
+</div>
+
+<div id="payoutSection" class="fin-card">
+  <h3><i class="fas fa-money-bill-wave"></i> Histórico de Saques</h3>
+  <div style="overflow-x:auto;">
+  <table class="admin-table">
+    <thead><tr><th>Data</th><th>Vendedor</th><th>Valor</th><th>Taxa</th><th>Líquido</th><th>Status</th></tr></thead>
+    <tbody>
+      <% payouts.forEach(function(p) { %>
+      <tr>
+        <td style="font-size:12px;color:#666;white-space:nowrap;"><%= p.created_at %></td>
+        <td><%= p.seller_name || '-' %></td>
+        <td style="font-weight:700;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %></td>
+        <td style="color:#999;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.fee || 0) %></td>
+        <td><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.net_amount || p.amount) %></td>
+        <td>
+          <% if (p.status === 'pending') { %><span style="background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:4px;font-size:11px;">Pendente</span>
+          <% } else if (p.status === 'approved') { %><span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:4px;font-size:11px;">Aprovado</span>
+          <% } else { %><span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:4px;font-size:11px;">Rejeitado</span><% } %>
+        </td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  </div>
 </div>
 
 <%- include('../partials/admin-footer') %>

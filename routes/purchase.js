@@ -41,7 +41,7 @@ router.post('/api/finalizar-compra', function(req, res) {
     db.run("UPDATE sales SET tracking_code = ?, tracking_status = 'confirmed' WHERE id = ?", [trackingCode, saleId]);
     db.createTrackingHistory(saleId, 'confirmed', 'Pedido confirmado e pagamento recebido');
 
-    var commPct = db.getCommissionPct();
+    var commPct = db.getCommissionPct(produto.seller_id);
     var commValue = produto.price * (commPct / 100);
     var sellerValue = produto.price - commValue;
     db.addTransaction(produto.seller_id, 'sale', 'Venda ' + produto.code + ' - ' + produto.name, sellerValue, 'sale', saleId);

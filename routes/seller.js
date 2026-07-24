@@ -202,13 +202,42 @@ router.get('/wallet', requireSeller, (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = 30;
   const offset = (page - 1) * limit;
+  const period = req.query.period || 'all';
+  var startDate = '', endDate = new Date().toISOString().slice(0,10);
+  if (period === '7d') startDate = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+  else if (period === '30d') startDate = new Date(Date.now() - 30*86400000).toISOString().slice(0,10);
+  else if (period === '90d') startDate = new Date(Date.now() - 90*86400000).toISOString().slice(0,10);
+  else if (period === '12m') startDate = new Date(Date.now() - 365*86400000).toISOString().slice(0,10);
+
   const balance = db.getWalletBalance(req.session.sellerId);
   const txns = db.getWalletTransactions(req.session.sellerId, limit, offset);
   const totalVendas = db.get("SELECT COUNT(*) as c FROM sales WHERE seller_id = ?", [req.session.sellerId]);
-  const commPct = db.getCommissionPct();
+  const commPct = db.getCommissionPct(req.session.sellerId);
   const totalCount = db.get("SELECT COUNT(*) as c FROM wallet_transactions WHERE seller_id = ?", [req.session.sellerId]);
   const totalPages = Math.ceil((totalCount ? totalCount.c : 0) / limit);
-  res.render('seller/wallet', { title: 'Minha Carteira', balance, txns, totalVendas: totalVendas ? totalVendas.c : 0, commPct, page, totalPages });
+  const summary = db.getFinanceSummary(req.session.sellerId, startDate || '2000-01-01', endDate);
+  const chartData = db.getFinanceChart(req.session.sellerId, 30);
+  const payouts = db.getPayouts(req.session.sellerId, 20, 0);
+  const sellerInfo = db.get('SELECT bank_info, pix_key_recebimento FROM sellers WHERE id = ?', [req.session.sellerId]);
+
+  res.render('seller/wallet', {
+    title: 'Minha Carteira',
+    balance, txns, totalVendas: totalVendas ? totalVendas.c : 0,
+    commPct, page, totalPages, period, startDate, endDate,
+    summary, chartData, payouts, sellerInfo
+  });
+});
+
+router.post('/wallet/solicitar-saque', requireSeller, (req, res) => {
+  var { amount, bank_info, payment_method } = req.body;
+  var val = parseFloat(amount);
+  var balance = db.getWalletBalance(req.session.sellerId);
+  if (val <= 0) return res.redirect('/seller/wallet?erro=Valor inválido');
+  if (val > balance) return res.redirect('/seller/wallet?erro=Saldo insuficiente');
+  if (val < 10) return res.redirect('/seller/wallet?erro=Valor mínimo é R$ 10,00');
+  db.createPayout(req.session.sellerId, val, bank_info || '', payment_method || 'pix');
+  db.addNotification('admin', 'payout', 'Saque solicitado: ' + req.session.sellerName + ' - R$ ' + val.toFixed(2), 'money-bill', '/admin/financeiro');
+  res.redirect('/seller/wallet?sucesso=Saque solicitado com sucesso');
 });
 
 router.post('/sales/status/:id', requireSeller, (req, res) => {
