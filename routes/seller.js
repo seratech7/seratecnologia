@@ -185,5 +185,23 @@ router.post('/products/delete/:id', (req, res) => {
   res.redirect('/seller/products');
 });
 
+router.get('/sales', requireSeller, (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = 30;
+  const offset = (page - 1) * limit;
+  const total = db.get('SELECT COUNT(*) as c FROM sales WHERE seller_id = ?', [req.session.sellerId]);
+  const sales = db.query('SELECT * FROM sales WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [req.session.sellerId, limit, offset]);
+  const totalPages = Math.ceil((total ? total.c : 0) / limit);
+  res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages });
+});
+
+router.post('/sales/status/:id', requireSeller, (req, res) => {
+  const { status } = req.body;
+  if (['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+    db.run("UPDATE sales SET status = ? WHERE id = ? AND seller_id = ?", [status, req.params.id, req.session.sellerId]);
+  }
+  res.redirect('/seller/sales');
+});
+
 return router;
 };

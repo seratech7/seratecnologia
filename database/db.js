@@ -79,6 +79,8 @@ async function initDb() {
     if (!cols.includes('website')) db.run("ALTER TABLE sellers ADD COLUMN website TEXT DEFAULT ''");
     if (!cols.includes('whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN whatsapp TEXT DEFAULT ''");
     if (!cols.includes('pix_key')) db.run("ALTER TABLE sellers ADD COLUMN pix_key TEXT DEFAULT ''");
+    if (!cols.includes('notify_whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN notify_whatsapp TEXT DEFAULT ''");
+    if (!cols.includes('notify_signal')) db.run("ALTER TABLE sellers ADD COLUMN notify_signal TEXT DEFAULT ''");
   }
 
   const tableInfo = db.exec("PRAGMA table_info(products)");
@@ -211,6 +213,27 @@ async function initDb() {
       referrer TEXT DEFAULT '',
       time_spent INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      product_code TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      product_price REAL NOT NULL,
+      buyer_name TEXT NOT NULL,
+      buyer_document TEXT NOT NULL,
+      buyer_phone TEXT NOT NULL,
+      buyer_email TEXT NOT NULL,
+      buyer_address TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      payment_method TEXT DEFAULT 'pix',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (product_id) REFERENCES products(id),
+      FOREIGN KEY (seller_id) REFERENCES sellers(id)
     )
   `);
 

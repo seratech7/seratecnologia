@@ -50,6 +50,11 @@
       <a href="/admin/notifications" class="<%= currentPath.startsWith('/admin/notifications') ? 'active' : '' %>">
         <i class="fas fa-bell"></i> Notificações
       </a>
+      <% if (!admin && seller) { %>
+      <a href="/seller/sales" class="<%= currentPath === '/seller/sales' ? 'active' : '' %>">
+        <i class="fas fa-shopping-bag"></i> Vendas
+      </a>
+      <% } %>
     </nav>
 
     <div class="sidebar-footer">

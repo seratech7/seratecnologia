@@ -171,6 +171,14 @@ function gerarPagamento(e) {
     document.getElementById('pixSection').scrollIntoView({ behavior: 'smooth' });
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar QR Code PIX';
+
+    fetch('/api/finalizar-compra', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    }).then(function(r) { return r.json(); }).then(function(resp) {
+      console.log(resp);
+    }).catch(function() {});
   }).catch(function() {
     document.getElementById('pixErro').textContent = 'Erro ao gerar PIX. Tente novamente.';
     document.getElementById('pixErro').style.display = 'block';

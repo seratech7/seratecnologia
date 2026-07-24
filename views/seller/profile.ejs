@@ -37,6 +37,23 @@
         <span style="font-size:12px;color:#888;">Essa chave será usada para receber pagamentos dos produtos que vender</span>
       </div>
 
+      <div style="border-top:1px solid #eee;margin:16px 0;"></div>
+      <h4 style="margin:0 0 12px;"><i class="fas fa-bell"></i> Notificações de Vendas</h4>
+
+      <div class="form-group">
+        <label for="notify_whatsapp">Notificar via WhatsApp (número com DDI)</label>
+        <input type="text" id="notify_whatsapp" name="notify_whatsapp" value="<%= seller.notify_whatsapp || '' %>" placeholder="5511999998888">
+        <span style="font-size:12px;color:#888;">A cada venda, você receberá um link para enviar notificação no WhatsApp</span>
+      </div>
+
+      <div class="form-group">
+        <label for="notify_signal">Notificar via Signal (número com DDI)</label>
+        <input type="text" id="notify_signal" name="notify_signal" value="<%= seller.notify_signal || '' %>" placeholder="5511999998888">
+        <span style="font-size:12px;color:#888;">A cada venda, você receberá um link para enviar notificação no Signal</span>
+      </div>
+
+      <div style="border-top:1px solid #eee;margin:16px 0;"></div>
+
       <div class="form-group">
         <label for="website">Site / Loja online</label>
         <input type="text" id="website" name="website" value="<%= seller.website || '' %>" placeholder="https://meusite.com">
