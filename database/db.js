@@ -387,20 +387,20 @@ async function initDb() {
     cats.forEach(function(c) { catMap[c.slug] = c.id; });
 
     var defaultProds = [
-      ['SSD Kingston NV2 1TB', 'SSD NVMe M.2 Kingston NV2 1TB, leitura 3500MB/s', 349.90, catMap['ssds'], 'Novo', 'Brasil', 'active', 1],
-      ['HD Seagate Barracuda 2TB', 'HD interno Seagate 2TB 7200RPM SATA III', 289.90, catMap['hds-armazenamento'], 'Novo', 'Brasil', 'active', 0],
-      ['Memória DDR5 32GB Kingston', 'Kit 2x16GB DDR5 4800MHz Kingston Fury Beast', 589.90, catMap['memoria-ram'], 'Novo', 'Brasil', 'active', 1],
-      ['Processador Intel Core i7-13700K', 'Intel Core i7-13700K 16 núcleos LGA1700', 2199.90, catMap['processadores'], 'Novo', 'Brasil', 'active', 0],
-      ['Placa de Vídeo RTX 4060', 'NVIDIA GeForce RTX 4060 8GB GDDR6', 1799.90, catMap['placas-video'], 'Novo', 'Brasil', 'active', 1],
-      ['Placa-mãe B760M', 'ASUS TUF Gaming B760M-Plus D4 LGA1700', 899.90, catMap['placas-mae'], 'Novo', 'Brasil', 'active', 0],
-      ['Monitor Gamer 27" 165Hz', 'Monitor LG UltraGear 27" IPS 165Hz 1ms', 1499.90, catMap['monitores'], 'Novo', 'Brasil', 'active', 0],
-      ['Teclado Mecânico RGB', 'Teclado gamer switch azul ABNT2', 199.90, catMap['perifericos'], 'Novo', 'Brasil', 'active', 1],
-      ['Fonte Corsair 650W', 'Fonte ATX Corsair CV650 80 Plus Bronze', 349.90, catMap['fontes-gabinetes'], 'Novo', 'Brasil', 'active', 0],
-      ['Notebook Dell Inspiron 15', 'Dell Inspiron 15" i5 8GB 256GB SSD', 3299.90, catMap['notebooks-pcs'], 'Novo', 'Brasil', 'active', 0],
+      ['SSD Kingston NV2 1TB', 'SSD NVMe M.2 Kingston NV2 1TB, leitura 3500MB/s e gravação 3000MB/s. Ideal para jogos e aplicações pesadas.', 349.90, catMap['ssds'], 'Novo', 'Brasil', 'active', 1, 'https://picsum.photos/seed/ssd-kingston-nv2/400/400'],
+      ['HD Seagate Barracuda 2TB', 'HD interno Seagate Barracuda 2TB 7200RPM SATA III 256MB cache. Armazenamento confiável para seu PC.', 289.90, catMap['hds-armazenamento'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/hd-seagate-2tb/400/400'],
+      ['Memória DDR5 32GB Kingston', 'Kit 2x16GB DDR5 4800MHz Kingston Fury Beast RGB. Performance extrema para sua placa-mãe DDR5.', 589.90, catMap['memoria-ram'], 'Novo', 'Brasil', 'active', 1, 'https://picsum.photos/seed/ddr5-kingston-32gb/400/400'],
+      ['Processador Intel Core i7-13700K', 'Intel Core i7-13700K 16 núcleos (8P+8E) 24 threads LGA1700. Até 5.4GHz Turbo para máximo desempenho.', 2199.90, catMap['processadores'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/intel-i7-13700k/400/400'],
+      ['Placa de Vídeo RTX 4060', 'NVIDIA GeForce RTX 4060 8GB GDDR6 DLSS 3. Ray Tracing e desempenho excepcional para jogos.', 1799.90, catMap['placas-video'], 'Novo', 'Brasil', 'active', 1, 'https://picsum.photos/seed/rtx-4060/400/400'],
+      ['Placa-mãe B760M', 'ASUS TUF Gaming B760M-Plus D4 LGA1700 DDR4. Conectividade completa e construção robusta.', 899.90, catMap['placas-mae'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/b760m-asus/400/400'],
+      ['Monitor Gamer 27" 165Hz', 'Monitor LG UltraGear 27" IPS 165Hz 1ms GTG. Resolução Full HD com cores precisas.', 1499.90, catMap['monitores'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/monitor-ultragear-27/400/400'],
+      ['Teclado Mecânico RGB', 'Teclado mecânico gamer switch azul ABNT2. 60% compacto com iluminação RGB personalizável.', 199.90, catMap['perifericos'], 'Novo', 'Brasil', 'active', 1, 'https://picsum.photos/seed/teclado-rgb/400/400'],
+      ['Fonte Corsair 650W', 'Fonte ATX Corsair CV650 80 Plus Bronze 650W. Cabos modulares e proteção completa.', 349.90, catMap['fontes-gabinetes'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/fonte-corsair-650w/400/400'],
+      ['Notebook Dell Inspiron 15', 'Dell Inspiron 15" Intel Core i5 8GB RAM 256GB SSD Windows 11. Notebook completo para trabalho e estudo.', 3299.90, catMap['notebooks-pcs'], 'Novo', 'Brasil', 'active', 0, 'https://picsum.photos/seed/dell-inspiron-15/400/400'],
     ];
     defaultProds.forEach(function(p) {
-      run('INSERT INTO products (name, description, price, category_id, seller_id, condition, location, status, featured) VALUES (?,?,?,?,?,?,?,?,?)',
-        [p[0], p[1], p[2], p[3], defaultSellerId, p[4]||'new', p[5]||'Brasil', p[6]||'active', p[7]||0]);
+      run('INSERT INTO products (name, description, price, category_id, seller_id, condition, location, status, featured, image) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [p[0], p[1], p[2], p[3], defaultSellerId, p[4]||'new', p[5]||'Brasil', p[6]||'active', p[7]||0, p[8]||'']);
       var lp = get("SELECT MAX(id) as id FROM products");
       if (lp) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lp.id, lp.id]);
     });
