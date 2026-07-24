@@ -200,10 +200,11 @@ document.addEventListener('DOMContentLoaded', function() {
     adClose.style.cursor = 'default';
 
     if (ad.link) {
-      adText.innerHTML = adText.innerHTML.replace(/<a\s/, '<a disabled ');
       topAd.querySelector('.top-ad-content').style.cursor = 'pointer';
       topAd.querySelector('.top-ad-content').onclick = function(e) {
-        if (e.target.tagName !== 'A') window.location.href = ad.link;
+        if (e.target.tagName !== 'A' && ad.link && ad.link.match(/^https?:\/\//i)) {
+          window.open(ad.link, '_blank');
+        }
       };
     }
 

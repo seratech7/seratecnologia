@@ -32,7 +32,7 @@
           <tr>
             <td><%= ad.sort_order %></td>
             <td><strong><%= ad.title || '-' %></strong></td>
-            <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%- ad.text %></td>
+            <td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><%= ad.text %></td>
             <td><%= ad.link ? '<a href="' + ad.link + '" target="_blank" class="btn-small">Abrir</a>' : '-' %></td>
             <td><%= ad.display_duration %>s</td>
             <td>

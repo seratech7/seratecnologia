@@ -46,7 +46,7 @@
       <td style="font-size:12px;color:#999;"><%= r.reviewer_ip || '-' %></td>
       <td style="font-size:12px;color:#666;white-space:nowrap;"><%= r.created_at %></td>
       <td style="white-space:nowrap;">
-        <button class="btn-small" onclick='editReview(<%= r.id %>,<%= r.rating %>,"<%= ((r.comment||'').replace(/"/g,"&quot;").replace(/[\n\r]/g," ")) %>")' style="margin-right:4px;">
+        <button class="btn-small btn-edit-review" data-id="<%= r.id %>" data-rating="<%= r.rating %>" data-comment="<%= (r.comment||'').replace(/"/g,'&quot;').replace(/[\n\r]/g,' ') %>" style="margin-right:4px;">
           <i class="fas fa-edit"></i>
         </button>
         <form method="POST" action="/admin/reviews/delete/<%= r.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta avaliação?')">
@@ -94,19 +94,24 @@
 </div>
 
 <script>
-function editReview(id, rating, comment) {
-  document.getElementById('editForm').action = '/admin/reviews/edit/' + id;
-  document.getElementById('editRating').value = rating;
-  document.getElementById('editComment').value = comment;
-  var stars = document.querySelectorAll('#starPicker i');
-  stars.forEach(function(s) {
-    s.style.color = parseInt(s.dataset.val) <= parseInt(rating) ? '#ffc107' : '#e0e0e0';
-  });
-  document.getElementById('editModal').style.display = 'flex';
-}
 function closeModal() {
   document.getElementById('editModal').style.display = 'none';
 }
+document.querySelectorAll('.btn-edit-review').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.dataset.id;
+    var rating = this.dataset.rating;
+    var comment = this.dataset.comment;
+    document.getElementById('editForm').action = '/admin/reviews/edit/' + id;
+    document.getElementById('editRating').value = rating;
+    document.getElementById('editComment').value = comment;
+    var stars = document.querySelectorAll('#starPicker i');
+    stars.forEach(function(s) {
+      s.style.color = parseInt(s.dataset.val) <= parseInt(rating) ? '#ffc107' : '#e0e0e0';
+    });
+    document.getElementById('editModal').style.display = 'flex';
+  });
+});
 document.getElementById('starPicker').addEventListener('click', function(e) {
   if (e.target.tagName === 'I') {
     var val = parseInt(e.target.dataset.val);

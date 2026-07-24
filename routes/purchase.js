@@ -24,6 +24,14 @@ router.post('/api/finalizar-compra', function(req, res) {
     if (!codigo || !nome || !documento || !telefone || !email || !endereco) {
       return res.status(400).json({ error: 'Preencha todos os campos' });
     }
+    nome = String(nome).trim().slice(0, 200);
+    documento = String(documento).replace(/[^0-9.\-\/]/g, '').slice(0, 20);
+    telefone = String(telefone).replace(/[^0-9+\-\s()]/g, '').slice(0, 30);
+    email = String(email).trim().toLowerCase().slice(0, 200);
+    endereco = String(endereco).trim().slice(0, 500);
+    if (email.length < 3 || !email.includes('@') || !email.includes('.')) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
 
     var produto = db.get("SELECT p.*, s.name as seller_name, s.pix_key as seller_pix, s.whatsapp as seller_whatsapp, s.notify_whatsapp, s.notify_signal FROM products p LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [codigo]);
     if (!produto) return res.status(404).json({ error: 'Produto não encontrado' });

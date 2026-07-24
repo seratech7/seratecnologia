@@ -91,7 +91,7 @@
       <td><%= n.read ? 'Sim' : 'Não' %></td>
       <td style="font-size:12px;color:#666;white-space:nowrap;"><%= n.created_at %></td>
       <td style="white-space:nowrap;">
-        <button class="btn-small" onclick='editNotif(<%= n.id %>,"<%= (n.message||'').replace(/"/g,"&quot;").replace(/[\n\r]/g," ") %>","<%= n.type %>","<%= n.icon||'bell' %>","<%= (n.link||'').replace(/"/g,"&quot;") %>","<%= (n.ip||'').replace(/"/g,"&quot;") %>",<%= n.read %>)' style="margin-right:4px;">
+        <button class="btn-small btn-edit-notif" data-id="<%= n.id %>" data-msg="<%= (n.message||'').replace(/"/g,'&quot;').replace(/[\n\r]/g,' ') %>" data-type="<%= n.type %>" data-icon="<%= n.icon||'bell' %>" data-link="<%= (n.link||'').replace(/"/g,'&quot;') %>" data-ip="<%= (n.ip||'').replace(/"/g,'&quot;') %>" data-read="<%= n.read %>" style="margin-right:4px;">
           <i class="fas fa-edit"></i>
         </button>
         <form method="POST" action="/admin/notifications/delete/<%= n.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta notificação?')">
@@ -173,19 +173,22 @@ document.querySelector('#newForm form').addEventListener('submit', function(e) {
   }
 });
 
-function editNotif(id, msg, type, icon, link, ip, read) {
-  document.getElementById('editForm').action = '/admin/notifications/edit/' + id;
-  document.getElementById('editMessage').value = msg;
-  document.getElementById('editType').value = type;
-  document.getElementById('editIcon').value = icon;
-  document.getElementById('editLink').value = link;
-  document.getElementById('editIp').value = ip;
-  document.getElementById('editRead').checked = read === 1;
-  document.getElementById('editModal').style.display = 'flex';
-}
 function closeModal() {
   document.getElementById('editModal').style.display = 'none';
 }
+
+document.querySelectorAll('.btn-edit-notif').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.getElementById('editForm').action = '/admin/notifications/edit/' + this.dataset.id;
+    document.getElementById('editMessage').value = this.dataset.msg;
+    document.getElementById('editType').value = this.dataset.type;
+    document.getElementById('editIcon').value = this.dataset.icon;
+    document.getElementById('editLink').value = this.dataset.link;
+    document.getElementById('editIp').value = this.dataset.ip;
+    document.getElementById('editRead').checked = this.dataset.read === '1';
+    document.getElementById('editModal').style.display = 'flex';
+  });
+});
 document.getElementById('editModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });

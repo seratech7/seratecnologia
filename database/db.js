@@ -589,13 +589,15 @@ function getTransactionsByPeriod(sellerId, startDate, endDate, limit, offset) {
 }
 
 function getFinanceSummary(sellerId, startDate, endDate) {
-  var where = sellerId ? "seller_id = " + sellerId + " AND" : "";
   if (!startDate) startDate = '2000-01-01';
   if (!endDate) endDate = '2100-01-01';
-  var sales = get("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM wallet_transactions WHERE " + where + " type = 'sale' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
-  var commissions = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'commission' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
-  var payouts = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'payout' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
-  var adjustments = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE " + where + " type = 'adjustment' AND date(created_at) >= ? AND date(created_at) <= ?", [startDate, endDate]);
+  var params = [startDate, endDate];
+  var sellerClause = '';
+  if (sellerId) { sellerClause = 'AND seller_id = ?'; params.unshift(sellerId); }
+  var sales = get("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM wallet_transactions WHERE type = 'sale' AND date(created_at) >= ? AND date(created_at) <= ? " + sellerClause, sellerId ? [sellerId, startDate, endDate] : [startDate, endDate]);
+  var commissions = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'commission' AND date(created_at) >= ? AND date(created_at) <= ? " + sellerClause, sellerId ? [sellerId, startDate, endDate] : [startDate, endDate]);
+  var payouts = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'payout' AND date(created_at) >= ? AND date(created_at) <= ? " + sellerClause, sellerId ? [sellerId, startDate, endDate] : [startDate, endDate]);
+  var adjustments = get("SELECT COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE type = 'adjustment' AND date(created_at) >= ? AND date(created_at) <= ? " + sellerClause, sellerId ? [sellerId, startDate, endDate] : [startDate, endDate]);
   return {
     salesTotal: sales ? sales.total : 0,
     salesCount: sales ? sales.count : 0,
@@ -607,8 +609,10 @@ function getFinanceSummary(sellerId, startDate, endDate) {
 
 function getFinanceChart(sellerId, days) {
   days = days || 30;
-  var where = sellerId ? "AND seller_id = " + sellerId : "";
-  var data = query("SELECT date(created_at) as day, type, COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE created_at >= date('now', '-' || ? || ' days') " + where + " GROUP BY day, type ORDER BY day ASC", [days]);
+  var sellerClause = '';
+  var params = [days];
+  if (sellerId) { sellerClause = 'AND seller_id = ?'; params.push(sellerId); }
+  var data = query("SELECT date(created_at) as day, type, COALESCE(SUM(amount),0) as total FROM wallet_transactions WHERE created_at >= date('now', '-' || ? || ' days') " + sellerClause + " GROUP BY day, type ORDER BY day ASC", params);
   var chart = {};
   data.forEach(function(r) {
     if (!chart[r.day]) chart[r.day] = { sale: 0, commission: 0, payout: 0, adjustment: 0 };

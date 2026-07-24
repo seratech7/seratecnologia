@@ -78,9 +78,9 @@
       </td>
       <td style="font-size:12px;color:#666;white-space:nowrap;"><%= v.created_at %></td>
       <td>
-        <a href="#" onclick='alert("Comprador: <%= v.buyer_name.replace(/'/g,"") %>\nEndereço: <%= v.buyer_address.replace(/'/g,"") %>")' class="btn-small" style="padding:4px 8px;font-size:11px;">
+        <button class="btn-small btn-view-buyer" data-name="<%= v.buyer_name.replace(/"/g,'&quot;') %>" data-address="<%= v.buyer_address.replace(/"/g,'&quot;') %>" style="padding:4px 8px;font-size:11px;cursor:pointer;">
           <i class="fas fa-eye"></i>
-        </a>
+        </button>
       </td>
     </tr>
     <% }); %>
@@ -97,4 +97,13 @@
 <% } %>
 <% } %>
 
+<script>
+document.querySelectorAll('.btn-view-buyer').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var name = this.dataset.name;
+    var addr = this.dataset.address;
+    alert('Comprador: ' + name + '\nEndereço: ' + addr);
+  });
+});
+</script>
 <%- include('../partials/admin-footer') %>

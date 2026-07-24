@@ -26,8 +26,19 @@ const PORT = process.env.PORT || 3000;
 
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+      fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "data:"],
+      imgSrc: ["'self'", "data:", "https:", "http:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  }
 }));
 
 // Rate limiting - login
@@ -49,15 +60,24 @@ const generalLimiter = rateLimit({
 
 // File upload validation
 const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, 'public', 'uploads')),
-  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname))
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const safeExt = allowedExtensions.includes(ext) ? ext : '.jpg';
+    cb(null, Date.now() + '-' + crypto.randomBytes(8).toString('hex') + safeExt);
+  }
 });
 const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (allowedMimes.includes(file.mimetype)) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        return cb(new Error('Extensão de arquivo inválida.'));
+      }
       cb(null, true);
     } else {
       cb(new Error('Formato de imagem inválido. Use JPEG, PNG, GIF ou WebP.'));
@@ -136,36 +156,19 @@ app.use(function(req, res, next) {
   next();
 });
 
-app.get('/admin/reset-senha/:token', (req, res) => {
-  if (req.params.token !== '12345') return res.status(404).send('not found');
-  const bcrypt = require('bcryptjs');
-  const hash = bcrypt.hashSync('admin123', 12);
-  const db = require('./database/db');
-  db.run('UPDATE admins SET password_hash = ? WHERE username = ?', [hash, 'admin']);
-  res.send('Senha do admin resetada para: admin123');
-});
-
+// Debug endpoint — only accessible with valid admin session
 app.get('/admin/debug', (req, res) => {
+  if (!req.session || !req.session.adminId) {
+    return res.status(404).send('not found');
+  }
   const db = require('./database/db');
-  const bcrypt = require('bcryptjs');
-  const admin = db.get('SELECT * FROM admins WHERE username = ?', ['admin']);
   const sellers = db.get('SELECT COUNT(*) as c FROM sellers');
   const products = db.get('SELECT COUNT(*) as c FROM products');
-  const freshHash = bcrypt.hashSync('admin123', 12);
-  if (admin) {
-    res.json({
-      adminExists: true,
-      hashFull: admin.password_hash,
-      compareAdmin123: bcrypt.compareSync('admin123', admin.password_hash),
-      freshHash: freshHash,
-      compareFresh: bcrypt.compareSync('admin123', freshHash),
-      envAdminPassword: process.env.ADMIN_PASSWORD || '(not set)',
-      sellers: sellers ? sellers.c : 0,
-      products: products ? products.c : 0
-    });
-  } else {
-    res.json({ adminExists: false, sellers: sellers ? sellers.c : 0, products: products ? products.c : 0 });
-  }
+  res.json({
+    adminExists: true,
+    sellers: sellers ? sellers.c : 0,
+    products: products ? products.c : 0
+  });
 });
 
 app.use('/admin', authRoutes);
@@ -180,6 +183,15 @@ app.use('/api', adRoutes);
 
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  if (req.xhr || req.headers['content-type']?.includes('json')) {
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+  res.status(500).send('Erro interno do servidor');
 });
 
 async function start() {

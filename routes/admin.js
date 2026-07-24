@@ -300,6 +300,10 @@ router.post('/sellers/new', (req, res) => {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
     return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios' });
   }
+  if (String(password).length < 6) {
+    const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Senha deve ter no mínimo 6 caracteres' });
+  }
   const hash = bcrypt.hashSync(password, 10);
   try {
     db.run("INSERT INTO sellers (name, email, phone, whatsapp, password_hash, status) VALUES (?, ?, ?, ?, ?, 'active')", [name, email, phone || '', whatsapp || '', hash]);
