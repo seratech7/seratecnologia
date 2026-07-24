@@ -338,6 +338,19 @@ async function initDb() {
     console.log(`[db] ${orphanCount} produtos vinculados ao vendedor #${sellerId}`);
   }
 
+  var sellerCount = db.exec("SELECT COUNT(*) as c FROM sellers");
+  var numSellers = sellerCount.length > 0 && sellerCount[0].values.length > 0 ? sellerCount[0].values[0][0] : 0;
+  if (numSellers < 2) {
+    var testHash = require('bcryptjs').hashSync('teste123', 10);
+    try {
+      run("INSERT INTO sellers (name, email, phone, password_hash, bio, status) VALUES (?,?,?,?,?,?)",
+        ['Vendedor Teste', 'teste@teste.com', '11999999999', testHash, 'Conta de teste.', 'active']);
+      console.log('[db] Vendedor teste criado: teste@teste.com / teste123');
+    } catch (e) {
+      // já existe
+    }
+  }
+
   saveDb();
 
   return db;
