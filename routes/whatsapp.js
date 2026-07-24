@@ -64,12 +64,12 @@ module.exports = function() {
     db.setWaAccountStatus(req.params.id, 'connecting', '');
     res.redirect('/admin/whatsapp');
     // Init in background (non-blocking)
-    waManager.initClient(req.params.id, 'wa_' + req.params.id).then(function(entry) {
+    waManager.initClient(req.params.id, 'wa_' + req.params.id).then(function(result) {
       const db2 = require('../database/db');
-      if (entry) {
-        db2.setWaAccountStatus(req.params.id, entry.ready ? 'connected' : 'waiting_qr', '');
+      if (result.entry) {
+        db2.setWaAccountStatus(req.params.id, result.entry.ready ? 'connected' : 'waiting_qr', '');
       } else {
-        db2.setWaAccountStatus(req.params.id, 'error', 'Erro ao iniciar cliente. Verifique se o Chromium est\u00e1 instalado.');
+        db2.setWaAccountStatus(req.params.id, 'error', result.error || 'Erro ao iniciar cliente. Verifique se o Chromium est\u00e1 instalado.');
       }
     }).catch(function(e) {
       const db2 = require('../database/db');
