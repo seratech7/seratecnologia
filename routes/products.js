@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
   const categories = db.query('SELECT * FROM categories ORDER BY name');
   const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location");
 
-  let sql = 'SELECT p.*, c.name as category_name, c.icon as category_icon FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?';
+  let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = ?";
   let params = ['active'];
 
   if (search) {
@@ -65,7 +65,7 @@ router.get('/', (req, res) => {
 
 router.get('/produto/:id', (req, res) => {
   const product = db.get(
-    'SELECT p.*, c.name as category_name, c.icon as category_icon FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?',
+    "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?",
     [req.params.id]
   );
 
@@ -90,7 +90,7 @@ router.get('/produto/:id', (req, res) => {
   );
 
   const related = db.query(
-    'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.id != ? AND p.status = ? LIMIT 4',
+    "SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.id != ? AND p.status = ? LIMIT 4",
     [product.category_id, product.id, 'active']
   );
 

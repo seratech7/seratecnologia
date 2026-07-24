@@ -1,0 +1,159 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/sellers' }) %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-store-alt"></i> <%= seller.name %></h1>
+    <a href="/admin/sellers" class="btn-small"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+  <div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#00c853,#00a844);"><i class="fas fa-box"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= seller.product_count || 0 %></span>
+        <span class="stat-label">Total de Produtos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#2196f3,#1565c0);"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= seller.active_count || 0 %></span>
+        <span class="stat-label">Produtos Ativos</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#ffd700,#ffaa00);"><i class="fas fa-star"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= seller.featured_count || 0 %></span>
+        <span class="stat-label">Em Destaque</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#9c27b0,#7b1fa2);"><i class="fas fa-dollar-sign"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue) %></span>
+        <span class="stat-label">Receita Total</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#00bcd4,#00838f);"><i class="fas fa-wallet"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(walletBalance) %></span>
+        <span class="stat-label">Saldo Carteira</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#ff9800,#f57c00);"><i class="fas fa-shopping-bag"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= sales.length %></span>
+        <span class="stat-label">Últimas Vendas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-box"></i> Produtos do Vendedor</h2>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Preço</th>
+            <th>Views</th>
+            <th>Vendas</th>
+            <th>Status</th>
+            <th>Destaque</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (products.length === 0) { %>
+            <tr><td colspan="7" class="empty-row">Nenhum produto</td></tr>
+          <% } else { %>
+            <% products.forEach(p => { %>
+              <tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <% if (p.image) { %><img src="<%= p.image %>" alt="" style="width:36px;height:36px;border-radius:4px;object-fit:cover;"><% } %>
+                    <span><%= p.name %></span>
+                  </div>
+                </td>
+                <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
+                <td style="text-align:center;"><span class="stat-badge views"><i class="fas fa-eye"></i> <%= p.views || 0 %></span></td>
+                <td style="text-align:center;"><span class="stat-badge sales"><i class="fas fa-shopping-cart"></i> <%= p.sales_count || 0 %></span></td>
+                <td>
+                  <% if (p.status === 'active') { %><span class="status-badge active">Ativo</span>
+                  <% } else if (p.status === 'pending') { %><span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
+                  <% } else { %><span class="status-badge inactive"><%= p.status %></span><% } %>
+                </td>
+                <td><% if (p.featured) { %><span style="color:#ffd700;"><i class="fas fa-star"></i></span><% } else { %>-<% } %></td>
+                <td>
+                  <a href="/admin/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+                </td>
+              </tr>
+            <% }) %>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <% if (sales.length > 0) { %>
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-shopping-bag"></i> Últimas Vendas</h2>
+      <a href="/admin/sales?search=<%= encodeURIComponent(seller.name) %>" class="btn-small">Ver todas</a>
+    </div>
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Produto</th>
+            <th>Cliente</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% sales.forEach(s => { %>
+            <tr>
+              <td style="font-family:monospace;font-size:13px;color:#666;"><%= '#SALE-' + String(s.id).padStart(5, '0') %></td>
+              <td><%= s.product_name %></td>
+              <td><%= s.buyer_name %></td>
+              <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.product_price) %></td>
+              <td>
+                <% if (s.status === 'pending') { %><span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
+                <% } else if (s.status === 'delivered') { %><span style="background:#e0f7fa;color:#00838f;padding:2px 8px;border-radius:4px;font-size:12px;">Entregue</span>
+                <% } else { %><span style="padding:2px 8px;border-radius:4px;font-size:12px;"><%= s.status %></span><% } %>
+              </td>
+              <td><%= new Date(s.created_at).toLocaleDateString('pt-BR') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-cog"></i> Ações</h2>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <form action="/admin/sellers/toggle/<%= seller.id %>" method="POST" onsubmit="return confirm('<%= seller.status === 'active' ? 'Desativar' : 'Ativar' %> este vendedor?')">
+        <button type="submit" class="btn <%= seller.status === 'active' ? 'btn-warning' : 'btn-success' %>">
+          <i class="fas fa-<%= seller.status === 'active' ? 'ban' : 'check' %>"></i> <%= seller.status === 'active' ? 'Desativar' : 'Ativar' %> Vendedor
+        </button>
+      </form>
+      <a href="mailto:<%= seller.email %>" class="btn btn-primary">
+        <i class="fas fa-envelope"></i> Enviar Email
+      </a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

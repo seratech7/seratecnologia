@@ -3009,3 +3009,41 @@ img { max-width: 100%; height: auto; display: block; }
 @media (max-width: 480px) {
   .notif-bell { font-size: 15px; width: 32px; height: 32px; }
 }
+
+/* =========================================
+   STAT BADGES (Views, Sales)
+   ========================================= */
+.stat-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 12px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.stat-badge.views { background: #e3f2fd; color: #1565c0; }
+.stat-badge.sales { background: #e8f5e9; color: #2e7d32; }
+
+/* =========================================
+   SALES MANAGEMENT
+   ========================================= */
+.sales-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.sales-summary .card {
+  padding: 20px; border-radius: 12px; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;
+}
+.sales-summary .card .num { font-size: 28px; font-weight: 800; margin: 4px 0; }
+.sales-summary .card .label { font-size: 13px; color: #666; }
+.sales-summary .card.pending { border-left: 4px solid #ff9800; }
+.sales-summary .card.approved { border-left: 4px solid #4caf50; }
+.sales-summary .card.shipped { border-left: 4px solid #2196f3; }
+.sales-summary .card.delivered { border-left: 4px solid #00bcd4; }
+.sales-summary .card.cancelled { border-left: 4px solid #f44336; }
+
+.status-badge.small { font-size: 11px; padding: 2px 8px; }
+
+.sale-client { font-size: 13px; color: #333; }
+.sale-client small { display: block; font-size: 11px; color: #999; }
+
+.admin-table .sale-products { max-width: 220px; }
+.admin-table .sale-products div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

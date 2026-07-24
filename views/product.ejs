@@ -74,6 +74,20 @@
             <span class="attr-value"><%= new Date(product.created_at).toLocaleDateString('pt-BR') %></span>
           </div>
         </div>
+        <div class="attribute">
+          <i class="fas fa-eye"></i>
+          <div>
+            <span class="attr-label">Visualizações</span>
+            <span class="attr-value"><%= product.views || 0 %></span>
+          </div>
+        </div>
+        <div class="attribute">
+          <i class="fas fa-shopping-cart"></i>
+          <div>
+            <span class="attr-label">Vendas</span>
+            <span class="attr-value"><%= product.sales_count || 0 %></span>
+          </div>
+        </div>
       </div>
 
       <div class="product-description">

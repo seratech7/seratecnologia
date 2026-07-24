@@ -47,7 +47,7 @@
       <tbody>
         <% sellers.forEach(s => { %>
           <tr>
-            <td><strong><%= s.name %></strong></td>
+            <td><strong><a href="/admin/sellers/<%= s.id %>" style="color:var(--accent);"><%= s.name %></a></strong></td>
             <td><%= s.email %></td>
             <td><%= s.phone || '-' %></td>
             <td><span class="status-badge <%= s.status %>"><%= s.status === 'active' ? 'Ativo' : 'Inativo' %></span></td>

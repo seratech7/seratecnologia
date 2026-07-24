@@ -1,0 +1,139 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/sales' }) %>
+
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-shopping-bag"></i> Gerenciar Vendas</h1>
+  </div>
+
+  <div class="sales-summary">
+    <div class="card pending">
+      <div class="num"><%= summary.pending %></div>
+      <div class="label"><i class="fas fa-clock"></i> Pendentes</div>
+    </div>
+    <div class="card approved">
+      <div class="num"><%= summary.approved %></div>
+      <div class="label"><i class="fas fa-check"></i> Aprovadas</div>
+    </div>
+    <div class="card shipped">
+      <div class="num"><%= summary.shipped %></div>
+      <div class="label"><i class="fas fa-truck"></i> Enviadas</div>
+    </div>
+    <div class="card delivered">
+      <div class="num"><%= summary.delivered %></div>
+      <div class="label"><i class="fas fa-check-double"></i> Entregues</div>
+    </div>
+    <div class="card cancelled">
+      <div class="num"><%= summary.cancelled %></div>
+      <div class="label"><i class="fas fa-times"></i> Canceladas</div>
+    </div>
+    <div class="card" style="border-left:4px solid #9c27b0;">
+      <div class="num"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(summary.revenue) %></div>
+      <div class="label"><i class="fas fa-dollar-sign"></i> Receita Total</div>
+    </div>
+  </div>
+
+  <div class="admin-filters" style="margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+    <form method="GET" action="/admin/sales" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <select name="filter" class="admin-select" onchange="this.form.submit()">
+        <option value="all" <%= filter === 'all' ? 'selected' : '' %>>Todas</option>
+        <option value="pending" <%= filter === 'pending' ? 'selected' : '' %>>Pendentes</option>
+        <option value="approved" <%= filter === 'approved' ? 'selected' : '' %>>Aprovadas</option>
+        <option value="shipped" <%= filter === 'shipped' ? 'selected' : '' %>>Enviadas</option>
+        <option value="delivered" <%= filter === 'delivered' ? 'selected' : '' %>>Entregues</option>
+        <option value="cancelled" <%= filter === 'cancelled' ? 'selected' : '' %>>Canceladas</option>
+      </select>
+      <input type="text" name="search" class="admin-input" placeholder="Buscar cliente, produto..." value="<%= search %>" style="min-width:220px;">
+      <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-search"></i></button>
+    </form>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Cliente</th>
+          <th>Produto</th>
+          <th>Valor</th>
+          <th>Vendedor</th>
+          <th>Comissão</th>
+          <th>Status</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (sales.length === 0) { %>
+          <tr><td colspan="9" class="empty-row">Nenhuma venda encontrada</td></tr>
+        <% } else { %>
+          <% sales.forEach(s => { %>
+            <tr>
+              <td style="font-family:monospace;font-size:13px;color:#666;"><%= '#SALE-' + String(s.id).padStart(5, '0') %></td>
+              <td>
+                <div class="sale-client">
+                  <strong><%= s.buyer_name %></strong>
+                  <small><%= s.buyer_email %><% if (s.buyer_phone) { %> | <%= s.buyer_phone %><% } %></small>
+                </div>
+              </td>
+              <td>
+                <div class="sale-products">
+                  <div><%= s.product_name %></div>
+                  <small style="color:#999;font-size:11px;"><%= s.product_code || '' %></small>
+                </div>
+              </td>
+              <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.product_price) %></td>
+              <td><%= s.seller_name || '-' %></td>
+              <td><%= s.commission ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.commission) : '-' %></td>
+              <td>
+                <% if (s.status === 'pending') { %><span class="status-badge small" style="background:#fff3cd;color:#856404;">Pendente</span>
+                <% } else if (s.status === 'approved') { %><span class="status-badge small" style="background:#e8f5e9;color:#2e7d32;">Aprovada</span>
+                <% } else if (s.status === 'shipped') { %><span class="status-badge small" style="background:#e3f2fd;color:#1565c0;">Enviada</span>
+                <% } else if (s.status === 'delivered') { %><span class="status-badge small" style="background:#e0f7fa;color:#00838f;">Entregue</span>
+                <% } else if (s.status === 'cancelled') { %><span class="status-badge small" style="background:#fdecea;color:#e74c3c;">Cancelada</span>
+                <% } else { %><span class="status-badge small"><%= s.status %></span><% } %>
+              </td>
+              <td><%= new Date(s.created_at).toLocaleDateString('pt-BR') %></td>
+              <td>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                  <% if (s.status === 'pending') { %>
+                    <form method="POST" action="/admin/sales/status/<%= s.id %>" style="display:inline;">
+                      <input type="hidden" name="status" value="approved">
+                      <button class="btn btn-sm btn-success btn-icon" title="Aprovar"><i class="fas fa-check"></i></button>
+                    </form>
+                  <% } %>
+                  <% if (s.status === 'approved') { %>
+                    <form method="POST" action="/admin/sales/status/<%= s.id %>" style="display:inline;">
+                      <input type="hidden" name="status" value="shipped">
+                      <button class="btn btn-sm btn-primary btn-icon" title="Marcar como Enviada"><i class="fas fa-truck"></i></button>
+                    </form>
+                  <% } %>
+                  <% if (s.status === 'shipped') { %>
+                    <form method="POST" action="/admin/sales/status/<%= s.id %>" style="display:inline;">
+                      <input type="hidden" name="status" value="delivered">
+                      <button class="btn btn-sm btn-info btn-icon" title="Marcar como Entregue"><i class="fas fa-check-double"></i></button>
+                    </form>
+                  <% } %>
+                  <% if (s.status !== 'cancelled' && s.status !== 'delivered') { %>
+                    <form method="POST" action="/admin/sales/cancel/<%= s.id %>" style="display:inline;" onsubmit="return confirm('Cancelar esta venda?')">
+                      <button class="btn btn-sm btn-danger btn-icon" title="Cancelar"><i class="fas fa-times"></i></button>
+                    </form>
+                  <% } %>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalPages > 1) { %>
+    <div class="pagination">
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <a href="/admin/sales?page=<%= i %>&filter=<%= filter %>&search=<%= encodeURIComponent(search) %>" class="page-link <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('../partials/admin-footer') %>

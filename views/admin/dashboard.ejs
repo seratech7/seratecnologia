@@ -46,6 +46,51 @@
         <span class="stat-label">Em Destaque</span>
       </div>
     </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #00c853, #00a844);">
+        <i class="fas fa-shopping-bag"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.totalSales %></span>
+        <span class="stat-label">Vendas Realizadas</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #9c27b0, #7b1fa2);">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.revenue) %></span>
+        <span class="stat-label">Receita Total</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.pendingSales %></span>
+        <span class="stat-label">Vendas Pendentes</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #2196f3, #1565c0);">
+        <i class="fas fa-eye"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.totalViews %></span>
+        <span class="stat-label">Total de Visualizações</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #00bcd4, #00838f);">
+        <i class="fas fa-chart-bar"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.todayViews %></span>
+        <span class="stat-label">Views Hoje</span>
+      </div>
+    </div>
   </div>
 
   <% if (featuredProducts.length > 0) { %>

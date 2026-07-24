@@ -13,12 +13,21 @@ router.get('/dashboard', (req, res) => {
   const pending = db.get("SELECT COUNT(*) as count FROM products WHERE status = 'pending'");
   const totalSellers = db.get('SELECT COUNT(*) as count FROM sellers');
   const featured = db.get('SELECT COUNT(*) as count FROM products WHERE featured = 1');
+  const totalSales = db.get("SELECT COUNT(*) as c, COALESCE(SUM(product_price),0) as rev FROM sales WHERE status NOT IN ('cancelled','pending')");
+  const pendingSales = db.get("SELECT COUNT(*) as c FROM sales WHERE status='pending'");
+  const totalViews = db.get('SELECT COUNT(*) as c FROM page_views');
+  const todayViews = db.get("SELECT COUNT(*) as c FROM page_views WHERE date(created_at) = date('now')");
   const recent = db.query('SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC LIMIT 5');
   const featuredProducts = db.query('SELECT p.*, c.name as category_name, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.featured = 1 ORDER BY p.updated_at DESC');
 
   res.render('admin/dashboard', {
     title: 'Dashboard - Painel Admin',
-    stats: { total: total.count, active: active.count, pending: pending.count, sellers: totalSellers.count, featured: featured.count },
+    stats: {
+      total: total.count, active: active.count, pending: pending.count,
+      sellers: totalSellers.count, featured: featured.count,
+      totalSales: totalSales.c, revenue: totalSales.rev,
+      pendingSales: pendingSales.c, totalViews: totalViews.c, todayViews: todayViews.c
+    },
     recentProducts: recent,
     featuredProducts
   });
@@ -72,6 +81,68 @@ router.get('/analytics', (req, res) => {
   });
 });
 
+// ========== SALES ==========
+router.get('/sales', (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = 30;
+  const offset = (page - 1) * limit;
+  const filter = req.query.filter || 'all';
+  const search = req.query.search || '';
+
+  let where = '';
+  const params = [];
+
+  if (filter !== 'all') {
+    where = "WHERE s.status = ?";
+    params.push(filter);
+  }
+
+  if (search) {
+    const joinOp = where ? 'AND' : 'WHERE';
+    where += ` ${joinOp} (s.buyer_name LIKE ? OR s.buyer_email LIKE ? OR s.buyer_phone LIKE ? OR s.product_name LIKE ? OR s.product_code LIKE ?)`;
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+  }
+
+  const countSql = `SELECT COUNT(*) as count FROM sales s ${where}`;
+  const dataSql = `SELECT s.*, sl.name as seller_name, (SELECT SUM(amount) FROM wallet_transactions WHERE reference_type='sale' AND reference_id=s.id) as commission FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id ${where} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`;
+
+  const totalCount = db.get(countSql, params);
+  const sales = db.query(dataSql, [...params, limit, offset]);
+  const totalPages = Math.ceil(totalCount.count / limit);
+
+  const summary = {
+    pending: db.get("SELECT COUNT(*) as c FROM sales WHERE status='pending'").c,
+    approved: db.get("SELECT COUNT(*) as c FROM sales WHERE status='approved'").c,
+    shipped: db.get("SELECT COUNT(*) as c FROM sales WHERE status='shipped'").c,
+    delivered: db.get("SELECT COUNT(*) as c FROM sales WHERE status='delivered'").c,
+    cancelled: db.get("SELECT COUNT(*) as c FROM sales WHERE status='cancelled'").c,
+    total: db.get("SELECT COUNT(*) as c FROM sales").c,
+    revenue: db.get("SELECT COALESCE(SUM(product_price),0) as total FROM sales WHERE status NOT IN ('cancelled','pending')").total
+  };
+
+  res.render('admin/sales', {
+    title: 'Vendas - Painel Admin',
+    sales, currentPage: page, totalPages, filter, search, summary
+  });
+});
+
+router.post('/sales/cancel/:id', (req, res) => {
+  const sale = db.get("SELECT * FROM sales WHERE id = ?", [req.params.id]);
+  if (sale && sale.status !== 'cancelled' && sale.status !== 'delivered') {
+    db.run("UPDATE sales SET status = 'cancelled' WHERE id = ?", [req.params.id]);
+  }
+  res.redirect(req.get('Referer') || '/admin/sales');
+});
+
+router.post('/sales/status/:id', (req, res) => {
+  const { status } = req.body;
+  const allowed = ['pending','approved','shipped','delivered','cancelled'];
+  if (allowed.includes(status)) {
+    db.run("UPDATE sales SET status = ? WHERE id = ? AND status != 'cancelled' AND status != 'delivered'", [status, req.params.id]);
+  }
+  res.redirect(req.get('Referer') || '/admin/sales');
+});
+
 router.get('/products', (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = 20;
@@ -94,7 +165,7 @@ router.get('/products', (req, res) => {
   }
 
   const countSql = `SELECT COUNT(*) as count FROM products p ${where}`;
-  const dataSql = `SELECT p.*, c.name as category_name, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id ${where} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+  const dataSql = `SELECT p.*, c.name as category_name, s.name as seller_name, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id ${where} ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
 
   const totalCount = db.get(countSql, params);
   const products = db.query(dataSql, [...params, limit, offset]);
@@ -254,6 +325,21 @@ router.post('/sellers/delete/:id', (req, res) => {
   db.run('UPDATE products SET seller_id = NULL WHERE seller_id = ?', [req.params.id]);
   db.run('DELETE FROM sellers WHERE id = ?', [req.params.id]);
   res.redirect('/admin/sellers');
+});
+
+router.get('/sellers/:id', (req, res) => {
+  const seller = db.get('SELECT *, (SELECT COUNT(*) FROM products WHERE seller_id = ?) as product_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND status = "active") as active_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND featured = 1) as featured_count FROM sellers WHERE id = ?', [req.params.id, req.params.id, req.params.id, req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers');
+
+  const products = db.query('SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? ORDER BY p.created_at DESC', [req.params.id]);
+  const sales = db.query("SELECT s.* FROM sales s WHERE s.seller_id = ? ORDER BY s.created_at DESC LIMIT 20", [req.params.id]);
+  const totalRevenue = db.get("SELECT COALESCE(SUM(product_price),0) as total FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending')", [req.params.id]);
+  const walletBalance = db.get("SELECT COALESCE(SUM(amount),0) as balance FROM wallet_transactions WHERE seller_id = ? AND status = 'completed'", [req.params.id]);
+
+  res.render('admin/seller-detail', {
+    title: `${seller.name} - Vendedor`,
+    seller, products, sales, totalRevenue: totalRevenue.total, walletBalance: walletBalance.balance
+  });
 });
 
 router.get('/categories', (req, res) => {
