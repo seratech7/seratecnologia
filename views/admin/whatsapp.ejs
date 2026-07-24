@@ -298,21 +298,26 @@
 </style>
 
 <script>
-// Render QR codes in-browser using a canvas-based approach
+var hasConnecting = <%= accounts.some(function(a) { return a.status === 'connecting' || a.status === 'waiting_qr'; }) ? 'true' : 'false' %>;
+
+// Auto-refresh when a connection is in progress
+if (hasConnecting) {
+  setTimeout(function() { location.reload(); }, 5000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   var qrContainers = document.querySelectorAll('.wa-qr-container');
   qrContainers.forEach(function(container) {
     var accountId = container.id.replace('qr-', '');
-    fetchQrCode(accountId, container);
+    pollQrCode(accountId, container);
   });
 });
 
-function fetchQrCode(accountId, container) {
+function pollQrCode(accountId, container) {
   fetch('/admin/whatsapp/qr/' + accountId)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.qr) {
-        // Render QR using a QR library if available, or show as text for manual use
         var img = document.createElement('img');
         img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(data.qr);
         img.alt = 'QR Code';
@@ -320,6 +325,9 @@ function fetchQrCode(accountId, container) {
         img.style.borderRadius = '4px';
         container.innerHTML = '';
         container.appendChild(img);
+      } else if (!data.ready) {
+        // No QR yet, try again
+        setTimeout(function() { pollQrCode(accountId, container); }, 2000);
       }
     })
     .catch(function() {});

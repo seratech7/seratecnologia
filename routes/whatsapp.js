@@ -57,22 +57,24 @@ module.exports = function() {
   });
 
   // === CONECTAR / DESCONECTAR ===
-  router.post('/whatsapp/connect/:id', async (req, res) => {
+  router.post('/whatsapp/connect/:id', (req, res) => {
     const db = require('../database/db');
     const account = db.getWaAccount(req.params.id);
-    if (!account) return res.redirect('/admin/whatsapp?error=Conta n\u00e3o encontrada');
-    try {
-      db.setWaAccountStatus(req.params.id, 'connecting', '');
-      const entry = await waManager.initClient(req.params.id, 'wa_' + req.params.id);
-      if (entry) {
-        db.setWaAccountStatus(req.params.id, entry.ready ? 'connected' : 'waiting_qr', '');
-      } else {
-        db.setWaAccountStatus(req.params.id, 'error', 'Erro ao iniciar cliente');
-      }
-    } catch (e) {
-      db.setWaAccountStatus(req.params.id, 'error', e.message);
-    }
+    if (!account) return res.redirect('/admin/whatsapp?error=Conta%20n%C3%A3o%20encontrada');
+    db.setWaAccountStatus(req.params.id, 'connecting', '');
     res.redirect('/admin/whatsapp');
+    // Init in background (non-blocking)
+    waManager.initClient(req.params.id, 'wa_' + req.params.id).then(function(entry) {
+      const db2 = require('../database/db');
+      if (entry) {
+        db2.setWaAccountStatus(req.params.id, entry.ready ? 'connected' : 'waiting_qr', '');
+      } else {
+        db2.setWaAccountStatus(req.params.id, 'error', 'Erro ao iniciar cliente. Verifique se o Chromium est\u00e1 instalado.');
+      }
+    }).catch(function(e) {
+      const db2 = require('../database/db');
+      db2.setWaAccountStatus(req.params.id, 'error', e.message);
+    });
   });
 
   router.post('/whatsapp/disconnect/:id', (req, res) => {
