@@ -459,6 +459,44 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS product_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      image TEXT NOT NULL,
+      sort_order INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS product_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      seller_id INTEGER NOT NULL,
+      buyer_name TEXT NOT NULL DEFAULT '',
+      question TEXT NOT NULL,
+      answer TEXT DEFAULT '',
+      answered_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  var sCols = db.exec("PRAGMA table_info(sellers)");
+  if (sCols.length > 0) {
+    var sn = sCols[0].values.map(function(r) { return r[1]; });
+    if (!sn.includes('notify_email_sale')) db.run("ALTER TABLE sellers ADD COLUMN notify_email_sale INTEGER DEFAULT 1");
+    if (!sn.includes('notify_email_approve')) db.run("ALTER TABLE sellers ADD COLUMN notify_email_approve INTEGER DEFAULT 1");
+    if (!sn.includes('notify_whatsapp_sale')) db.run("ALTER TABLE sellers ADD COLUMN notify_whatsapp_sale INTEGER DEFAULT 0");
+    if (!sn.includes('monthly_goal')) db.run("ALTER TABLE sellers ADD COLUMN monthly_goal INTEGER DEFAULT 0");
+  }
+
+  var saCols = db.exec("PRAGMA table_info(sales)");
+  if (saCols.length > 0) {
+    var sc = saCols[0].values.map(function(r) { return r[1]; });
+    if (!sc.includes('carrier')) db.run("ALTER TABLE sales ADD COLUMN carrier TEXT DEFAULT ''");
+  }
+
   const orphans = db.exec("SELECT COUNT(*) as c FROM products WHERE seller_id IS NULL");
   const orphanCount = orphans.length > 0 && orphans[0].values.length > 0 ? orphans[0].values[0][0] : 0;
   if (orphanCount > 0) {
@@ -820,7 +858,7 @@ function deleteBanner(id) {
   run("DELETE FROM banners WHERE id = ?", [id]);
 }
 
-// === ACTIVITY LOG ===
+  // === ACTIVITY LOG ===
 function logActivity(userType, userId, userName, action, details, targetType, targetId, ip) {
   try {
     run("INSERT INTO activity_log (user_type, user_id, user_name, action, details, target_type, target_id, ip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -905,4 +943,67 @@ function notifyAllSellers(type, message, icon, link) {
   return sellers.length;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers };
+// === SELLER DASHBOARD ===
+function getSellerSalesSummary(sellerId) {
+  var today = get("SELECT COUNT(*) as c, COALESCE(SUM(product_price),0) as rev FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND date(created_at) = date('now')", [sellerId]);
+  var week = get("SELECT COUNT(*) as c, COALESCE(SUM(product_price),0) as rev FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-7 days')", [sellerId]);
+  var month = get("SELECT COUNT(*) as c, COALESCE(SUM(product_price),0) as rev FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-30 days')", [sellerId]);
+  return { today: today || {c:0,rev:0}, week: week || {c:0,rev:0}, month: month || {c:0,rev:0} };
+}
+function getSellerChartData(sellerId, days) {
+  return query("SELECT date(created_at) as day, COUNT(*) as sales, COALESCE(SUM(product_price),0) as revenue FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-' || ? || ' days') GROUP BY day ORDER BY day ASC", [sellerId, days || 30]);
+}
+function getSellerTopProducts(sellerId) {
+  return query("SELECT p.id, p.name, p.image, p.price, COUNT(s.id) as total_sales, COALESCE(SUM(s.product_price),0) as total_revenue FROM products p LEFT JOIN sales s ON s.product_id = p.id AND s.status NOT IN ('cancelled','pending') WHERE p.seller_id = ? GROUP BY p.id ORDER BY total_sales DESC LIMIT 5", [sellerId]);
+}
+function getSellerProductViews(sellerId) {
+  var r = get("SELECT COUNT(*) as c FROM page_views pv JOIN products p ON pv.product_id = p.id WHERE p.seller_id = ?", [sellerId]);
+  return r ? r.c : 0;
+}
+
+// === PRODUCT QUESTIONS ===
+function getProductQuestions(productId) {
+  return query("SELECT * FROM product_questions WHERE product_id = ? AND answer != '' ORDER BY answered_at DESC", [productId]);
+}
+function getSellerQuestions(sellerId) {
+  return query("SELECT pq.*, p.name as product_name FROM product_questions pq JOIN products p ON pq.product_id = p.id WHERE pq.seller_id = ? ORDER BY pq.answered_at IS NULL DESC, pq.created_at DESC", [sellerId]);
+}
+function askQuestion(productId, sellerId, buyerName, question) {
+  run("INSERT INTO product_questions (product_id, seller_id, buyer_name, question) VALUES (?, ?, ?, ?)", [productId, sellerId, buyerName || 'Anônimo', question]);
+}
+function answerQuestion(questionId, answer) {
+  run("UPDATE product_questions SET answer = ?, answered_at = datetime('now') WHERE id = ?", [answer, questionId]);
+}
+
+// === CLONE PRODUCT ===
+function cloneProduct(id) {
+  var p = get("SELECT * FROM products WHERE id = ?", [id]);
+  if (!p) return null;
+  run("INSERT INTO products (name, description, price, category_id, seller_id, image, status, condition, location, featured, code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
+    [p.name + ' (cópia)', p.description, p.price, p.category_id, p.seller_id, p.image, 'pending', p.condition || 'new', p.location || 'Brasil', p.code + '-COPY']);
+  var r = get("SELECT MAX(id) as id FROM products");
+  return r ? r.id : null;
+}
+
+// === MONTHLY GOAL ===
+function getSellerMonthlyProgress(sellerId) {
+  var seller = get("SELECT monthly_goal FROM sellers WHERE id = ?", [sellerId]);
+  var goal = seller ? (seller.monthly_goal || 0) : 0;
+  if (goal <= 0) return { goal: 0, sales: 0, pct: 0 };
+  var monthSales = get("SELECT COUNT(*) as c FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')", [sellerId]);
+  var sales = monthSales ? monthSales.c : 0;
+  return { goal: goal, sales: sales, pct: Math.min(100, Math.round((sales / goal) * 100)) };
+}
+
+// === SELLER SETTINGS ===
+function updateSellerNotifPrefs(sellerId, prefs) {
+  run("UPDATE sellers SET notify_email_sale = ?, notify_email_approve = ?, notify_whatsapp_sale = ?, monthly_goal = ? WHERE id = ?",
+    [prefs.notify_email_sale ? 1 : 0, prefs.notify_email_approve ? 1 : 0, prefs.notify_whatsapp_sale ? 1 : 0, parseInt(prefs.monthly_goal) || 0, sellerId]);
+}
+
+// === SELLER CSV EXPORT ===
+function getSellerSalesCsv(sellerId) {
+  return query("SELECT s.*, p.name as prod_name FROM sales s JOIN products p ON s.product_id = p.id WHERE s.seller_id = ? ORDER BY s.created_at DESC", [sellerId]);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getSellerMonthlyProgress, updateSellerNotifPrefs, getSellerSalesCsv };

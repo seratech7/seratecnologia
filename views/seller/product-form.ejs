@@ -1,13 +1,10 @@
 <%- include('../partials/seller-header') %>
-
 <div class="admin-content">
   <div class="page-header">
     <h1><i class="fas fa-<%= product ? 'edit' : 'plus' %>"></i> <%= product ? 'Editar' : 'Novo' %> Produto</h1>
     <a href="/seller/products" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
   </div>
-
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
-
   <div class="form-card">
     <form action="/seller/products/<%= product ? 'edit/' + product.id : 'new' %>" method="POST" enctype="multipart/form-data" class="admin-form">
       <div class="form-row">
@@ -20,20 +17,16 @@
           <input type="number" id="price" name="price" step="0.01" min="0" value="<%= product ? product.price : '' %>" required placeholder="0,00">
         </div>
       </div>
-
       <div class="form-group">
         <label for="description">Descrição</label>
         <textarea id="description" name="description" rows="5" placeholder="Descreva o produto em detalhes..."><%= product ? product.description : '' %></textarea>
       </div>
-
       <div class="form-row">
         <div class="form-group">
           <label for="category_id">Categoria</label>
           <select id="category_id" name="category_id">
             <option value="">Sem categoria</option>
-            <% categories.forEach(cat => { %>
-              <option value="<%= cat.id %>" <%= product && product.category_id == cat.id ? 'selected' : '' %>><%= cat.icon || '📦' %> <%= cat.name %></option>
-            <% }) %>
+            <% categories.forEach(cat => { %><option value="<%= cat.id %>" <%= product && product.category_id == cat.id ? 'selected' : '' %>><%= cat.icon || '📦' %> <%= cat.name %></option><% }) %>
           </select>
         </div>
         <div class="form-group">
@@ -45,36 +38,39 @@
           </select>
         </div>
       </div>
-
       <div class="form-group">
         <label for="location">Localização</label>
         <input type="text" id="location" name="location" value="<%= product ? product.location : 'Brasil' %>" placeholder="Ex: São Paulo, SP">
       </div>
-
       <div class="form-group">
-        <label for="image">Imagem do Produto</label>
+        <label>Fotos do Produto (máx 5, a primeira será a principal)</label>
+        <input type="file" name="images" accept="image/*" multiple>
         <% if (product && product.image) { %>
-          <div class="current-image">
-            <img src="<%= product.image %>" alt="Imagem atual" style="max-width: 200px; border-radius: 8px;">
-            <p>Imagem atual. Envie uma nova para substituir.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <div style="position:relative;">
+              <img src="<%= product.image %>" style="width:100px;height:100px;object-fit:cover;border-radius:6px;border:2px solid #4caf50;">
+              <span style="position:absolute;bottom:2px;left:2px;background:#4caf50;color:#fff;font-size:10px;padding:1px 6px;border-radius:3px;">Principal</span>
+            </div>
+            <% if (typeof extraImages !== 'undefined' && extraImages) { extraImages.forEach(function(img) { %>
+              <div style="position:relative;">
+                <img src="<%= img.image %>" style="width:100px;height:100px;object-fit:cover;border-radius:6px;">
+                <form method="POST" action="/seller/products/delete-image/<%= img.id %>" style="position:absolute;top:2px;right:2px;" onsubmit="return confirm('Remover esta imagem?')">
+                  <button style="width:20px;height:20px;border:none;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                </form>
+              </div>
+            <% }) } %>
           </div>
         <% } %>
-        <input type="file" id="image" name="image" accept="image/*">
       </div>
-
       <div class="info-box">
         <i class="fas fa-info-circle"></i>
         <p>Após criar ou editar, seu produto passará por <strong>aprovação do administrador</strong> antes de ser publicado.</p>
       </div>
-
       <div class="form-actions">
-        <button type="submit" class="btn-primary">
-          <i class="fas fa-save"></i> <%= product ? 'Salvar Alterações' : 'Criar Produto' %>
-        </button>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> <%= product ? 'Salvar Alterações' : 'Criar Produto' %></button>
         <a href="/seller/products" class="btn-secondary">Cancelar</a>
       </div>
     </form>
   </div>
 </div>
-
 <%- include('../partials/seller-footer') %>

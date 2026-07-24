@@ -1,0 +1,37 @@
+<%- include('../partials/seller-header') %>
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-question-circle"></i> Perguntas dos Clientes</h1>
+  </div>
+  <div class="table-container">
+    <table class="admin-table">
+      <thead><tr><th>Produto</th><th>Cliente</th><th>Pergunta</th><th>Resposta</th><th>Data</th><th>Ação</th></tr></thead>
+      <tbody>
+        <% if (!questions || questions.length === 0) { %><tr><td colspan="6" class="empty-row">Nenhuma pergunta recebida</td></tr><% } %>
+        <% (questions || []).forEach(function(q) { %>
+          <tr>
+            <td><%= q.product_name || '---' %></td>
+            <td><%= q.buyer_name || 'Anônimo' %></td>
+            <td><%= q.question %></td>
+            <td>
+              <% if (q.answer) { %><span style="color:#4caf50;"><%= q.answer %></span>
+              <% } else { %><span style="color:#e65100;font-weight:600;">Aguardando</span><% } %>
+            </td>
+            <td><%= new Date(q.created_at).toLocaleDateString('pt-BR') %></td>
+            <td>
+              <% if (!q.answer) { %>
+                <form method="POST" action="/seller/questions/answer/<%= q.id %>" style="display:flex;gap:4px;">
+                  <input type="text" name="answer" placeholder="Responder..." required style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;width:160px;">
+                  <button type="submit" class="btn-primary" style="padding:4px 12px;font-size:13px;">Responder</button>
+                </form>
+              <% } else { %>
+                <span style="color:#999;">Respondida</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('../partials/seller-footer') %>
