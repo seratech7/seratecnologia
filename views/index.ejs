@@ -310,6 +310,9 @@ function q(urlParams) {
               <% if (product.featured) { %>
                 <span class="featured-badge"><i class="fas fa-star"></i> Destaque</span>
               <% } %>
+              <% if (product.flash_price && product.flash_ends_at && new Date(product.flash_ends_at) > new Date()) { %>
+                <span class="flash-badge"><i class="fas fa-bolt"></i> Flash</span>
+              <% } %>
               <% var condClass = product.condition || 'new'; %>
               <% if (condClass === 'new') { %>
                 <span class="condition-badge new">Novo</span>
@@ -326,7 +329,12 @@ function q(urlParams) {
             <div class="product-info">
               <h3 class="product-name"><%= product.name %></h3>
               <p class="product-price">
-                <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %>
+                <% if (product.flash_price && product.flash_ends_at && new Date(product.flash_ends_at) > new Date()) { %>
+                  <span class="flash-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.flash_price) %></span>
+                  <span class="original-price"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %></span>
+                <% } else { %>
+                  <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price) %>
+                <% } %>
               </p>
               <div class="product-meta">
                 <span class="product-location">

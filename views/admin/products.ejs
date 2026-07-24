@@ -9,6 +9,7 @@
   <div class="filter-tabs">
     <a href="/admin/products" class="<%= filter === 'all' || !filter ? 'active' : '' %>">Todos</a>
     <a href="/admin/products?filter=featured" class="<%= filter === 'featured' ? 'active' : '' %>"><i class="fas fa-star"></i> Destaques</a>
+    <a href="/admin/products?filter=flash" class="<%= filter === 'flash' ? 'active' : '' %>"><i class="fas fa-bolt"></i> Flash Sale</a>
     <a href="/admin/products?filter=pending" class="<%= filter === 'pending' ? 'active' : '' %>">Pendentes</a>
     <a href="/admin/products?filter=active" class="<%= filter === 'active' ? 'active' : '' %>">Ativos</a>
     <a href="/admin/products?filter=rejected" class="<%= filter === 'rejected' ? 'active' : '' %>">Rejeitados</a>
@@ -24,13 +25,29 @@
     </form>
   </div>
 
+  <form method="POST" action="/admin/products/bulk" id="bulkForm">
+  <div class="bulk-bar" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:10px 16px;background:#f5f5f5;border-radius:8px;">
+    <input type="checkbox" id="selectAll" onchange="document.querySelectorAll('.bulk-check').forEach(function(c){c.checked=this.checked})" style="margin:0;">
+    <span style="font-size:13px;color:#666;">Selecionar todos</span>
+    <select name="action" class="admin-select" style="width:auto;padding:4px 8px;font-size:13px;">
+      <option value="">-- Ação em massa --</option>
+      <option value="approve">Aprovar</option>
+      <option value="feature">Destacar</option>
+      <option value="unfeature">Remover Destaque</option>
+      <option value="delete">Excluir</option>
+    </select>
+    <button type="submit" class="btn-primary" style="padding:4px 12px;font-size:13px;" onclick="return confirm('Aplicar ação em massa?')">Aplicar</button>
+  </div>
+
   <div class="table-container">
     <table class="admin-table">
       <thead>
         <tr>
+          <th style="width:30px;"></th>
           <th>Código</th>
           <th>Produto</th>
           <th>Preço</th>
+          <th>Flash</th>
           <th>Visualizações</th>
           <th>Vendas</th>
           <th>Vendedor</th>
@@ -42,10 +59,11 @@
       </thead>
       <tbody>
           <% if (products.length === 0) { %>
-            <tr><td colspan="10" class="empty-row">Nenhum produto encontrado</td></tr>
+            <tr><td colspan="12" class="empty-row">Nenhum produto encontrado</td></tr>
           <% } else { %>
             <% products.forEach(p => { %>
               <tr>
+                <td><input type="checkbox" name="ids" value="<%= p.id %>" class="bulk-check"></td>
                 <td style="font-family:monospace;font-size:13px;color:#666;white-space:nowrap;"><%= p.code || 'PROD-' + String(p.id).padStart(5, '0') %></td>
                 <td class="product-cell">
                   <div class="product-cell-info">
@@ -57,6 +75,16 @@
                   </div>
                 </td>
                 <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.price) %></td>
+                <td>
+                  <% if (p.flash_price && p.flash_ends_at && new Date(p.flash_ends_at) > new Date()) { %>
+                    <span style="background:#ff5722;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;">
+                      <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.flash_price) %>
+                    </span>
+                    <div style="font-size:10px;color:#999;"><%= new Date(p.flash_ends_at).toLocaleString('pt-BR') %></div>
+                  <% } else { %>
+                    <span style="color:#ccc;font-size:12px;">-</span>
+                  <% } %>
+                </td>
                 <td style="text-align:center;"><span class="stat-badge views"><i class="fas fa-eye"></i> <%= p.views || 0 %></span></td>
                 <td style="text-align:center;"><span class="stat-badge sales"><i class="fas fa-shopping-cart"></i> <%= p.sales_count || 0 %></span></td>
                 <td><%= p.seller_name || 'Admin' %></td>
@@ -80,9 +108,26 @@
                 <form action="/admin/products/feature/<%= p.id %>" method="POST" class="inline-form">
                   <button type="submit" class="btn-icon" style="<%= p.featured ? 'background:#fff3cd;color:#f9a825;' : '' %>" title="<%= p.featured ? 'Remover destaque' : 'Destacar' %>"><i class="fas fa-star"></i></button>
                 </form>
+                <% if (p.status === 'active' && (!p.flash_price || new Date(p.flash_ends_at) < new Date())) { %>
+                  <button type="button" class="btn-icon" style="background:#fff3e0;color:#e65100;" title="Flash Sale" onclick="document.getElementById('flashForm_<%= p.id %>').style.display='block'"><i class="fas fa-bolt"></i></button>
+                <% } %>
+                <% if (p.flash_price && p.flash_ends_at && new Date(p.flash_ends_at) > new Date()) { %>
+                  <form action="/admin/products/flash/remove/<%= p.id %>" method="POST" class="inline-form">
+                    <button type="submit" class="btn-icon" style="background:#fdecea;color:#c62828;" title="Remover Flash"><i class="fas fa-bolt"></i></button>
+                  </form>
+                <% } %>
                 <a href="/admin/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
                 <form action="/admin/products/delete/<%= p.id %>" method="POST" class="inline-form" onsubmit="return confirm('Excluir este produto?')">
                   <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
+                </form>
+                <form id="flashForm_<%= p.id %>" action="/admin/products/flash/<%= p.id %>" method="POST" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);z-index:9999;width:300px;" onclick="event.stopPropagation()">
+                  <h4 style="margin:0 0 12px;color:#e65100;"><i class="fas fa-bolt"></i> Flash Sale</h4>
+                  <div class="form-group"><label>Preço Flash (R$)</label><input type="number" name="flash_price" class="admin-input" step="0.01" min="0.01" required></div>
+                  <div class="form-group"><label>Duração (horas)</label><input type="number" name="flash_hours" class="admin-input" value="24" min="1" max="168"></div>
+                  <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button type="submit" class="btn-primary" style="padding:8px 16px;font-size:13px;">Ativar</button>
+                    <button type="button" class="btn-primary" style="background:#999;padding:8px 16px;font-size:13px;" onclick="this.closest('form').style.display='none'">Cancelar</button>
+                  </div>
                 </form>
               </td>
             </tr>
@@ -91,6 +136,7 @@
       </tbody>
     </table>
   </div>
+  </form>
 
   <% if (totalPages > 1) { %>
     <div class="pagination">

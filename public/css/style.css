@@ -646,6 +646,38 @@ img { max-width: 100%; height: auto; display: block; }
   gap: 3px;
 }
 
+.flash-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ff5722;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  z-index: 2;
+  animation: pulse-flash 1.5s infinite;
+}
+
+@keyframes pulse-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.flash-price {
+  color: #ff5722;
+  font-weight: 800;
+}
+
+.original-price {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+  margin-left: 6px;
+  font-weight: 400;
+}
+
 .condition-badge {
   position: absolute;
   top: 8px;

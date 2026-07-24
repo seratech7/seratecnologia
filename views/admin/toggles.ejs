@@ -1,0 +1,43 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/toggles' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-toggle-on"></i> Controle de Funcionalidades</h1>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <form method="POST" action="/admin/toggles">
+    <div class="form-card">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
+        <% var items = [
+          { key: 'banners', label: 'Banners na Home', icon: 'images' },
+          { key: 'compras', label: 'Compras Online', icon: 'shopping-cart' },
+          { key: 'cadastro_vendedor', label: 'Cadastro de Vendedores', icon: 'user-plus' },
+          { key: 'whatsapp', label: 'WhatsApp', icon: 'fab fa-whatsapp' },
+          { key: 'mercado_pago', label: 'Mercado Pago', icon: 'credit-card' },
+          { key: 'pix', label: 'PIX', icon: 'qrcode' }
+        ]; %>
+        <% items.forEach(function(item) { %>
+          <label style="display:flex;align-items:center;gap:12px;padding:16px;background:#f9f9f9;border-radius:8px;cursor:pointer;border:2px solid <%= toggles[item.key] === '1' ? '#4caf50' : '#e0e0e0' %>;">
+            <i class="<%= item.icon %>" style="font-size:20px;color:<%= toggles[item.key] === '1' ? '#4caf50' : '#999' %>;width:24px;"></i>
+            <span style="flex:1;font-weight:500;"><%= item.label %></span>
+            <label class="switch">
+              <input type="hidden" name="<%= item.key %>" value="0">
+              <input type="checkbox" name="<%= item.key %>" value="1" <%= toggles[item.key] === '1' ? 'checked' : '' %> onchange="this.closest('label').style.borderColor=this.checked?'#4caf50':'#e0e0e0';this.closest('label').querySelector('i').style.color=this.checked?'#4caf50':'#999'">
+              <span class="slider round"></span>
+            </label>
+          </label>
+        <% }) %>
+      </div>
+    </div>
+    <button type="submit" class="btn-primary" style="margin-top:16px;"><i class="fas fa-save"></i> Salvar</button>
+  </form>
+</div>
+<style>
+.switch { position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0; }
+.switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; transition:.3s; border-radius:24px; }
+.slider:before { position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:white; transition:.3s; border-radius:50%; }
+input:checked + .slider { background:#4caf50; }
+input:checked + .slider:before { transform:translateX(20px); }
+</style>
+<%- include('../partials/admin-footer') %>

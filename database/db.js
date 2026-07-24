@@ -39,9 +39,15 @@ async function initDb() {
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       display_name TEXT NOT NULL DEFAULT 'Admin',
+      role TEXT NOT NULL DEFAULT 'admin',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  var adminCols = db.exec("PRAGMA table_info(admins)");
+  if (adminCols.length > 0) {
+    var ac = adminCols[0].values.map(function(r) { return r[1]; });
+    if (!ac.includes('role')) db.run("ALTER TABLE admins ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'");
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS sellers (
@@ -117,6 +123,13 @@ async function initDb() {
     db.run("ALTER TABLE products ADD COLUMN code TEXT DEFAULT ''");
   }
   db.run("UPDATE products SET code = 'PROD-' || substr('00000' || id, -5, 5) WHERE code IS NULL OR code = ''");
+
+  var fpCols = db.exec("PRAGMA table_info(products)");
+  if (fpCols.length > 0) {
+    var fpNames = fpCols[0].values.map(function(r) { return r[1]; });
+    if (!fpNames.includes('flash_price')) db.run("ALTER TABLE products ADD COLUMN flash_price REAL DEFAULT NULL");
+    if (!fpNames.includes('flash_ends_at')) db.run("ALTER TABLE products ADD COLUMN flash_ends_at DATETIME DEFAULT NULL");
+  }
 
   const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
   if (adminPass === 'admin123') {
@@ -844,4 +857,52 @@ function unblockIp(id) {
   run("DELETE FROM blocked_ips WHERE id = ?", [id]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp };
+// === FEATURE TOGGLES ===
+function getToggle(key) {
+  var r = get("SELECT value FROM config WHERE key = ?", ['toggle_' + key]);
+  return r ? r.value : '1';
+}
+function setToggle(key, value) {
+  run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", ['toggle_' + key, value]);
+}
+function getAllToggles() {
+  return query("SELECT key, value FROM config WHERE key LIKE 'toggle_%' ORDER BY key");
+}
+
+// === FLASH SALE ===
+function getFlashSales() {
+  return query("SELECT p.*, c.name as category_name, c.icon as category_icon, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now') AND p.status = 'active' ORDER BY p.flash_ends_at ASC");
+}
+function setFlashSale(productId, flashPrice, endsAt) {
+  run("UPDATE products SET flash_price = ?, flash_ends_at = ? WHERE id = ?", [flashPrice, endsAt, productId]);
+}
+function removeFlashSale(productId) {
+  run("UPDATE products SET flash_price = NULL, flash_ends_at = NULL WHERE id = ?", [productId]);
+}
+
+// === CLEANUP ===
+function cleanupOldData(daysViews, daysLogs) {
+  var deletedViews = 0, deletedLogs = 0;
+  try {
+    var r1 = get("SELECT changes() as c");
+    run("DELETE FROM page_views WHERE created_at < datetime('now', '-' || ? || ' days')", [daysViews || 90]);
+    deletedViews = (get("SELECT changes() as c") || {}).c || 0;
+    run("DELETE FROM activity_log WHERE created_at < datetime('now', '-' || ? || ' days')", [daysLogs || 180]);
+    deletedLogs = (get("SELECT changes() as c") || {}).c || 0;
+  } catch(e) {}
+  return { deletedViews: deletedViews || 0, deletedLogs: deletedLogs || 0 };
+}
+
+// === BLAST NOTIFICATION ===
+function notifyAllSellers(type, message, icon, link) {
+  var sellers = query("SELECT id FROM sellers");
+  sellers.forEach(function(s) {
+    try {
+      run('INSERT INTO notifications (ip, type, message, icon, link, created_at) VALUES (?, ?, ?, ?, ?, datetime("now"))',
+        [String(s.id), type || 'info', message, icon || 'bell', link || '']);
+    } catch(e) {}
+  });
+  return sellers.length;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers };

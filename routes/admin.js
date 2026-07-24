@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const db = require('../database/db');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 
 module.exports = function(upload) {
 const router = express.Router();
@@ -164,6 +164,7 @@ router.get('/products', (req, res) => {
   else if (filter === 'active') { where = "WHERE p.status = 'active'"; }
   else if (filter === 'rejected') { where = "WHERE p.status = 'rejected'"; }
   else if (filter === 'featured') { where = "WHERE p.featured = 1"; }
+  else if (filter === 'flash') { where = "WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now')"; }
 
   if (search) {
     const joinOp = where ? 'AND' : 'WHERE';
@@ -716,7 +717,8 @@ router.post('/config', (req, res) => {
   var allowedKeys = [
     'site_name', 'site_description', 'site_whatsapp', 'site_email',
     'commission_pct', 'mp_access_token', 'pix_key_platform',
-    'default_product_status', 'maintenance_mode', 'max_products_per_seller'
+    'default_product_status', 'maintenance_mode', 'max_products_per_seller',
+    'custom_css', 'custom_js'
   ];
   allowedKeys.forEach(function(key) {
     if (req.body[key] !== undefined) {
@@ -877,6 +879,91 @@ router.post('/ips-bloqueados/novo', (req, res) => {
 router.post('/ips-bloqueados/desbloquear/:id', (req, res) => {
   db.unblockIp(req.params.id);
   res.redirect('/admin/ips-bloqueados');
+});
+
+// ========== FEATURE TOGGLES ==========
+router.get('/toggles', requireSuperAdmin, (req, res) => {
+  var toggles = {};
+  var rows = db.getAllToggles();
+  rows.forEach(function(r) {
+    var key = r.key.replace('toggle_', '');
+    toggles[key] = r.value;
+  });
+  res.render('admin/toggles', { title: 'Controle de Funcionalidades', toggles, success: null, error: null });
+});
+
+router.post('/toggles', requireSuperAdmin, (req, res) => {
+  var allowed = ['banners', 'compras', 'cadastro_vendedor', 'whatsapp', 'mercado_pago', 'pix'];
+  allowed.forEach(function(key) {
+    db.setToggle(key, req.body[key] === '1' ? '1' : '0');
+  });
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_toggles', 'Toggles atualizados');
+  res.render('admin/toggles', { title: 'Controle de Funcionalidades', toggles: {}, success: 'Toggles salvos!', error: null });
+});
+
+// ========== BLAST NOTIFICATION ==========
+router.get('/blast', requireSuperAdmin, (req, res) => {
+  res.render('admin/blast', { title: 'Notificação em Massa', success: null, error: null });
+});
+
+router.post('/blast', requireSuperAdmin, (req, res) => {
+  var { type, message, icon, link } = req.body;
+  if (!message) return res.render('admin/blast', { title: 'Notificação em Massa', success: null, error: 'Mensagem obrigatória' });
+  var count = db.notifyAllSellers(type || 'info', message, icon || 'bell', link || '');
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'blast_notification', 'Notificação enviada para ' + count + ' vendedores: ' + message);
+  res.render('admin/blast', { title: 'Notificação em Massa', success: 'Notificação enviada para ' + count + ' vendedores!', error: null });
+});
+
+// ========== DATA CLEANUP ==========
+router.get('/limpar', requireSuperAdmin, (req, res) => {
+  res.render('admin/cleanup', { title: 'Limpeza de Dados', result: null, error: null });
+});
+
+router.post('/limpar', requireSuperAdmin, (req, res) => {
+  var daysViews = parseInt(req.query.days_views) || 90;
+  var daysLogs = parseInt(req.query.days_logs) || 180;
+  var result = db.cleanupOldData(daysViews, daysLogs);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'cleanup', 'Limpeza: ' + result.deletedViews + ' views, ' + result.deletedLogs + ' logs');
+  res.render('admin/cleanup', { title: 'Limpeza de Dados', result: result, error: null });
+});
+
+// ========== FLASH SALE ==========
+router.post('/products/flash/:id', requireSuperAdmin, (req, res) => {
+  var { flash_price, flash_hours } = req.body;
+  if (!flash_price || !flash_hours) return res.redirect('/admin/products');
+  var product = db.get("SELECT * FROM products WHERE id = ?", [req.params.id]);
+  if (!product) return res.redirect('/admin/products');
+  var endsAt = new Date(Date.now() + parseInt(flash_hours) * 3600000).toISOString().slice(0, 19).replace('T', ' ');
+  db.setFlashSale(req.params.id, parseFloat(flash_price), endsAt);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'flash_sale', 'Flash sale: ' + product.name + ' - R$ ' + flash_price);
+  res.redirect('/admin/products');
+});
+
+router.post('/products/flash/remove/:id', requireSuperAdmin, (req, res) => {
+  db.removeFlashSale(req.params.id);
+  res.redirect('/admin/products');
+});
+
+// ========== BULK ACTIONS ==========
+router.post('/products/bulk', requireAdmin, (req, res) => {
+  var { action, ids } = req.body;
+  if (!action || !ids) return res.redirect('/admin/products');
+  var list = Array.isArray(ids) ? ids : [ids];
+  if (action === 'approve') {
+    list.forEach(function(id) { db.run("UPDATE products SET status = 'active' WHERE id = ?", [id]); });
+  } else if (action === 'feature') {
+    list.forEach(function(id) { db.run("UPDATE products SET featured = 1 WHERE id = ?", [id]); });
+  } else if (action === 'unfeature') {
+    list.forEach(function(id) { db.run("UPDATE products SET featured = 0 WHERE id = ?", [id]); });
+  } else if (action === 'delete') {
+    list.forEach(function(id) {
+      var p = db.get("SELECT image FROM products WHERE id = ?", [id]);
+      if (p && p.image) { try { fs.unlinkSync(path.join(__dirname, '..', 'public', p.image)); } catch(e) {} }
+      db.run("DELETE FROM products WHERE id = ?", [id]);
+    });
+  }
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'bulk_' + action, 'Ação em massa: ' + action + ' em ' + list.length + ' produtos');
+  res.redirect('/admin/products');
 });
 
 return router;

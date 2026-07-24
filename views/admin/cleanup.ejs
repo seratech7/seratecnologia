@@ -1,0 +1,33 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/limpar' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-broom"></i> Limpeza de Dados Antigos</h1>
+    <p>Remova registros antigos para manter o banco de dados leve</p>
+  </div>
+  <% if (result) { %>
+    <div class="alert alert-success">
+      <i class="fas fa-check-circle"></i> Limpeza concluída!<br>
+      <strong><%= result.deletedViews %></strong> page_views removidos<br>
+      <strong><%= result.deletedLogs %></strong> activity_logs removidos
+    </div>
+  <% } %>
+  <div class="form-card">
+    <h3>Configurar Limpeza</h3>
+    <form method="POST" action="/admin/limpar">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Apagar page_views com mais de (dias)</label>
+          <input type="number" name="days_views" class="admin-input" value="90" min="1" max="365">
+        </div>
+        <div class="form-group">
+          <label>Apagar activity_log com mais de (dias)</label>
+          <input type="number" name="days_logs" class="admin-input" value="180" min="1" max="730">
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" style="background:#e65100;" onclick="return confirm('Tem certeza? Esta ação não pode ser desfeita.')">
+        <i class="fas fa-broom"></i> Executar Limpeza
+      </button>
+    </form>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

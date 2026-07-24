@@ -20,6 +20,7 @@ const adRoutes = require('./routes/ads');
 const notificationRoutes = require('./routes/notifications');
 const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
+const { toggleMiddleware } = require('./middleware/toggles');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -131,6 +132,23 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(toggleMiddleware);
+
+// Inject custom CSS/JS from config
+app.use((req, res, next) => {
+  try {
+    var db = require('./database/db');
+    var customCss = db.get("SELECT value FROM config WHERE key = 'custom_css'");
+    var customJs = db.get("SELECT value FROM config WHERE key = 'custom_js'");
+    res.locals.customCSS = customCss ? customCss.value : '';
+    res.locals.customJS = customJs ? customJs.value : '';
+  } catch(e) {
+    res.locals.customCSS = '';
+    res.locals.customJS = '';
+  }
+  next();
+});
+
 // Maintenance mode check
 app.use((req, res, next) => {
   if (req.path.startsWith('/admin') || req.path.startsWith('/seller') || req.path === '/admin/login') return next();
@@ -224,6 +242,36 @@ app.use('/', notificationRoutes);
 app.use('/', purchaseRoutes);
 app.use('/', mercadopagoRoutes);
 app.use('/api', adRoutes);
+
+// Sitemap
+app.get('/sitemap.xml', (req, res) => {
+  try {
+    var db = require('./database/db');
+    var products = db.query("SELECT id, updated_at FROM products WHERE status = 'active' ORDER BY id");
+    var pages = db.getAllPages();
+    var baseUrl = process.env.BASE_URL || 'https://seratecnologia-1.onrender.com';
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    xml += '  <url><loc>' + baseUrl + '/</loc><priority>1.0</priority></url>\n';
+    products.forEach(function(p) {
+      xml += '  <url><loc>' + baseUrl + '/produto/' + p.id + '</loc><lastmod>' + (p.updated_at || '').slice(0,10) + '</lastmod><priority>0.8</priority></url>\n';
+    });
+    (pages || []).forEach(function(p) {
+      xml += '  <url><loc>' + baseUrl + '/pagina/' + p.slug + '</loc><priority>0.5</priority></url>\n';
+    });
+    xml += '</urlset>';
+    res.header('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch(e) {
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
+// Robots.txt
+app.get('/robots.txt', (req, res) => {
+  var baseUrl = process.env.BASE_URL || 'https://seratecnologia-1.onrender.com';
+  res.type('text/plain');
+  res.send('User-agent: *\nAllow: /\nSitemap: ' + baseUrl + '/sitemap.xml\n');
+});
 
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });

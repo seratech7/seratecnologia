@@ -1,0 +1,41 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/blast' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-bullhorn"></i> Notificação em Massa</h1>
+    <p>Envie uma notificação para todos os vendedores de uma vez</p>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <form method="POST" action="/admin/blast" class="form-card">
+    <div class="form-group">
+      <label>Tipo</label>
+      <select name="type" class="admin-select">
+        <option value="info">Informativo</option>
+        <option value="warning">Aviso</option>
+        <option value="sale">Promoção</option>
+        <option value="alert">Alerta</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Ícone</label>
+      <select name="icon" class="admin-select">
+        <option value="bell">Sino</option>
+        <option value="info-circle">Info</option>
+        <option value="exclamation-triangle">Aviso</option>
+        <option value="shopping-cart">Vendas</option>
+        <option value="tools">Manutenção</option>
+        <option value="bullhorn">Mega-fone</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Mensagem *</label>
+      <textarea name="message" class="admin-input" rows="4" required placeholder="Digite a mensagem que todos os vendedores verão..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Link (opcional)</label>
+      <input type="text" name="link" class="admin-input" placeholder="/seller/sales">
+    </div>
+    <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Enviar para Todos</button>
+  </form>
+</div>
+<%- include('../partials/admin-footer') %>
