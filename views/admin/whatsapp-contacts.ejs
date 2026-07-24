@@ -1,0 +1,92 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/whatsapp/contacts' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-address-book"></i> Contatos WhatsApp</h1>
+    <p><%= contacts.length %> contatos cadastrados</p>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <!-- Ações -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <button class="btn-primary" onclick="document.getElementById('addForm').style.display='block'"><i class="fas fa-plus"></i> Novo Contato</button>
+    <button class="btn-secondary" onclick="document.getElementById('importForm').style.display='block'"><i class="fas fa-upload"></i> Importar CSV</button>
+    <button class="btn-secondary" onclick="document.getElementById('blastForm').style.display='block'"><i class="fas fa-bullhorn"></i> Enviar para Todos</button>
+    <form method="GET" style="display:inline;">
+      <input type="text" name="search" placeholder="Buscar contato..." value="<%= search %>" class="admin-input" style="width:200px;display:inline;">
+      <button type="submit" class="btn-secondary">Buscar</button>
+    </form>
+  </div>
+
+  <!-- Add Form -->
+  <div id="addForm" class="form-card" style="display:none;margin-bottom:20px;">
+    <h4>Novo Contato</h4>
+    <form method="POST" action="/admin/whatsapp/contacts/add">
+      <div class="form-group"><label>Nome</label><input type="text" name="name" class="admin-input" placeholder="Nome do contato"></div>
+      <div class="form-group"><label>Telefone *</label><input type="text" name="phone" class="admin-input" required placeholder="5521999999999"></div>
+      <div class="form-group"><label>Observações</label><input type="text" name="notes" class="admin-input" placeholder="Observações"></div>
+      <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
+      <button type="button" class="btn-secondary" onclick="this.closest('.form-card').style.display='none'">Cancelar</button>
+    </form>
+  </div>
+
+  <!-- Import CSV -->
+  <div id="importForm" class="form-card" style="display:none;margin-bottom:20px;">
+    <h4>Importar Contatos</h4>
+    <p style="font-size:13px;color:#666;">Cole os dados no formato: <b>telefone,nome,observacoes</b> (um por linha)</p>
+    <form method="POST" action="/admin/whatsapp/contacts/import">
+      <div class="form-group">
+        <textarea name="csv" class="admin-input" rows="6" required placeholder="5521999999991,João,Cliente&#10;5521999999992,Maria,Fornecedor"></textarea>
+      </div>
+      <button type="submit" class="btn-primary"><i class="fas fa-upload"></i> Importar</button>
+      <button type="button" class="btn-secondary" onclick="this.closest('.form-card').style.display='none'">Cancelar</button>
+    </form>
+  </div>
+
+  <!-- Blast Form -->
+  <div id="blastForm" class="form-card" style="display:none;margin-bottom:20px;">
+    <h4>Enviar Mensagem para Todos os Contatos</h4>
+    <form method="POST" action="/admin/whatsapp/contacts/send-all">
+      <div class="form-group">
+        <label>Mensagem</label>
+        <textarea name="message" class="admin-input" rows="4" required placeholder="Digite a mensagem que será enviada para TODOS os contatos..."></textarea>
+      </div>
+      <button type="submit" class="btn-primary" onclick="return confirm('Enviar para <%= contacts.length %> contatos?')"><i class="fas fa-paper-plane"></i> Enviar para <%= contacts.length %> contatos</button>
+      <button type="button" class="btn-secondary" onclick="this.closest('.form-card').style.display='none'">Cancelar</button>
+    </form>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <% if (contacts.length === 0) { %>
+      <p style="color:#999;text-align:center;padding:40px 0;">Nenhum contato encontrado. Adicione ou importe contatos.</p>
+    <% } else { %>
+      <table class="admin-table">
+        <thead><tr><th>Nome</th><th>Telefone</th><th>Mensagens</th><th>Obs</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody>
+          <% contacts.forEach(function(c) { %>
+          <tr>
+            <td><strong><%= c.name || '—' %></strong></td>
+            <td><%= c.phone %></td>
+            <td><%= c.msg_count || 0 %></td>
+            <td><%= c.notes || '' %></td>
+            <td style="font-size:12px;"><%= c.created_at %></td>
+            <td>
+              <form method="POST" action="/admin/whatsapp/contacts/delete/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Remover <%= c.name || c.phone %>?')">
+                <button type="submit" class="btn-small btn-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+<style>
+.btn-small { padding:4px 10px; font-size:12px; border:none; border-radius:4px; cursor:pointer; }
+.btn-danger { background:#ffebee; color:#c62828; }
+.btn-danger:hover { background:#ffcdd2; }
+</style>
+<%- include('../partials/admin-footer') %>

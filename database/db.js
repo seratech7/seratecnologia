@@ -122,7 +122,7 @@ async function initDb() {
   if (!hasCode) {
     db.run("ALTER TABLE products ADD COLUMN code TEXT DEFAULT ''");
   }
-  db.run("UPDATE products SET code = 'PROD-' || substr('00000' || id, -5, 5) WHERE code IS NULL OR code = ''");
+  db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE code IS NULL OR code = ''");
 
   var fpCols = db.exec("PRAGMA table_info(products)");
   if (fpCols.length > 0) {
@@ -509,6 +509,37 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wa_contacts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL,
+      notes TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wa_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      phone TEXT NOT NULL,
+      contact_name TEXT DEFAULT '',
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      type TEXT DEFAULT 'outgoing',
+      sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS wa_schedules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      phone TEXT NOT NULL,
+      message TEXT NOT NULL,
+      scheduled_for DATETIME NOT NULL,
+      status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   var sCols = db.exec("PRAGMA table_info(sellers)");
   if (sCols.length > 0) {
     var sn = sCols[0].values.map(function(r) { return r[1]; });
@@ -581,7 +612,7 @@ async function initDb() {
       run('INSERT INTO products (name, description, price, category_id, seller_id, condition, location, status, featured, image) VALUES (?,?,?,?,?,?,?,?,?,?)',
         [p[0], p[1], p[2], p[3], defaultSellerId, p[4]||'new', p[5]||'Brasil', p[6]||'active', p[7]||0, p[8]||'']);
       var lp = get("SELECT MAX(id) as id FROM products");
-      if (lp) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lp.id, lp.id]);
+      if (lp) run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lp.id]);
     });
     console.log('[db] Produtos padrão criados');
   }
@@ -601,7 +632,7 @@ async function initDb() {
       run("INSERT INTO products (name, description, price, seller_id, status) VALUES (?, ?, ?, ?, ?)",
         ['Teclado Mecânico RGB', 'Teclado gamer switch azul ABNT2', 10, tsSeller.id, 'active']);
       var tp = get("SELECT MAX(id) as id FROM products");
-      if (tp) run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [tp.id, tp.id]);
+      if (tp) run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [tp.id]);
       tsProd = get("SELECT id, code, name, price FROM products WHERE seller_id = ? LIMIT 1", [tsSeller.id]);
     }
     if (tsSeller && tsProd) {
@@ -1090,4 +1121,76 @@ function getSellerSalesCsv(sellerId) {
   return query("SELECT s.*, p.name as prod_name FROM sales s JOIN products p ON s.product_id = p.id WHERE s.seller_id = ? ORDER BY s.created_at DESC", [sellerId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv };
+// === WHATSAPP CONTACTS ===
+function getWaContacts(search) {
+  var sql = 'SELECT *, (SELECT COUNT(*) FROM wa_messages WHERE phone = wa_contacts.phone) as msg_count FROM wa_contacts';
+  if (search) sql += " WHERE name LIKE ? OR phone LIKE ?";
+  sql += ' ORDER BY created_at DESC';
+  return query(sql, search ? ['%' + search + '%', '%' + search + '%'] : []);
+}
+
+function getWaContact(id) { return get('SELECT * FROM wa_contacts WHERE id = ?', [id]); }
+
+function addWaContact(name, phone, notes) {
+  var existing = get('SELECT id FROM wa_contacts WHERE phone = ?', [phone]);
+  if (existing) { run('UPDATE wa_contacts SET name = ?, notes = ? WHERE id = ?', [name, notes||'', existing.id]); return existing.id; }
+  run('INSERT INTO wa_contacts (name, phone, notes) VALUES (?, ?, ?)', [name, phone, notes||'']);
+  return get('SELECT last_insert_rowid() as id').id;
+}
+
+function deleteWaContact(id) { run('DELETE FROM wa_contacts WHERE id = ?', [id]); }
+
+function importWaContacts(list) {
+  var count = 0;
+  list.forEach(function(c) {
+    if (c.phone) { addWaContact(c.name||'', c.phone, c.notes||''); count++; }
+  });
+  return count;
+}
+
+// === WHATSAPP MESSAGES ===
+function getWaMessages(limit, offset) {
+  return query('SELECT * FROM wa_messages ORDER BY sent_at DESC LIMIT ? OFFSET ?', [limit||50, offset||0]);
+}
+
+function getWaMessagesByPhone(phone, limit) {
+  return query('SELECT * FROM wa_messages WHERE phone = ? ORDER BY sent_at DESC LIMIT ?', [phone, limit||20]);
+}
+
+function addWaMessage(phone, contactName, message, status) {
+  run("INSERT INTO wa_messages (phone, contact_name, message, status, sent_at) VALUES (?, ?, ?, ?, datetime('now'))",
+    [phone, contactName||'', message, status||'sent']);
+}
+
+function getWaMessagesCount() { return (get('SELECT COUNT(*) as c FROM wa_messages')||{}).c||0; }
+
+function getWaMessagesToday() { return (get("SELECT COUNT(*) as c FROM wa_messages WHERE date(sent_at) = date('now')")||{}).c||0; }
+
+function getWaContactsCount() { return (get('SELECT COUNT(*) as c FROM wa_contacts')||{}).c||0; }
+
+function getWaStats() {
+  return {
+    contacts: getWaContactsCount(),
+    messages: getWaMessagesCount(),
+    today: getWaMessagesToday()
+  };
+}
+
+// === WHATSAPP SCHEDULES ===
+function getWaSchedules() {
+  return query("SELECT * FROM wa_schedules ORDER BY scheduled_for ASC");
+}
+
+function getPendingWaSchedules() {
+  return query("SELECT * FROM wa_schedules WHERE status = 'pending' AND scheduled_for <= datetime('now') ORDER BY scheduled_for ASC");
+}
+
+function addWaSchedule(phone, message, scheduledFor) {
+  run("INSERT INTO wa_schedules (phone, message, scheduled_for) VALUES (?, ?, ?)", [phone, message, scheduledFor]);
+}
+
+function markWaScheduleDone(id) { run("UPDATE wa_schedules SET status = 'sent' WHERE id = ?", [id]); }
+
+function deleteWaSchedule(id) { run("DELETE FROM wa_schedules WHERE id = ?", [id]); }
+
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule };

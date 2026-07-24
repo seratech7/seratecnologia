@@ -239,7 +239,7 @@ router.post('/products/new', upload.single('image'), (req, res) => {
     [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, image, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0]
   );
   var lastId = db.get('SELECT MAX(id) as id FROM products');
-  if (lastId) db.run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lastId.id, lastId.id]);
+  if (lastId) db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lastId.id]);
 
   res.redirect('/admin/products');
 });

@@ -50,26 +50,16 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="seller_id">Vendedor</label>
-          <select id="seller_id" name="seller_id">
-            <option value="">Admin (sem vendedor)</option>
-            <% if (typeof sellers !== 'undefined' && sellers.length > 0) { %>
-              <% sellers.forEach(s => { %>
-                <option value="<%= s.id %>" <%= product && product.seller_id == s.id ? 'selected' : '' %>><%= s.name %></option>
-              <% }) %>
-            <% } %>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="condition">Condição</label>
-          <select id="condition" name="condition">
-            <option value="new" <%= product && product.condition === 'new' ? 'selected' : '' %>>Novo</option>
-            <option value="semi-new" <%= product && product.condition === 'semi-new' ? 'selected' : '' %>>Semi-novo</option>
-            <option value="used" <%= product && product.condition === 'used' ? 'selected' : '' %>>Usado</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label for="seller_id">Vendedor</label>
+        <select id="seller_id" name="seller_id">
+          <option value="">Admin (sem vendedor)</option>
+          <% if (typeof sellers !== 'undefined' && sellers.length > 0) { %>
+            <% sellers.forEach(s => { %>
+              <option value="<%= s.id %>" <%= product && product.seller_id == s.id ? 'selected' : '' %>><%= s.name %></option>
+            <% }) %>
+          <% } %>
+        </select>
       </div>
 
       <div class="form-row">

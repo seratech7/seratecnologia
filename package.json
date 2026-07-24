@@ -8,8 +8,11 @@
     "dev": "node --watch server.js",
     "promote": "node utils/promote.js",
     "promote:links": "node utils/promote.js --links-only",
-    "promote:apis": "node utils/promote.js --apis-only",
-    "promote:seo": "node utils/promote.js --seo-only"
+    "promote:seo": "node utils/promote.js --seo-only",
+    "promote:telegram": "node utils/promote.js --telegram-only",
+    "promote:discord": "node utils/promote.js --discord-only",
+    "promote:whatsapp": "node utils/promote.js --whatsapp-only",
+    "promote:email": "node utils/promote.js --email-only"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

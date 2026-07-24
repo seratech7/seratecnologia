@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> | MarketPlace</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/fonts/fontawesome.min.css">
 </head>
 <body class="admin-page">
 
@@ -76,6 +76,9 @@
       </a>
       <a href="/admin/toggles" class="<%= currentPath === '/admin/toggles' ? 'active' : '' %>">
         <i class="fas fa-toggle-on"></i> Toggles
+      </a>
+      <a href="/admin/whatsapp" class="<%= currentPath.startsWith('/admin/whatsapp') ? 'active' : '' %>">
+        <i class="fab fa-whatsapp"></i> WhatsApp
       </a>
       <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
         <i class="fas fa-bullhorn"></i> Notificar Todos

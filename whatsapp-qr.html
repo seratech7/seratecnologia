@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp - Escaneie o QR</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); }
+  .card { background: white; border-radius: 16px; padding: 40px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 420px; margin: 20px; }
+  h1 { font-size: 22px; color: #128C7E; margin-bottom: 8px; }
+  .sub { color: #666; font-size: 14px; margin-bottom: 24px; }
+  #qrCode img { width: 300px; height: 300px; border-radius: 8px; border: 2px solid #eee; }
+  .loading { width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; background: #f5f5f5; border-radius: 8px; color: #999; margin: 0 auto; }
+  ol { text-align: left; margin: 20px 0 0; padding: 0 0 0 24px; }
+  li { margin-bottom: 10px; font-size: 14px; line-height: 1.5; color: #444; }
+  li b { color: #128C7E; }
+  .footer { font-size: 12px; color: #999; margin-top: 20px; }
+  .step { display: inline-block; background: #25D366; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📱 Conectar ao WhatsApp</h1>
+  <p class="sub">Escaneie o QR code com seu celular</p>
+  <div id="qrCode"><div class="loading">🔄 Gerando QR Code...</div></div>
+  <ol>
+    <li><span class="step">1</span> Abra o <b>WhatsApp</b> no seu <b>CELULAR</b></li>
+    <li><span class="step">2</span> Toque em <b>Menu</b> (3 pontinhos) e depois em <b>WhatsApp Web</b> <br><small style="color:#999">(ou: <b>Linked Devices</b> > <b>Link a Device</b>)</small></li>
+    <li><span class="step">3</span> Escaneie o QR code desta página</li>
+    <li><span class="step">4</span> Pronto! Volte ao terminal</li>
+  </ol>
+  <p style="font-size:13px;color:#999;margin-top:16px;">⚠️ Se o QR estiver preto/quadrado, a página ainda está carregando</p>
+</div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const qrData = params.get('data');
+  if (qrData) {
+    document.getElementById('qrCode').innerHTML =
+      '<img src="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' +
+      encodeURIComponent(qrData) + '" alt="QR Code">';
+  } else {
+    document.getElementById('qrCode').innerHTML =
+      '<div class="loading">❌ Nenhum QR disponível<br><small>Execute npm run promote:whatsapp primeiro</small></div>';
+  }
+</script>
+</body>
+</html>

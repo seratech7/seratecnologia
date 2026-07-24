@@ -38,6 +38,9 @@ router.get('/login', redirectIfSeller, (req, res) => {
 });
 
 router.post('/login', (req, res) => {
+  if (req.body._csrf !== req.session.csrfToken) {
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Token inválido. Recarregue a página.' });
+  }
   const { email, password } = req.body;
   if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos' });
   const seller = db.get('SELECT * FROM sellers WHERE email = ?', [email]);
@@ -109,7 +112,7 @@ router.post('/products/new', upload.array('images', 5), (req, res) => {
   db.run('INSERT INTO products (name, description, price, category_id, seller_id, image, condition, location, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [cleanName, cleanDesc, cleanPrice, category_id || null, req.session.sellerId, mainImage, condition || 'new', cleanLocation, 'pending']);
   var lastId = db.get('SELECT MAX(id) as id FROM products');
-  if (lastId) db.run("UPDATE products SET code = 'PROD-' || substr('00000' || ?, -5, 5) WHERE id = ?", [lastId.id, lastId.id]);
+  if (lastId) db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lastId.id]);
   // Save extra images
   if (req.files && req.files.length > 1 && lastId) {
     for (var i = 1; i < req.files.length; i++) {
@@ -118,7 +121,7 @@ router.post('/products/new', upload.array('images', 5), (req, res) => {
   }
   try {
     var baseUrl = process.env.BASE_URL || 'https://seratecnologia-1.onrender.com';
-    var prodCode = 'PROD-' + String(lastId ? lastId.id : 0).padStart(5, '0');
+    var prodCode = db.get("SELECT code FROM products WHERE id = ?", [lastId ? lastId.id : 0]); if (prodCode) prodCode = prodCode.code; else prodCode = 'PROD-' + Math.random().toString(36).slice(2, 10).toUpperCase();
     var waMsg = encodeURIComponent('Acabei de cadastrar o produto ' + cleanName + ' (' + prodCode + ') no SeraTecnologia!');
     var sellerPhone = req.session.sellerPhone || '';
     var waLink = sellerPhone ? 'https://wa.me/55' + sellerPhone.replace(/\D/g, '') + '?text=' + waMsg : baseUrl + '/seller/products';

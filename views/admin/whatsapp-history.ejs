@@ -1,0 +1,37 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/whatsapp/history' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-history"></i> Histórico de Mensagens</h1>
+    <p><%= total %> mensagens enviadas</p>
+  </div>
+
+  <div class="card">
+    <% if (messages.length === 0) { %>
+      <p style="color:#999;text-align:center;padding:40px 0;">Nenhuma mensagem ainda.</p>
+    <% } else { %>
+      <table class="admin-table">
+        <thead><tr><th>Telefone</th><th>Contato</th><th>Mensagem</th><th>Status</th><th>Data</th></tr></thead>
+        <tbody>
+          <% messages.forEach(function(m) { %>
+          <tr>
+            <td><%= m.phone %></td>
+            <td><%= m.contact_name || '—' %></td>
+            <td style="max-width:350px;word-break:break-word;"><%= m.message %></td>
+            <td><span class="badge badge-<%= m.status === 'sent' ? 'success' : 'danger' %>"><%= m.status %></span></td>
+            <td style="font-size:12px;"><%= m.sent_at %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+
+      <% if (pages > 1) { %>
+      <div style="text-align:center;margin-top:20px;">
+        <% for (var i = 1; i <= pages; i++) { %>
+          <a href="/admin/whatsapp/history?page=<%= i %>" style="display:inline-block;padding:6px 12px;margin:2px;background:<%= page === i ? '#25D366' : '#eee' %>;color:<%= page === i ? '#fff' : '#333' %>;border-radius:4px;text-decoration:none;"><%= i %></a>
+        <% } %>
+      </div>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

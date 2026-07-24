@@ -64,7 +64,7 @@
             <% products.forEach(p => { %>
               <tr>
                 <td><input type="checkbox" name="ids" value="<%= p.id %>" class="bulk-check"></td>
-                <td style="font-family:monospace;font-size:13px;color:#666;white-space:nowrap;"><%= p.code || 'PROD-' + String(p.id).padStart(5, '0') %></td>
+                <td style="font-family:monospace;font-size:13px;color:#666;white-space:nowrap;"><%= p.code || 'PROD-' + Math.random().toString(36).slice(2,10).toUpperCase() %></td>
                 <td class="product-cell">
                   <div class="product-cell-info">
                     <% if (p.image) { %><img src="<%= p.image %>" alt="" class="thumb"><% } else { %><div class="thumb thumb-placeholder"><i class="fas fa-image"></i></div><% } %>

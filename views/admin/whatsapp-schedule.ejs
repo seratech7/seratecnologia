@@ -1,0 +1,47 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/whatsapp/schedules' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-clock"></i> Mensagens Agendadas</h1>
+    <p>Agende disparos para data/hora específica</p>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div class="form-card" style="margin-bottom:20px;">
+    <h4>Nova Mensagem Agendada</h4>
+    <form method="POST" action="/admin/whatsapp/schedules/add">
+      <div class="form-group"><label>Telefone</label><input type="text" name="phone" class="admin-input" required placeholder="5521999999999"></div>
+      <div class="form-group"><label>Mensagem</label><textarea name="message" class="admin-input" rows="3" required placeholder="Digite a mensagem..."></textarea></div>
+      <div class="form-group"><label>Agendar para</label><input type="datetime-local" name="scheduled_for" class="admin-input" required></div>
+      <button type="submit" class="btn-primary"><i class="fas fa-clock"></i> Agendar</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Agendamentos</h3>
+    <% if (schedules.length === 0) { %>
+      <p style="color:#999;text-align:center;padding:20px;">Nenhum agendamento.</p>
+    <% } else { %>
+      <table class="admin-table">
+        <thead><tr><th>Telefone</th><th>Mensagem</th><th>Agendado para</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody>
+          <% schedules.forEach(function(s) { %>
+          <tr>
+            <td><%= s.phone %></td>
+            <td style="max-width:300px;word-break:break-word;"><%= s.message %></td>
+            <td><%= s.scheduled_for %></td>
+            <td><span class="badge badge-<%= s.status === 'pending' ? 'warning' : 'success' %>"><%= s.status %></span></td>
+            <td>
+              <form method="POST" action="/admin/whatsapp/schedules/delete/<%= s.id %>" style="display:inline;" onsubmit="return confirm('Remover agendamento?')">
+                <button type="submit" class="btn-small btn-danger"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

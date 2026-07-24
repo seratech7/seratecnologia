@@ -1,0 +1,27 @@
+2026/07/24-04:18:35.628 29b0 Reusing MANIFEST C:\Users\ggdra\Documents\Default Project\wa_session\session-promote\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/07/24-04:18:35.637 29b0 Recovering log #154
+2026/07/24-04:18:36.412 29b0 Reusing old log C:\Users\ggdra\Documents\Default Project\wa_session\session-promote\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000154.log 
+2026/07/24-04:19:07.559 29b0 Level-0 table #161: started
+2026/07/24-04:19:07.992 29b0 Level-0 table #161: 1283089 bytes OK
+2026/07/24-04:19:08.016 29b0 Delete type=0 #154
+2026/07/24-04:19:08.159 29b0 Compacting 1@1 + 3@2 files
+2026/07/24-04:19:08.925 29b0 Generated table #162@1: 76948 keys, 2234118 bytes
+2026/07/24-04:19:09.258 29b0 Generated table #163@1: 46841 keys, 2222385 bytes
+2026/07/24-04:19:09.570 29b0 Generated table #164@1: 10614 keys, 2164393 bytes
+2026/07/24-04:19:09.624 29b0 Generated table #165@1: 6895 keys, 374211 bytes
+2026/07/24-04:19:09.624 29b0 Compacted 1@1 + 3@2 files => 6995107 bytes
+2026/07/24-04:19:09.627 29b0 compacted to: files[ 0 0 4 0 0 0 0 ]
+2026/07/24-04:19:19.527 439c Level-0 table #167: started
+2026/07/24-04:19:19.817 439c Level-0 table #167: 1057229 bytes OK
+2026/07/24-04:19:19.828 439c Delete type=2 #156
+2026/07/24-04:19:19.829 439c Delete type=2 #157
+2026/07/24-04:19:19.829 439c Delete type=2 #158
+2026/07/24-04:19:19.829 439c Delete type=0 #160
+2026/07/24-04:19:19.830 439c Delete type=2 #161
+2026/07/24-04:19:20.181 439c Compacting 1@1 + 4@2 files
+2026/07/24-04:19:21.195 439c Generated table #168@1: 75905 keys, 2220211 bytes
+2026/07/24-04:19:21.899 439c Generated table #169@1: 51968 keys, 2222491 bytes
+2026/07/24-04:19:22.162 439c Generated table #170@1: 12412 keys, 2175131 bytes
+2026/07/24-04:19:22.326 439c Generated table #171@1: 13350 keys, 797980 bytes
+2026/07/24-04:19:22.327 439c Compacted 1@1 + 4@2 files => 7415813 bytes
+2026/07/24-04:19:22.330 439c compacted to: files[ 0 0 4 0 0 0 0 ]

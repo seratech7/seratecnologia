@@ -10,6 +10,12 @@ router.get('/:id', (req, res) => {
 
   if (!seller) return res.status(404).render('404', { title: 'Vendedor não encontrado' });
 
+  // Hide sensitive data from public (only show if admin/seller logged in)
+  if (!req.session.adminId && !req.session.sellerId) {
+    seller.email = '';
+    seller.phone = '';
+  }
+
   const daysOnPlatform = Math.floor((Date.now() - new Date(seller.created_at).getTime()) / (1000 * 60 * 60 * 24));
 
   const rating = db.get(

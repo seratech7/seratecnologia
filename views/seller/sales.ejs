@@ -46,7 +46,7 @@
         <span style="font-size:12px;color:#999;"><%= v.buyer_document %></span>
       </td>
       <td>
-        <a href="https://wa.me/55<%= v.buyer_phone.replace(/\D/g,'') %>" target="_blank" style="text-decoration:none;">
+        <a href="https://wa.me/55<%= (v.buyer_phone || '').replace(/\D/g,'') %>" target="_blank" style="text-decoration:none;">
           <i class="fab fa-whatsapp" style="color:#25d366;"></i>
         </a>
         <a href="mailto:<%= v.buyer_email %>" style="margin-left:4px;text-decoration:none;color:#666;">

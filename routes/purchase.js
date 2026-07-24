@@ -120,7 +120,7 @@ router.get('/rastreio', function(req, res) {
     sale = db.getSaleByTrackingCode(code);
     if (sale) history = db.getTrackingHistory(sale.id);
   }
-  res.render('rastreio', { title: 'Rastrear Pedido', sale: sale, history: history, code: code, error: code && !sale ? 'Código de rastreio não encontrado' : null });
+  res.render('rastreio', { title: 'Rastrear Pedido', sale: sale, history: history, code: code, error: code && !sale ? 'Informe um código de rastreio válido' : null });
 });
 
 router.get('/api/rastreio/:codigo', function(req, res) {

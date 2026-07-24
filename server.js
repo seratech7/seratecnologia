@@ -25,28 +25,51 @@ const { toggleMiddleware } = require('./middleware/toggles');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Generate CSP nonce per request
+app.use((req, res, next) => {
+  res.locals.nonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
 // Security headers
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
-      fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "data:"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", "data:"],
       imgSrc: ["'self'", "data:", "https:", "http:"],
       connectSrc: ["'self'"],
       frameSrc: ["'none'"],
-      objectSrc: ["'none'"]
+      objectSrc: ["'none'"],
+      formAction: ["'self'"]
     }
   }
 }));
 
-// Rate limiting - login
+// X-XSS-Protection override (helmet defaults to 0)
+app.use((req, res, next) => {
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.removeHeader('X-Powered-By');
+  next();
+});
+
+// Rate limiting - login (10 attempts per 15 min)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: 'Muitas tentativas. Tente novamente em 15 minutos.',
+  message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiting - API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: { error: 'Muitas requisições. Tente novamente em 5 minutos.' },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -54,7 +77,7 @@ const loginLimiter = rateLimit({
 // Rate limiting - geral
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -131,6 +154,11 @@ app.use((req, res, next) => {
   res.locals.currentPath = req.path;
   res.locals.session = req.session;
   res.locals.query = req.query;
+  // Generate CSRF token
+  if (!req.session.csrfToken) {
+    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+  }
+  res.locals.csrfToken = req.session.csrfToken;
   next();
 });
 
@@ -235,8 +263,10 @@ app.get('/admin/debug', (req, res) => {
   });
 });
 
+app.use('/api', apiLimiter);
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
+app.use('/admin', require('./routes/whatsapp')());
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
 app.use('/', productRoutes);
@@ -245,11 +275,11 @@ app.use('/', purchaseRoutes);
 app.use('/', mercadopagoRoutes);
 app.use('/api', adRoutes);
 
-// Sitemap
+// Sitemap — only last 50 products to prevent enumeration
 app.get('/sitemap.xml', (req, res) => {
   try {
     var db = require('./database/db');
-    var products = db.query("SELECT id, updated_at FROM products WHERE status = 'active' ORDER BY id");
+    var products = db.query("SELECT id, updated_at FROM products WHERE status = 'active' ORDER BY id DESC LIMIT 50");
     var pages = db.getAllPages();
     var baseUrl = process.env.BASE_URL || 'https://seratecnologia-1.onrender.com';
     var xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';

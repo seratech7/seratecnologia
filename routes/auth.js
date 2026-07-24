@@ -9,6 +9,10 @@ router.get('/login', redirectIfAdmin, (req, res) => {
 });
 
 router.post('/login', (req, res) => {
+  if (req.body._csrf !== req.session.csrfToken) {
+    return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Token inválido. Recarregue a página.' });
+  }
+
   const { username, password } = req.body;
 
   if (!username || !password) {

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp - Conectar</title>
+<style>
+  body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f0f0f0; }
+  .container { text-align: center; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 400px; }
+  h2 { color: #25D366; margin-top: 0; }
+  ol { text-align: left; line-height: 1.8; font-size: 15px; }
+  ol li { margin-bottom: 8px; }
+  #qr img { width: 300px; height: 300px; image-rendering: pixelated; }
+  .loading { color: #999; }
+  .step { background: #e8f5e9; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: #2e7d32; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>📱 Conectar WhatsApp</h2>
+  <div id="qr" class="loading">Aguardando QR Code...</div>
+  <hr>
+  <h3>Instruções:</h3>
+  <ol>
+    <li><span class="step">1</span> Abra o <b>WhatsApp</b> no seu <b>CELULAR</b></li>
+    <li><span class="step">2</span> Toque em <b>Menu</b> (3 pontinhos) > <b>Linked Devices</b> ou <b>WhatsApp Web</b></li>
+    <li><span class="step">3</span> Toque em <b>Link a Device</b> (ou <b>+</b>)</li>
+    <li><span class="step">4</span> Escaneie o QR code ao lado</li>
+  </ol>
+  <p style="font-size:13px;color:#999;">Após escanear, volte ao terminal e aguarde</p>
+</div>
+<script>
+  let attempts = 0;
+  const apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=';
+  function checkQR() {
+    fetch('/whatsapp-qr.json?' + Date.now())
+      .then(r => r.json())
+      .then(data => {
+        if (data.qr) {
+          document.getElementById('qr').innerHTML = '<img src="' + apiUrl + encodeURIComponent(data.qr) + '" alt="QR Code">';
+        } else if (data.ready) {
+          document.getElementById('qr').innerHTML = '<div style="background:#e8f5e9;padding:30px;border-radius:8px;font-size:20px;color:#2e7d32;">✅ Conectado!</div>';
+        }
+      })
+      .catch(() => {});
+  }
+  setInterval(checkQR, 3000);
+  checkQR();
+</script>
+</body>
+</html>
