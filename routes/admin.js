@@ -368,13 +368,13 @@ router.post('/sellers/delete/:id', (req, res) => {
 });
 
 router.get('/sellers/:id', (req, res) => {
-  const seller = db.get('SELECT *, (SELECT COUNT(*) FROM products WHERE seller_id = ?) as product_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND status = "active") as active_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND featured = 1) as featured_count FROM sellers WHERE id = ?', [req.params.id, req.params.id, req.params.id, req.params.id]);
+  const seller = db.get("SELECT *, (SELECT COUNT(*) FROM products WHERE seller_id = ?) as product_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND status = 'active') as active_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND featured = 1) as featured_count FROM sellers WHERE id = ?", [req.params.id, req.params.id, req.params.id, req.params.id]);
   if (!seller) return res.redirect('/admin/sellers');
 
   const products = db.query('SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? ORDER BY p.created_at DESC', [req.params.id]);
   const sales = db.query("SELECT s.* FROM sales s WHERE s.seller_id = ? ORDER BY s.created_at DESC LIMIT 20", [req.params.id]);
   const totalRevenue = db.get("SELECT COALESCE(SUM(product_price),0) as total FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending')", [req.params.id]);
-  const walletBalance = db.get("SELECT COALESCE(SUM(amount),0) as balance FROM wallet_transactions WHERE seller_id = ? AND status = 'completed'", [req.params.id]);
+  const walletBalance = db.get("SELECT COALESCE(SUM(amount),0) as balance FROM wallet_transactions WHERE seller_id = ?", [req.params.id]);
 
   res.render('admin/seller-detail', {
     title: `${seller.name} - Vendedor`,
