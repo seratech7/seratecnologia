@@ -120,13 +120,15 @@ app.use(express.json({ limit: '1mb' }));
 
 app.set('trust proxy', 1);
 
+var SQLiteStore = require('connect-sqlite3')(session);
 app.use(session({
+  store: new SQLiteStore({ db: 'sessions.sqlite', dir: __dirname, table: 'sessions' }),
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
   resave: false,
   saveUninitialized: false,
   rolling: true,
   cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'lax',
     secure: false
