@@ -1,0 +1,70 @@
+<%- include('../partials/admin-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-bug"></i> Diagnóstico do Sistema</h1>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+
+  <div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#2196f3,#1565c0);"><i class="fas fa-tag"></i></div>
+      <div class="stat-info"><span class="stat-number"><%= db.categories %></span><span class="stat-label">Categorias</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#ff9800,#f57c00);"><i class="fas fa-ad"></i></div>
+      <div class="stat-info"><span class="stat-number"><%= db.ads %></span><span class="stat-label">Anúncios</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#4caf50,#388e3c);"><i class="fas fa-box"></i></div>
+      <div class="stat-info"><span class="stat-number"><%= db.products %></span><span class="stat-label">Produtos</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#00bcd4,#00838f);"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-info"><span class="stat-number"><%= db.productsActive %></span><span class="stat-label">Ativos</span></div>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-tag"></i> Categorias (<%= (db.categorySample || []).length %>)</h2>
+      <form action="/admin/reseed-categories" method="POST" style="display:inline;" onsubmit="return confirm('Recriar categorias padrão? Só funciona se não houver nenhuma.')">
+        <button type="submit" class="btn-small" style="background:#ff9800;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;"><i class="fas fa-sync"></i> Recriar Categorias</button>
+      </form>
+    </div>
+    <div style="padding:12px;background:#f5f5f5;border-radius:8px;font-size:13px;">
+      <% if (db.categorySample && db.categorySample.length > 0) { %>
+        <% db.categorySample.forEach(function(c) { %>
+          <span style="display:inline-block;padding:4px 10px;margin:3px;background:white;border-radius:4px;"><%= c.name %></span>
+        <% }) %>
+      <% } else { %>
+        <span style="color:#999;">Nenhuma categoria encontrada</span>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-ad"></i> Anúncios (<%= db.ads %>)</h2>
+      <form action="/admin/reseed-ads" method="POST" style="display:inline;" onsubmit="return confirm('Recriar anúncios padrão? Só funciona se não houver nenhum.')">
+        <button type="submit" class="btn-small" style="background:#ff9800;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;"><i class="fas fa-sync"></i> Recriar Anúncios</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-cog"></i> Ações Rápidas</h2>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <form action="/admin/products/reactivate-all" method="POST" onsubmit="return confirm('Reativar TODOS os produtos?')">
+        <button type="submit" class="btn" style="background:#2e7d32;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;">
+          <i class="fas fa-sync"></i> Reativar Todos os Produtos
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

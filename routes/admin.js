@@ -1109,6 +1109,67 @@ router.post('/products/reactivate-all', requireAdmin, (req, res) => {
   res.redirect('/admin/products');
 });
 
+router.get('/debug', requireAdmin, (req, res) => {
+  const dbState = {
+    products: (db.get('SELECT COUNT(*) as c FROM products') || {}).c || 0,
+    productsActive: (db.get("SELECT COUNT(*) as c FROM products WHERE status = 'active'") || {}).c || 0,
+    categories: (db.get('SELECT COUNT(*) as c FROM categories') || {}).c || 0,
+    ads: (db.get('SELECT COUNT(*) as c FROM ads') || {}).c || 0,
+    sellers: (db.get('SELECT COUNT(*) as c FROM sellers') || {}).c || 0,
+    banners: (db.get('SELECT COUNT(*) as c FROM banners') || {}).c || 0,
+    pageViews: (db.get('SELECT COUNT(*) as c FROM page_views') || {}).c || 0,
+    sales: (db.get('SELECT COUNT(*) as c FROM sales') || {}).c || 0,
+    productSample: db.query('SELECT id, name, status FROM products LIMIT 5') || [],
+    categorySample: db.query('SELECT id, name FROM categories LIMIT 5') || [],
+  };
+  res.render('admin/debug', { title: 'Diagnóstico', db: dbState, msg: req.query.msg || '' });
+});
+
+router.post('/reseed-categories', requireAdmin, (req, res) => {
+  const existing = db.get('SELECT COUNT(*) as c FROM categories');
+  if (existing && existing.c > 0) {
+    return res.redirect('/admin/debug?msg=categorias+ja+existem');
+  }
+  const cats = [
+    ['HDs e Armazenamento', 'hds-armazenamento', '💾'],
+    ['SSDs', 'ssds', '⚡'],
+    ['Memória RAM', 'memoria-ram', '🧠'],
+    ['Processadores', 'processadores', '🔲'],
+    ['Placas de Vídeo', 'placas-video', '🎮'],
+    ['Placas-mãe', 'placas-mae', '🔧'],
+    ['Notebooks e PCs', 'notebooks-pcs', '💻'],
+    ['Monitores', 'monitores', '🖥️'],
+    ['Periféricos', 'perifericos', '⌨️'],
+    ['Fontes e Gabinetes', 'fontes-gabinetes', '🔌'],
+    ['Redes e Conectividade', 'redes', '🌐'],
+    ['Outros', 'outros', '📦'],
+  ];
+  for (const [name, slug, icon] of cats) {
+    db.run('INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)', [name, slug, icon]);
+  }
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'reseed_categories', 'Recriou todas as categorias');
+  res.redirect('/admin/categories?sucesso=categorias+recriadas');
+});
+
+router.post('/reseed-ads', requireAdmin, (req, res) => {
+  const existing = db.get('SELECT COUNT(*) as c FROM ads');
+  if (existing && existing.c > 0) {
+    return res.redirect('/admin/debug?msg=anuncios+ja+existem');
+  }
+  const defaultAds = [
+    ['SSD Kingston NV2 1TB', '<i class="fas fa-bolt"></i> SSD Kingston NV2 1TB — R$ 349,90', '/produto/1', '', 15, 86400],
+    ['Memória DDR5 32GB', '<i class="fas fa-microchip"></i> Memória DDR5 32GB — R$ 589,90', '/produto/4', '', 15, 86400],
+    ['HD Seagate 2TB', '<i class="fas fa-hdd"></i> HD Seagate 2TB — R$ 289,90', '/produto/2', '', 15, 86400],
+    ['SSD Samsung 990 Pro', '<i class="fas fa-star"></i> SSD Samsung 990 Pro 2TB — R$ 1.299,90', '/produto/15', '', 15, 86400],
+    ['Promoção SSDs', '<i class="fas fa-tags"></i> Aproveite nossas ofertas em SSDs!', '/?category=ssds', '', 20, 43200],
+  ];
+  defaultAds.forEach(function(ad) {
+    db.run('INSERT INTO ads (title, text, link, image, display_duration, cooldown, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)', ad);
+  });
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'reseed_ads', 'Recriou todos os anúncios');
+  res.redirect('/admin/ads?sucesso=anuncios+recriados');
+});
+
 // ========== GOALS ==========
 router.get('/metas', requireSuperAdmin, (req, res) => {
   var goals = db.getAllGoals();
