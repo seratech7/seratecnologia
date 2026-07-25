@@ -16,12 +16,6 @@
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;">
-    <div class="share-card" style="border-top:4px solid #25D366;">
-      <div style="font-size:32px;color:#25D366;"><i class="fab fa-whatsapp"></i></div>
-      <h4>WhatsApp</h4>
-      <input type="text" class="share-input" id="linkwa" readonly onclick="this.select()">
-      <button class="copy-btn" onclick="copyLink('linkwa')">Copiar</button>
-    </div>
     <div class="share-card" style="border-top:4px solid #1877F2;">
       <div style="font-size:32px;color:#1877F2;"><i class="fab fa-facebook"></i></div>
       <h4>Facebook</h4>
@@ -62,7 +56,6 @@ function gerarLinks() {
   const text = encodeURIComponent(msg);
   const encodedUrl = encodeURIComponent(url);
   const links = {
-    linkwa: 'https://wa.me/?text=' + text,
     linkfb: 'https://www.facebook.com/sharer/sharer.php?u=' + encodedUrl + '&quote=' + text,
     linktw: 'https://twitter.com/intent/tweet?text=' + text + '&url=' + encodedUrl,
     linkli: 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl,

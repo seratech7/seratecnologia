@@ -237,11 +237,6 @@ router.post('/sales/status/:id', requireSeller, upload.array('proof_photos', 5),
     var seller = db.get('SELECT name FROM sellers WHERE id = ?', [req.session.sellerId]);
     var notifyMsg = '📦 ' + (seller ? seller.name : 'Vendedor') + ' atualizou seu pedido ' + sale.product_code + '!\n\nStatus: ' + (trackingLabels[trackingStatus] || trackingStatus) + '\nMensagem: ' + msg;
     db.addNotification('customer_' + sale.id, 'tracking', notifyMsg, 'truck', '/rastreio?codigo=' + sale.tracking_code);
-    var waNum = sale.buyer_phone.replace(/\D/g, '');
-    if (waNum) {
-      var waLink = 'https://wa.me/55' + waNum + '?text=' + encodeURIComponent(notifyMsg);
-      db.addNotification('customer_' + sale.id, 'whatsapp', 'Clique para notificar ' + sale.buyer_name + ' via WhatsApp', 'whatsapp', waLink);
-    }
     sendTrackingUpdate(sale, trackingLabels[trackingStatus] || trackingStatus, msg);
   }
   res.redirect('/seller/sales');
@@ -345,8 +340,7 @@ router.get('/configuracoes', requireSeller, (req, res) => {
 router.post('/configuracoes', requireSeller, (req, res) => {
   var prefs = {
     notify_email_sale: req.body.notify_email_sale === '1',
-    notify_email_approve: req.body.notify_email_approve === '1',
-    notify_whatsapp_sale: req.body.notify_whatsapp_sale === '1'
+    notify_email_approve: req.body.notify_email_approve === '1'
   };
   db.updateSellerNotifPrefs(req.session.sellerId, prefs);
   res.redirect('/seller/configuracoes?sucesso=Salvo');

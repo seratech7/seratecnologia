@@ -9,8 +9,7 @@
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
   <!-- Stats Row -->
-  <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px;">
-    <div class="mstat-card"><div class="mstat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fab fa-whatsapp"></i></div><div class="mstat-value"><%= stats.waToday %></div><div class="mstat-label">WhatsApp Hoje</div></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;">
     <div class="mstat-card"><div class="mstat-icon" style="background:#e3f2fd;color:#1565c0;"><i class="fas fa-envelope"></i></div><div class="mstat-value"><%= stats.totalSent %></div><div class="mstat-label">Total Enviado</div></div>
     <div class="mstat-card"><div class="mstat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-rocket"></i></div><div class="mstat-value"><%= stats.totalCampaigns %></div><div class="mstat-label">Campanhas</div></div>
     <div class="mstat-card"><div class="mstat-icon" style="background:#f3e5f5;color:#6a1b9a;"><i class="fas fa-file-alt"></i></div><div class="mstat-value"><%= stats.totalTemplates %></div><div class="mstat-label">Modelos</div></div>
@@ -20,11 +19,7 @@
 
   <!-- Platform Cards -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:24px;">
-    <a href="/admin/marketing/whatsapp" class="platform-card" style="border-left:4px solid #25D366;">
-      <div class="plat-icon" style="color:#25D366;"><i class="fab fa-whatsapp"></i></div>
-      <div class="plat-name">WhatsApp</div>
-      <div class="plat-status"><span class="badge badge-<%= waReady ? 'success' : 'muted' %>"><%= waReady ? 'Conectado' : 'Desconectado' %></span></div>
-    </a>
+    
     <a href="/admin/marketing/telegram" class="platform-card" style="border-left:4px solid #0088cc;">
       <div class="plat-icon" style="color:#0088cc;"><i class="fab fa-telegram-plane"></i></div>
       <div class="plat-name">Telegram</div>
@@ -99,7 +94,6 @@
       <p style="font-size:13px;color:#666;margin-bottom:12px;">Disparo em todas as plataformas com 1 clique</p>
       <form method="POST" action="/admin/marketing/campaigns/disparar">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <input type="hidden" name="platforms" value="whatsapp">
         <input type="hidden" name="platforms" value="telegram">
         <input type="hidden" name="platforms" value="discord">
         <textarea name="message" class="admin-input" rows="3" placeholder="Digite a mensagem para disparo rápido..." style="font-size:13px;"></textarea>

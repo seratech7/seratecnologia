@@ -70,6 +70,20 @@
     </div>
 
     <div class="form-card" style="margin-bottom:20px;">
+      <h3><i class="fas fa-bolt"></i> Ofertas Relâmpago</h3>
+      <div class="form-group">
+        <label>Categoria de Ofertas Relâmpago</label>
+        <select name="flash_category_id" class="admin-select">
+          <option value="">Todas as categorias</option>
+          <% if (typeof categories !== 'undefined') { categories.forEach(function(c) { %>
+            <option value="<%= c.id %>" <%= config.flash_category_id == c.id ? 'selected' : '' %>><%= c.icon || '📦' %> <%= c.name %></option>
+          <% }); } %>
+        </select>
+        <span style="font-size:12px;color:#888;">Se definida, apenas produtos desta categoria poderão ser ofertas relâmpago</span>
+      </div>
+    </div>
+
+    <div class="form-card" style="margin-bottom:20px;">
       <h3><i class="fas fa-sliders-h"></i> Comportamento</h3>
       <div class="form-row">
         <div class="form-group">

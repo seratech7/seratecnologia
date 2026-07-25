@@ -186,12 +186,22 @@ router.get('/products', (req, res) => {
 });
 
 router.post('/products/approve/:id', (req, res) => {
-  db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [req.params.id]);
+  var id = parseInt(req.params.id);
+  if (!id) return res.redirect('/admin/products');
+  var p = db.get("SELECT status FROM products WHERE id = ?", [id]);
+  if (!p) return res.redirect('/admin/products');
+  db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+  var check = db.get("SELECT status FROM products WHERE id = ?", [id]);
+  if (check && check.status !== 'active') {
+    db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+  }
   res.redirect('/admin/products');
 });
 
 router.post('/products/reject/:id', (req, res) => {
-  db.run("UPDATE products SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [req.params.id]);
+  var id = parseInt(req.params.id);
+  if (!id) return res.redirect('/admin/products');
+  db.run("UPDATE products SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
   res.redirect('/admin/products');
 });
 
@@ -209,12 +219,12 @@ router.get('/products/new', (req, res) => {
   res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: null, sellers: [] });
 });
 
-router.post('/products/new', upload.single('image'), (req, res) => {
+router.post('/products/new', upload.array('images', 3), (req, res) => {
   const { name, description, price, category_id, condition, location, status, featured, seller_id } = req.body;
 
   if (!name || !price) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Nome e preço são obrigatórios', sellers: [] });
+    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Nome e preço são obrigatórios', sellers: [], extraImages: [] });
   }
 
   const cleanName = (name || '').toString().trim().slice(0, 100);
@@ -224,22 +234,29 @@ router.post('/products/new', upload.single('image'), (req, res) => {
 
   if (!cleanName) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Nome inválido', sellers: [] });
+    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Nome inválido', sellers: [], extraImages: [] });
   }
   if (cleanPrice <= 0) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Preço deve ser maior que zero', sellers: [] });
+    return res.render('admin/product-form', { title: 'Novo Produto', product: null, categories, error: 'Preço deve ser maior que zero', sellers: [], extraImages: [] });
   }
 
-  let image = null;
-  if (req.file) image = '/uploads/' + req.file.filename;
+  var mainImage = null;
+  if (req.files && req.files.length > 0) mainImage = '/uploads/' + req.files[0].filename;
 
   db.run(
     'INSERT INTO products (name, description, price, category_id, seller_id, image, condition, location, status, featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, image, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0]
+    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0]
   );
   var lastId = db.get('SELECT MAX(id) as id FROM products');
   if (lastId) db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lastId.id]);
+
+  // Save extra images
+  if (req.files && req.files.length > 1 && lastId) {
+    for (var i = 1; i < req.files.length; i++) {
+      db.run("INSERT INTO product_images (product_id, image) VALUES (?, ?)", [lastId.id, '/uploads/' + req.files[i].filename]);
+    }
+  }
 
   res.redirect('/admin/products');
 });
@@ -250,10 +267,11 @@ router.get('/products/edit/:id', (req, res) => {
 
   const categories = db.query('SELECT * FROM categories ORDER BY name');
   const sellers = db.query("SELECT id, name FROM sellers WHERE status = 'active' ORDER BY name");
-  res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: null, sellers });
+  const extraImages = db.query("SELECT * FROM product_images WHERE product_id = ?", [req.params.id]);
+  res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: null, sellers, extraImages });
 });
 
-router.post('/products/edit/:id', upload.single('image'), (req, res) => {
+router.post('/products/edit/:id', upload.array('images', 3), (req, res) => {
   const product = db.get('SELECT * FROM products WHERE id = ?', [req.params.id]);
   if (!product) return res.redirect('/admin/products');
 
@@ -261,7 +279,8 @@ router.post('/products/edit/:id', upload.single('image'), (req, res) => {
 
   if (!name || !price) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Nome e preço são obrigatórios', sellers: [] });
+    const extraImages = db.query("SELECT * FROM product_images WHERE product_id = ?", [req.params.id]);
+    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Nome e preço são obrigatórios', sellers: [], extraImages });
   }
 
   const cleanName = (name || '').toString().trim().slice(0, 100);
@@ -271,20 +290,29 @@ router.post('/products/edit/:id', upload.single('image'), (req, res) => {
 
   if (!cleanName) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Nome inválido', sellers: [] });
+    const extraImages = db.query("SELECT * FROM product_images WHERE product_id = ?", [req.params.id]);
+    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Nome inválido', sellers: [], extraImages });
   }
   if (cleanPrice <= 0) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
-    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Preço deve ser maior que zero', sellers: [] });
+    const extraImages = db.query("SELECT * FROM product_images WHERE product_id = ?", [req.params.id]);
+    return res.render('admin/product-form', { title: 'Editar Produto', product, categories, error: 'Preço deve ser maior que zero', sellers: [], extraImages });
   }
 
-  let image = product.image;
-  if (req.file) image = '/uploads/' + req.file.filename;
+  var mainImage = product.image;
+  if (req.files && req.files.length > 0) mainImage = '/uploads/' + req.files[0].filename;
 
   db.run(
     'UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, seller_id = ?, image = ?, condition = ?, location = ?, status = ?, featured = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, image, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0, req.params.id]
+    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0, req.params.id]
   );
+
+  // Save extra images
+  if (req.files && req.files.length > 1) {
+    for (var i = 1; i < req.files.length; i++) {
+      db.run("INSERT INTO product_images (product_id, image) VALUES (?, ?)", [req.params.id, '/uploads/' + req.files[i].filename]);
+    }
+  }
 
   res.redirect('/admin/products');
 });
@@ -372,6 +400,17 @@ router.post('/categories/new', (req, res) => {
     const categories = db.query('SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count FROM categories c ORDER BY c.name');
     return res.render('admin/categories', { title: 'Categorias - Painel Admin', categories, error: 'Categoria já existe' });
   }
+  res.redirect('/admin/categories');
+});
+
+router.post('/categories/edit/:id', (req, res) => {
+  const { name, icon } = req.body;
+  if (!name) {
+    const categories = db.query('SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count FROM categories c ORDER BY c.name');
+    return res.render('admin/categories', { title: 'Categorias - Painel Admin', categories, error: 'Nome é obrigatório' });
+  }
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  db.run('UPDATE categories SET name = ?, slug = ?, icon = ? WHERE id = ?', [name, slug, icon || '📦', req.params.id]);
   res.redirect('/admin/categories');
 });
 
@@ -702,12 +741,14 @@ router.get('/config', (req, res) => {
 
   var sellers = db.query('SELECT id, name, email FROM sellers ORDER BY name');
   var admins = db.query('SELECT id, username FROM admins ORDER BY username');
+  var categories = db.query('SELECT * FROM categories ORDER BY name');
 
   res.render('admin/config', {
     title: 'Configurações do Site',
     config: configObj,
     sellers: sellers,
     admins: admins,
+    categories: categories,
     error: null,
     success: null
   });
@@ -718,7 +759,7 @@ router.post('/config', (req, res) => {
     'site_name', 'site_description', 'site_whatsapp', 'site_email',
     'commission_pct', 'mp_access_token', 'pix_key_platform',
     'default_product_status', 'maintenance_mode', 'max_products_per_seller',
-    'custom_css', 'custom_js'
+    'custom_css', 'custom_js', 'flash_category_id'
   ];
   allowedKeys.forEach(function(key) {
     if (req.body[key] !== undefined) {
@@ -778,34 +819,63 @@ router.post('/cupons/deletar/:id', (req, res) => {
 // ========== BANNERS ==========
 router.get('/banners', (req, res) => {
   var banners = db.getAllBanners();
-  res.render('admin/banners', { title: 'Banners da Home', banners, error: null });
+  res.render('admin/banners', { title: 'Banners', banners, error: null, editBanner: null });
 });
 
-router.post('/banners/novo', upload.single('image'), (req, res) => {
-  var { title, subtitle, link, sort_order, active, display_duration } = req.body;
-  var image = req.file ? '/uploads/' + req.file.filename : '';
-  if (!image) return res.redirect('/admin/banners');
-  db.saveBanner(null, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10);
+router.get('/banners/novo', (req, res) => {
+  res.render('admin/banner-form', { title: 'Novo Banner', banner: null, error: null });
+});
+
+router.get('/banners/editar/:id', (req, res) => {
+  var banner = db.get("SELECT * FROM banners WHERE id = ?", [req.params.id]);
+  if (!banner) return res.redirect('/admin/banners');
+  res.render('admin/banner-form', { title: 'Editar Banner', banner, error: null });
+});
+
+router.post('/banners/novo', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'mobile_image', maxCount: 1 }]), (req, res) => {
+  var { title, subtitle, link, sort_order, active, display_duration, bg_color, text_align, position, transition, start_date, end_date, target_blank } = req.body;
+  var image = req.files && req.files['image'] && req.files['image'][0] ? '/uploads/' + req.files['image'][0].filename : '';
+  if (!image) return res.render('admin/banner-form', { title: 'Novo Banner', banner: null, error: 'Imagem principal é obrigatória' });
+  var mobileImage = req.files && req.files['mobile_image'] && req.files['mobile_image'][0] ? '/uploads/' + req.files['mobile_image'][0].filename : '';
+  db.saveBanner(null, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10, {
+    mobileImage: mobileImage, bgColor: bg_color || '#1a1a2e', textAlign: text_align || 'left',
+    position: position || 'hero', transition: transition || 'slide',
+    startDate: start_date || null, endDate: end_date || null, targetBlank: target_blank === '1'
+  });
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'create_banner', 'Banner criado: ' + (title || ''), 'banner', 0, req.ip);
   res.redirect('/admin/banners');
 });
 
-router.post('/banners/editar/:id', upload.single('image'), (req, res) => {
-  var { title, subtitle, link, sort_order, active, display_duration } = req.body;
+router.post('/banners/editar/:id', upload.fields([{ name: 'image', maxCount: 1 }, { name: 'mobile_image', maxCount: 1 }]), (req, res) => {
+  var { title, subtitle, link, sort_order, active, display_duration, bg_color, text_align, position, transition, start_date, end_date, target_blank } = req.body;
   var existing = db.get("SELECT * FROM banners WHERE id = ?", [req.params.id]);
   if (!existing) return res.redirect('/admin/banners');
-  var image = req.file ? '/uploads/' + req.file.filename : existing.image;
-  db.saveBanner(req.params.id, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10);
+  var image = req.files && req.files['image'] && req.files['image'][0] ? '/uploads/' + req.files['image'][0].filename : existing.image;
+  var mobileImage = req.files && req.files['mobile_image'] && req.files['mobile_image'][0] ? '/uploads/' + req.files['mobile_image'][0].filename : (existing.mobile_image || '');
+  db.saveBanner(req.params.id, title || '', subtitle || '', image, link, parseInt(sort_order) || 0, active === '1', parseInt(display_duration) || 10, {
+    mobileImage: mobileImage, bgColor: bg_color || existing.bg_color || '#1a1a2e', textAlign: text_align || existing.text_align || 'left',
+    position: position || existing.position || 'hero', transition: transition || existing.transition || 'slide',
+    startDate: start_date || null, endDate: end_date || null, targetBlank: target_blank === '1'
+  });
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'edit_banner', 'Banner editado: ' + (title || ''), 'banner', req.params.id, req.ip);
   res.redirect('/admin/banners');
 });
 
 router.post('/banners/deletar/:id', (req, res) => {
-  var b = db.get("SELECT image FROM banners WHERE id = ?", [req.params.id]);
+  var b = db.get("SELECT image, mobile_image FROM banners WHERE id = ?", [req.params.id]);
   if (b && b.image) {
     try { fs.unlinkSync(path.join(__dirname, '..', 'public', b.image)); } catch(e) {}
   }
+  if (b && b.mobile_image) {
+    try { fs.unlinkSync(path.join(__dirname, '..', 'public', b.mobile_image)); } catch(e) {}
+  }
   db.deleteBanner(req.params.id);
   res.redirect('/admin/banners');
+});
+
+router.post('/banners/clique/:id', (req, res) => {
+  db.incrementBannerClicks(req.params.id);
+  res.json({ ok: true });
 });
 
 // ========== ACTIVITY LOG ==========
@@ -893,7 +963,7 @@ router.get('/toggles', requireSuperAdmin, (req, res) => {
 });
 
 router.post('/toggles', requireSuperAdmin, (req, res) => {
-  var allowed = ['banners', 'compras', 'cadastro_vendedor', 'whatsapp', 'mercado_pago', 'pix'];
+  var allowed = ['banners', 'compras', 'cadastro_vendedor', 'mercado_pago', 'pix'];
   allowed.forEach(function(key) {
     db.setToggle(key, req.body[key] === '1' ? '1' : '0');
   });
@@ -949,8 +1019,11 @@ router.get('/ofertas/novo', requireSuperAdmin, (req, res) => res.redirect('/admi
 
 router.get('/ofertas', requireSuperAdmin, (req, res) => {
   var flashProducts = db.getFlashSales();
-  var allProducts = db.query("SELECT id, name, price, status FROM products WHERE status = 'active' ORDER BY name");
-  res.render('admin/ofertas', { title: 'Ofertas Relâmpago', flashProducts, allProducts, success: null, error: null });
+  var flashCat = (db.get("SELECT value FROM config WHERE key = 'flash_category_id'")||{}).value;
+  var catFilter = flashCat ? "AND category_id = " + parseInt(flashCat) + " " : "";
+  var allProducts = db.query("SELECT id, name, price, category_id FROM products WHERE status = 'active' " + catFilter + "ORDER BY name");
+  var categories = db.query("SELECT * FROM categories ORDER BY name");
+  res.render('admin/ofertas', { title: 'Ofertas Relâmpago', flashProducts, allProducts, categories, flashCat, success: null, error: null });
 });
 
 router.post('/ofertas/novo', requireSuperAdmin, (req, res) => {

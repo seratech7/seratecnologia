@@ -90,14 +90,6 @@ router.post('/api/finalizar-compra', function(req, res) {
 
     db.addNotification(produto.seller_id.toString(), 'sale', 'Nova venda: ' + produto.name + ' - R$ ' + finalPrice.toFixed(2), 'shopping-cart', '/seller/sales');
 
-    if (produto.notify_whatsapp) {
-      var waNum = produto.notify_whatsapp.replace(/\D/g, '');
-      if (waNum) {
-        var waMsg = encodeURIComponent(vendaMsg);
-        db.addNotification(produto.seller_id.toString(), 'whatsapp', 'Clique para enviar notificação via WhatsApp', 'whatsapp', 'https://wa.me/' + waNum + '?text=' + waMsg);
-      }
-    }
-
     if (produto.notify_signal) {
       var sigNum = produto.notify_signal.replace(/\D/g, '');
       if (sigNum) {

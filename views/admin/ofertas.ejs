@@ -7,6 +7,24 @@
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
 
+  <% if (flashCat) { var cat = categories.find(function(c) { return c.id == flashCat; }); %>
+    <div class="alert alert-info" style="background:#e3f2fd;border:1px solid #90caf9;color:#1565c0;padding:10px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-info-circle"></i> Ofertas restritas à categoria: <strong><%= cat ? cat.icon + ' ' + cat.name : 'Categoria #' + flashCat %></strong>
+      <a href="/admin/config" style="margin-left:auto;font-size:13px;">Alterar <i class="fas fa-external-link-alt"></i></a>
+    </div>
+  <% } else { %>
+    <div class="alert alert-warning" style="background:#fff3e0;border:1px solid #ffcc80;color:#e65100;padding:10px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-exclamation-triangle"></i> Nenhuma categoria específica definida para ofertas.
+      <a href="/admin/config" style="margin-left:auto;font-size:13px;">Configurar <i class="fas fa-external-link-alt"></i></a>
+    </div>
+  <% } %>
+
+  <% if (!flashCat && allProducts.length === 0) { %>
+    <div class="alert" style="background:#fce4ec;border:1px solid #ef9a9a;color:#c62828;padding:10px 16px;border-radius:8px;margin-bottom:16px;">
+      <i class="fas fa-times-circle"></i> Configure uma categoria de ofertas em <a href="/admin/config">Configurações</a> para começar.
+    </div>
+  <% } %>
+
   <div class="form-card" style="margin-bottom:20px;">
     <h3>Nova Oferta</h3>
     <form method="POST" action="/admin/ofertas/novo" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">

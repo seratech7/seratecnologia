@@ -25,7 +25,7 @@
       <thead><tr><th>Plataforma</th><th>Destinatário</th><th>Status</th><th>Erro</th><th>Data</th></tr></thead>
       <tbody><% results.forEach(function(r) { %>
         <tr>
-          <td><span class="plat-tag" style="background:<%= r.platform === 'whatsapp' ? '#e8f5e9' : r.platform === 'telegram' ? '#e3f2fd' : r.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= r.platform %></span></td>
+          <td><span class="plat-tag" style="background:<%= r.platform === 'telegram' ? '#e3f2fd' : r.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= r.platform %></span></td>
           <td style="font-size:13px;"><%= r.recipient || '—' %></td>
           <td><span class="badge badge-<%= r.status === 'sent' ? 'success' : 'danger' %>"><%= r.status %></span></td>
           <td style="font-size:12px;color:#999;"><%= r.error || '—' %></td>

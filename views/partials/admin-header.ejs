@@ -36,9 +36,6 @@
       <a href="/admin/products" class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>">
         <i class="fas fa-box"></i> <span>Produtos</span>
       </a>
-      <a href="/admin/products?filter=featured" style="color:#ffd700;">
-        <i class="fas fa-star"></i> <span>Destaques</span>
-      </a>
       <a href="/admin/categories" class="<%= currentPath === '/admin/categories' ? 'active' : '' %>">
         <i class="fas fa-tags"></i> <span>Categorias</span>
       </a>
@@ -73,7 +70,7 @@
       <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
         <i class="fas fa-bullhorn"></i> <span>Marketing Central</span>
       </a>
-      <a href="/admin/marketing/whatsapp" class="sub-link <%= (currentPath || '') === '/admin/marketing/whatsapp' ? 'active' : '' %>"><i class="fab fa-whatsapp"></i> <span>WhatsApp</span></a>
+
       <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> <span>Auto-Promo</span></a>
       <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> <span>Campanhas</span></a>
       <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> <span>QR Code</span></a>

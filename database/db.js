@@ -274,7 +274,8 @@ async function initDb() {
     'maintenance_mode': '0',
     'default_product_status': 'pending',
     'pix_key_platform': '',
-    'max_products_per_seller': '50'
+    'max_products_per_seller': '50',
+    'flash_category_id': ''
   };
   Object.keys(defaultConfigs).forEach(function(key) {
     var existing = get("SELECT value FROM config WHERE key = ?", [key]);
@@ -421,6 +422,15 @@ async function initDb() {
   if (bannerCols.length > 0) {
     var bc = bannerCols[0].values.map(function(r) { return r[1]; });
     if (!bc.includes('display_duration')) db.run("ALTER TABLE banners ADD COLUMN display_duration INTEGER DEFAULT 10");
+    if (!bc.includes('mobile_image')) db.run("ALTER TABLE banners ADD COLUMN mobile_image TEXT DEFAULT ''");
+    if (!bc.includes('bg_color')) db.run("ALTER TABLE banners ADD COLUMN bg_color TEXT DEFAULT '#1a1a2e'");
+    if (!bc.includes('text_align')) db.run("ALTER TABLE banners ADD COLUMN text_align TEXT DEFAULT 'left'");
+    if (!bc.includes('position')) db.run("ALTER TABLE banners ADD COLUMN position TEXT DEFAULT 'hero'");
+    if (!bc.includes('transition')) db.run("ALTER TABLE banners ADD COLUMN transition TEXT DEFAULT 'slide'");
+    if (!bc.includes('start_date')) db.run("ALTER TABLE banners ADD COLUMN start_date TEXT");
+    if (!bc.includes('end_date')) db.run("ALTER TABLE banners ADD COLUMN end_date TEXT");
+    if (!bc.includes('clicks')) db.run("ALTER TABLE banners ADD COLUMN clicks INTEGER DEFAULT 0");
+    if (!bc.includes('target_blank')) db.run("ALTER TABLE banners ADD COLUMN target_blank INTEGER DEFAULT 1");
   }
   db.run(`
     CREATE TABLE IF NOT EXISTS activity_log (
@@ -507,48 +517,6 @@ async function initDb() {
       achieved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       notes TEXT DEFAULT '',
       UNIQUE(goal_id, seller_id)
-    )
-  `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS wa_accounts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      phone TEXT DEFAULT '',
-      status TEXT DEFAULT 'disconnected',
-      error_message TEXT DEFAULT '',
-      session_id TEXT DEFAULT '',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS wa_contacts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL DEFAULT '',
-      phone TEXT NOT NULL,
-      notes TEXT DEFAULT '',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS wa_messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      phone TEXT NOT NULL,
-      contact_name TEXT DEFAULT '',
-      message TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
-      type TEXT DEFAULT 'outgoing',
-      sent_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  db.run(`
-    CREATE TABLE IF NOT EXISTS wa_schedules (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      phone TEXT NOT NULL,
-      message TEXT NOT NULL,
-      scheduled_for DATETIME NOT NULL,
-      status TEXT DEFAULT 'pending',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
@@ -981,25 +949,43 @@ function incrementCoupon(id) {
 
 // === BANNERS ===
 function getActiveBanners() {
-  return query("SELECT * FROM banners WHERE active = 1 ORDER BY sort_order ASC, id ASC");
+  return query("SELECT * FROM banners WHERE active = 1 AND (start_date IS NULL OR start_date <= datetime('now')) AND (end_date IS NULL OR end_date >= datetime('now')) ORDER BY sort_order ASC, id ASC");
+}
+
+function getBannersByPosition(position) {
+  return query("SELECT * FROM banners WHERE active = 1 AND position = ? AND (start_date IS NULL OR start_date <= datetime('now')) AND (end_date IS NULL OR end_date >= datetime('now')) ORDER BY sort_order ASC, id ASC", [position]);
 }
 
 function getAllBanners() {
   return query("SELECT * FROM banners ORDER BY sort_order ASC, id ASC");
 }
 
-function saveBanner(id, title, subtitle, image, link, sortOrder, active, displayDuration) {
+function saveBanner(id, title, subtitle, image, link, sortOrder, active, displayDuration, opts) {
+  opts = opts || {};
   if (id) {
-    run("UPDATE banners SET title = ?, subtitle = ?, image = ?, link = ?, sort_order = ?, active = ?, display_duration = ? WHERE id = ?",
-      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10, id]);
+    run("UPDATE banners SET title=?, subtitle=?, image=?, link=?, sort_order=?, active=?, display_duration=?, mobile_image=?, bg_color=?, text_align=?, position=?, transition=?, start_date=?, end_date=?, target_blank=? WHERE id=?",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10,
+       opts.mobileImage || '', opts.bgColor || '#1a1a2e', opts.textAlign || 'left',
+       opts.position || 'hero', opts.transition || 'slide',
+       opts.startDate || null, opts.endDate || null,
+       opts.targetBlank !== undefined ? (opts.targetBlank ? 1 : 0) : 1,
+       id]);
   } else {
-    run("INSERT INTO banners (title, subtitle, image, link, sort_order, active, display_duration) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10]);
+    run("INSERT INTO banners (title, subtitle, image, link, sort_order, active, display_duration, mobile_image, bg_color, text_align, position, transition, start_date, end_date, target_blank) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      [title, subtitle, image, link || '', sortOrder || 0, active ? 1 : 0, displayDuration || 10,
+       opts.mobileImage || '', opts.bgColor || '#1a1a2e', opts.textAlign || 'left',
+       opts.position || 'hero', opts.transition || 'slide',
+       opts.startDate || null, opts.endDate || null,
+       opts.targetBlank !== undefined ? (opts.targetBlank ? 1 : 0) : 1]);
   }
 }
 
 function deleteBanner(id) {
   run("DELETE FROM banners WHERE id = ?", [id]);
+}
+
+function incrementBannerClicks(id) {
+  run("UPDATE banners SET clicks = COALESCE(clicks, 0) + 1 WHERE id = ?", [id]);
 }
 
   // === ACTIVITY LOG ===
@@ -1053,7 +1039,10 @@ function getAllToggles() {
 
 // === FLASH SALE ===
 function getFlashSales() {
-  return query("SELECT p.*, c.name as category_name, c.icon as category_icon, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now') AND p.status = 'active' ORDER BY p.flash_ends_at ASC");
+  var flashCat = get("SELECT value FROM config WHERE key = 'flash_category_id'");
+  var catFilter = '';
+  if (flashCat && flashCat.value) catFilter = 'AND p.category_id = ' + parseInt(flashCat.value) + ' ';
+  return query("SELECT p.*, c.name as category_name, c.icon as category_icon, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now') AND p.status = 'active' " + catFilter + "ORDER BY p.flash_ends_at ASC");
 }
 function setFlashSale(productId, flashPrice, endsAt) {
   run("UPDATE products SET flash_price = ?, flash_ends_at = ? WHERE id = ?", [flashPrice, endsAt, productId]);
@@ -1212,96 +1201,6 @@ function getSellerSalesCsv(sellerId) {
   return query("SELECT s.*, p.name as prod_name FROM sales s JOIN products p ON s.product_id = p.id WHERE s.seller_id = ? ORDER BY s.created_at DESC", [sellerId]);
 }
 
-// === WHATSAPP CONTACTS ===
-function getWaContacts(search) {
-  var sql = 'SELECT *, (SELECT COUNT(*) FROM wa_messages WHERE phone = wa_contacts.phone) as msg_count FROM wa_contacts';
-  if (search) sql += " WHERE name LIKE ? OR phone LIKE ?";
-  sql += ' ORDER BY created_at DESC';
-  return query(sql, search ? ['%' + search + '%', '%' + search + '%'] : []);
-}
-
-function getWaContact(id) { return get('SELECT * FROM wa_contacts WHERE id = ?', [id]); }
-
-function addWaContact(name, phone, notes) {
-  var existing = get('SELECT id FROM wa_contacts WHERE phone = ?', [phone]);
-  if (existing) { run('UPDATE wa_contacts SET name = ?, notes = ? WHERE id = ?', [name, notes||'', existing.id]); return existing.id; }
-  run('INSERT INTO wa_contacts (name, phone, notes) VALUES (?, ?, ?)', [name, phone, notes||'']);
-  return get('SELECT last_insert_rowid() as id').id;
-}
-
-function deleteWaContact(id) { run('DELETE FROM wa_contacts WHERE id = ?', [id]); }
-
-function importWaContacts(list) {
-  var count = 0;
-  list.forEach(function(c) {
-    if (c.phone) { addWaContact(c.name||'', c.phone, c.notes||''); count++; }
-  });
-  return count;
-}
-
-// === WHATSAPP MESSAGES ===
-function getWaMessages(limit, offset) {
-  return query('SELECT * FROM wa_messages ORDER BY sent_at DESC LIMIT ? OFFSET ?', [limit||50, offset||0]);
-}
-
-function getWaMessagesByPhone(phone, limit) {
-  return query('SELECT * FROM wa_messages WHERE phone = ? ORDER BY sent_at DESC LIMIT ?', [phone, limit||20]);
-}
-
-function addWaMessage(phone, contactName, message, status) {
-  run("INSERT INTO wa_messages (phone, contact_name, message, status, sent_at) VALUES (?, ?, ?, ?, datetime('now'))",
-    [phone, contactName||'', message, status||'sent']);
-}
-
-function getWaMessagesCount() { return (get('SELECT COUNT(*) as c FROM wa_messages')||{}).c||0; }
-
-function getWaMessagesToday() { return (get("SELECT COUNT(*) as c FROM wa_messages WHERE date(sent_at) = date('now')")||{}).c||0; }
-
-function getWaContactsCount() { return (get('SELECT COUNT(*) as c FROM wa_contacts')||{}).c||0; }
-
-function getWaStats() {
-  return {
-    contacts: getWaContactsCount(),
-    messages: getWaMessagesCount(),
-    today: getWaMessagesToday()
-  };
-}
-
-// === WHATSAPP SCHEDULES ===
-function getWaSchedules() {
-  return query("SELECT * FROM wa_schedules ORDER BY scheduled_for ASC");
-}
-
-function getPendingWaSchedules() {
-  return query("SELECT * FROM wa_schedules WHERE status = 'pending' AND scheduled_for <= datetime('now') ORDER BY scheduled_for ASC");
-}
-
-function addWaSchedule(phone, message, scheduledFor) {
-  run("INSERT INTO wa_schedules (phone, message, scheduled_for) VALUES (?, ?, ?)", [phone, message, scheduledFor]);
-}
-
-function markWaScheduleDone(id) { run("UPDATE wa_schedules SET status = 'sent' WHERE id = ?", [id]); }
-
-function deleteWaSchedule(id) { run("DELETE FROM wa_schedules WHERE id = ?", [id]); }
-
-// === WHATSAPP ACCOUNTS (multi-conta) ===
-function getWaAccounts() { return query("SELECT * FROM wa_accounts ORDER BY created_at DESC"); }
-function getWaAccount(id) { return get("SELECT * FROM wa_accounts WHERE id = ?", [id]); }
-function saveWaAccount(id, name, phone) {
-  if (id) { run("UPDATE wa_accounts SET name=?, phone=? WHERE id=?", [name, phone||'', id]); return id; }
-  run("INSERT INTO wa_accounts (name, phone) VALUES (?, ?)", [name, phone||'']);
-  return get("SELECT last_insert_rowid() as id").id;
-}
-function deleteWaAccount(id) {
-  run("DELETE FROM wa_accounts WHERE id = ?", [id]);
-}
-function setWaAccountStatus(id, status, errorMessage) {
-  run("UPDATE wa_accounts SET status=?, error_message=? WHERE id=?", [status, errorMessage||'', id]);
-}
-function setWaAccountPhone(id, phone) {
-  run("UPDATE wa_accounts SET phone=? WHERE id=?", [phone||'', id]);
-}
-
 // === MARKETING TEMPLATES ===
 function getMarketingTemplates(platform) {
   if (platform) return query("SELECT * FROM marketing_templates WHERE platform = ? ORDER BY name", [platform]);
@@ -1340,29 +1239,7 @@ function getMarketingStats() {
     totalCampaigns: (get('SELECT COUNT(*) as c FROM marketing_campaigns')||{}).c||0,
     totalSent: (get('SELECT COALESCE(SUM(total_sent),0) as c FROM marketing_campaigns')||{}).c||0,
     totalTemplates: (get('SELECT COUNT(*) as c FROM marketing_templates')||{}).c||0,
-    totalWaSent: (get('SELECT COUNT(*) as c FROM wa_messages WHERE status="sent"')||{}).c||0,
-    waToday: getWaMessagesToday()
   };
-}
-
-// === WA AUTO REPLY ===
-function getWaAutoReplies() { return query("SELECT * FROM wa_autoreply ORDER BY keyword"); }
-function getWaAutoReply(id) { return get("SELECT * FROM wa_autoreply WHERE id = ?", [id]); }
-function saveWaAutoReply(keyword, reply, matchType, id) {
-  if (id) { run("UPDATE wa_autoreply SET keyword=?, reply=?, match_type=? WHERE id=?", [keyword,reply,matchType||'exact',id]); return id; }
-  run("INSERT INTO wa_autoreply (keyword,reply,match_type) VALUES (?,?,?)", [keyword,reply,matchType||'exact']);
-  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
-}
-function deleteWaAutoReply(id) { run("DELETE FROM wa_autoreply WHERE id = ?", [id]); }
-function findWaAutoReply(text) {
-  var replies = query("SELECT * FROM wa_autoreply WHERE active = 1");
-  for (var i = 0; i < replies.length; i++) {
-    var r = replies[i];
-    if (r.match_type === 'exact' && text.toLowerCase() === r.keyword.toLowerCase()) return r;
-    if (r.match_type === 'contains' && text.toLowerCase().indexOf(r.keyword.toLowerCase()) !== -1) return r;
-    if (r.match_type === 'starts' && text.toLowerCase().indexOf(r.keyword.toLowerCase()) === 0) return r;
-  }
-  return null;
 }
 
 // === MARKETING SCHEDULE ===
@@ -1377,11 +1254,8 @@ function getMarketingFullStats() {
     totalCampaigns: (get('SELECT COUNT(*) as c FROM marketing_campaigns')||{}).c||0,
     totalSent: (get('SELECT COALESCE(SUM(total_sent),0) as c FROM marketing_campaigns')||{}).c||0,
     totalTemplates: (get('SELECT COUNT(*) as c FROM marketing_templates')||{}).c||0,
-    totalWaSent: (get('SELECT COUNT(*) as c FROM wa_messages WHERE status="sent"')||{}).c||0,
-    waToday: (get("SELECT COUNT(*) as c FROM wa_messages WHERE status='sent' AND date(sent_at)=date('now')")||{}).c||0,
     totalLists: (get('SELECT COUNT(*) as c FROM marketing_lists')||{}).c||0,
     totalMembers: (get('SELECT COUNT(*) as c FROM marketing_list_members')||{}).c||0,
-    totalAutoReplies: (get('SELECT COUNT(*) as c FROM wa_autoreply')||{}).c||0,
     totalCoupons: (get('SELECT COUNT(*) as c FROM coupons')||{}).c||0,
     totalSchedule: (get("SELECT COUNT(*) as c FROM marketing_schedule WHERE status='pending'")||{}).c||0
   };
@@ -1400,12 +1274,6 @@ function addMarketingListMember(listId, phone, name) {
   return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
 }
 function deleteMarketingListMember(id) { run("DELETE FROM marketing_list_members WHERE id = ?", [id]); }
-function addWaContactsToList(listId) {
-  var contacts = query("SELECT phone, name FROM wa_contacts");
-  var count = 0;
-  contacts.forEach(function(c) { var existing = get("SELECT id FROM marketing_list_members WHERE list_id = ? AND phone = ?", [listId, c.phone.replace(/\D/g,'')]); if (!existing) { run("INSERT INTO marketing_list_members (list_id,phone,name) VALUES (?,?,?)", [listId, c.phone.replace(/\D/g,''), c.name||'']); count++; } });
-  return count;
-}
 
 // === SELLER CHAT ===
 function getSellerConversations(sellerId) {
@@ -1453,4 +1321,4 @@ function searchSellers(query) {
   return query("SELECT id, name, avatar, bio FROM sellers WHERE status = 'active' AND (name LIKE ? OR email LIKE ?) LIMIT 20", ['%' + query + '%', '%' + query + '%']);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getWaContacts, getWaContact, addWaContact, deleteWaContact, importWaContacts, getWaMessages, getWaMessagesByPhone, addWaMessage, getWaMessagesCount, getWaMessagesToday, getWaContactsCount, getWaStats, getWaSchedules, getPendingWaSchedules, addWaSchedule, markWaScheduleDone, deleteWaSchedule, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, addWaContactsToList, getWaAutoReplies, getWaAutoReply, saveWaAutoReply, deleteWaAutoReply, findWaAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getWaAccounts, getWaAccount, saveWaAccount, deleteWaAccount, setWaAccountStatus, setWaAccountPhone, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers };
+module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers };

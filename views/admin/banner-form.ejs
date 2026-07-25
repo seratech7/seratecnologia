@@ -1,0 +1,127 @@
+<%- include('../partials/admin-header') %>
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-<%= banner ? 'edit' : 'plus' %>"></i> <%= banner ? 'Editar' : 'Novo' %> Banner</h1>
+    <a href="/admin/banners" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+
+  <div class="form-card">
+    <form action="/admin/banners/<%= banner ? 'editar/' + banner.id : 'novo' %>" method="POST" enctype="multipart/form-data" class="admin-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Título</label>
+          <input type="text" id="title" name="title" value="<%= banner ? banner.title : '' %>" placeholder="Ex: Promoção Imperdível">
+        </div>
+        <div class="form-group">
+          <label for="subtitle">Subtítulo</label>
+          <input type="text" id="subtitle" name="subtitle" value="<%= banner ? banner.subtitle : '' %>" placeholder="Ex: Até 50% de desconto">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="link">Link</label>
+          <input type="text" id="link" name="link" value="<%= banner ? banner.link : '' %>" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label for="sort_order">Ordem</label>
+          <input type="number" id="sort_order" name="sort_order" value="<%= banner ? banner.sort_order : '0' %>" min="0">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="position">Posição</label>
+          <select id="position" name="position">
+            <option value="hero" <%= banner && banner.position === 'hero' ? 'selected' : '' %>>Hero (Principal)</option>
+            <option value="mini" <%= banner && banner.position === 'mini' ? 'selected' : '' %>>Mini (Barra lateral)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="transition">Transição</label>
+          <select id="transition" name="transition">
+            <option value="slide" <%= banner && banner.transition === 'slide' ? 'selected' : '' %>>Deslizar</option>
+            <option value="fade" <%= banner && banner.transition === 'fade' ? 'selected' : '' %>>Fade</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="display_duration">Duração (segundos)</label>
+          <input type="number" id="display_duration" name="display_duration" value="<%= banner ? banner.display_duration : '10' %>" min="3" max="60">
+        </div>
+        <div class="form-group">
+          <label for="bg_color">Cor de Fundo</label>
+          <input type="color" id="bg_color" name="bg_color" value="<%= banner && banner.bg_color ? banner.bg_color : '#1a1a2e' %>">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="text_align">Alinhamento do Texto</label>
+          <select id="text_align" name="text_align">
+            <option value="left" <%= banner && banner.text_align === 'left' ? 'selected' : '' %>>Esquerda</option>
+            <option value="center" <%= banner && banner.text_align === 'center' ? 'selected' : '' %>>Centro</option>
+            <option value="right" <%= banner && banner.text_align === 'right' ? 'selected' : '' %>>Direita</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label" style="margin-top:32px;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="target_blank" value="1" <%= !banner || banner.target_blank ? 'checked' : '' %>>
+            Abrir link em nova aba
+          </label>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="start_date">Início (agendamento)</label>
+          <input type="datetime-local" id="start_date" name="start_date" value="<%= banner && banner.start_date ? banner.start_date.replace(' ', 'T') : '' %>">
+        </div>
+        <div class="form-group">
+          <label for="end_date">Fim (agendamento)</label>
+          <input type="datetime-local" id="end_date" name="end_date" value="<%= banner && banner.end_date ? banner.end_date.replace(' ', 'T') : '' %>">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="image">Imagem Principal *</label>
+          <% if (banner && banner.image) { %>
+            <div style="margin-bottom:8px;">
+              <img src="<%= banner.image %>" style="max-width:300px;max-height:120px;border-radius:6px;display:block;">
+              <span style="font-size:12px;color:#999;">Atual. Envie nova para substituir.</span>
+            </div>
+          <% } %>
+          <input type="file" id="image" name="image" accept="image/*" <%= banner ? '' : 'required' %>>
+        </div>
+        <div class="form-group">
+          <label for="mobile_image">Imagem para Mobile (opcional)</label>
+          <% if (banner && banner.mobile_image) { %>
+            <div style="margin-bottom:8px;">
+              <img src="<%= banner.mobile_image %>" style="max-width:150px;max-height:100px;border-radius:6px;display:block;">
+              <span style="font-size:12px;color:#999;">Atual. Envie nova para substituir.</span>
+            </div>
+          <% } %>
+          <input type="file" id="mobile_image" name="mobile_image" accept="image/*">
+        </div>
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" name="active" value="1" <%= !banner || banner.active ? 'checked' : '' %>>
+          <i class="fas fa-check-circle"></i> Banner Ativo
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> <%= banner ? 'Salvar Alterações' : 'Criar Banner' %></button>
+        <a href="/admin/banners" class="btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

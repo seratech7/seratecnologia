@@ -43,8 +43,25 @@
             <td><code><%= cat.slug %></code></td>
             <td><%= cat.product_count || 0 %></td>
             <td>
+              <button class="btn-icon btn-edit" onclick="editCategory(<%= cat.id %>)" title="Editar"><i class="fas fa-pen"></i></button>
               <form action="/admin/categories/delete/<%= cat.id %>" method="POST" class="inline-form" onsubmit="return confirm('Excluir esta categoria? Os produtos serão removidos da categoria.')">
                 <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <tr id="edit-<%= cat.id %>" class="edit-category-row" style="display:none;">
+            <td colspan="5">
+              <form action="/admin/categories/edit/<%= cat.id %>" method="POST" class="admin-form inline-form-row">
+                <div class="form-row">
+                  <div class="form-group">
+                    <input type="text" name="name" value="<%= cat.name %>" required>
+                  </div>
+                  <div class="form-group">
+                    <input type="text" name="icon" value="<%= cat.icon || '📦' %>">
+                  </div>
+                  <button type="submit" class="btn-primary btn-sm"><i class="fas fa-save"></i> Salvar</button>
+                  <button type="button" class="btn-secondary btn-sm" onclick="document.getElementById('edit-<%= cat.id %>').style.display='none'">Cancelar</button>
+                </div>
               </form>
             </td>
           </tr>
@@ -54,4 +71,10 @@
   </div>
 </div>
 
+<script>
+function editCategory(id) {
+  var row = document.getElementById('edit-' + id);
+  if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+</script>
 <%- include('../partials/admin-footer') %>

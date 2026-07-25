@@ -336,7 +336,6 @@ app.get('/admin/debug', (req, res) => {
 app.use('/api', apiLimiter);
 app.use('/admin', authRoutes);
 app.use('/admin', adminRoutes(upload));
-app.use('/admin', require('./routes/whatsapp')());
 app.use('/admin', require('./routes/marketing')());
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);

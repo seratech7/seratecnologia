@@ -4,7 +4,6 @@
     <h1><i class="fas fa-list"></i> <%= list.name %></h1>
     <div style="display:flex;gap:8px;">
       <a href="/admin/marketing/lists" class="btn-secondary"><i class="fas fa-arrow-left"></i> Listas</a>
-      <a href="/admin/marketing/whatsapp" class="btn-secondary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
     </div>
   </div>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
@@ -48,8 +47,7 @@
           <label>Mensagem</label>
           <textarea name="message" class="admin-input" rows="6" required placeholder="Digite a mensagem..."></textarea>
         </div>
-        <button type="submit" class="btn-primary" <%= waReady ? '' : 'disabled' %>><i class="fab fa-whatsapp"></i> Enviar para <%= members.length %> membros</button>
-        <% if (!waReady) { %><p style="font-size:12px;color:#c62828;margin-top:5px;">WhatsApp desconectado</p><% } %>
+        <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Enviar para <%= members.length %> membros</button>
       </form>
     </div>
 

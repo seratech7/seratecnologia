@@ -8,10 +8,9 @@
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
 
   <!-- Resumo -->
-  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;">
     <div class="rstat"><span class="rnum"><%= stats.totalCampaigns %></span><span>Campanhas</span></div>
     <div class="rstat"><span class="rnum"><%= stats.totalSent %></span><span>Mensagens Enviadas</span></div>
-    <div class="rstat"><span class="rnum"><%= stats.totalWaSent + stats.waToday %></span><span>WhatsApp Total</span></div>
     <div class="rstat"><span class="rnum"><%= stats.totalLists %></span><span>Listas</span></div>
     <div class="rstat"><span class="rnum"><%= stats.totalAutoReplies %></span><span>Auto-Respostas</span></div>
   </div>
@@ -22,7 +21,6 @@
       <h3><i class="fas fa-download"></i> Exportar Dados</h3>
       <p style="font-size:13px;color:#666;">Baixe relatórios em CSV para análise</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="/admin/marketing/reports/export/whatsapp" class="btn-secondary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
         <a href="/admin/marketing/reports/export/campaigns" class="btn-secondary"><i class="fas fa-rocket"></i> Campanhas</a>
         <a href="/admin/marketing/reports/export/contacts" class="btn-secondary"><i class="fas fa-address-book"></i> Contatos</a>
       </div>
@@ -50,19 +48,7 @@
     <% } %>
   </div>
 
-  <!-- Últimas Mensagens WhatsApp -->
-  <div class="card">
-    <h3><i class="fab fa-whatsapp"></i> Últimas Mensagens WhatsApp</h3>
-    <% if (recentMsgs.length === 0) { %><p style="color:#999;font-size:13px;">Nenhuma mensagem.</p><% } else { %>
-    <table class="admin-table">
-      <thead><tr><th>Telefone</th><th>Mensagem</th><th>Status</th><th>Data</th></tr></thead>
-      <tbody><% recentMsgs.forEach(function(m) { %>
-        <tr><td><%= m.phone %></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= m.message %></td><td><span class="badge badge-<%= m.status === 'sent' ? 'success' : 'danger' %>"><%= m.status %></span></td><td style="font-size:12px;"><%= (m.sent_at||'').slice(0,16).replace('T',' ') %></td></tr>
-      <% }) %></tbody>
-    </table>
-    <% } %>
   </div>
-</div>
 <style>
 .rstat { background:var(--card-bg,#fff); border:1px solid var(--border,#ddd); border-radius:8px; padding:14px; text-align:center; display:flex; flex-direction:column; gap:2px; font-size:12px; color:#666; }
 .rnum { font-size:24px; font-weight:700; color:#1565c0; }

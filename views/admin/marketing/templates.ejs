@@ -16,12 +16,11 @@
         <input type="hidden" name="id" value="<%= id || '' %>">
         <div class="form-group">
           <label>Nome</label>
-          <input type="text" name="name" class="admin-input" required placeholder="Promoção WhatsApp">
+          <input type="text" name="name" class="admin-input" required placeholder="Promoção">
         </div>
         <div class="form-group">
           <label>Plataforma</label>
           <select name="platform" class="admin-input">
-            <option value="whatsapp">WhatsApp</option>
             <option value="telegram">Telegram</option>
             <option value="discord">Discord</option>
             <option value="email">Email</option>
@@ -44,7 +43,6 @@
       <h3><i class="fas fa-list"></i> Modelos Salvos</h3>
       <div style="margin-bottom:10px;">
         <a href="/admin/marketing/templates" class="filter-chip <%= !platform ? 'active' : '' %>">Todos</a>
-        <a href="/admin/marketing/templates?platform=whatsapp" class="filter-chip <%= platform === 'whatsapp' ? 'active' : '' %>">WhatsApp</a>
         <a href="/admin/marketing/templates?platform=telegram" class="filter-chip <%= platform === 'telegram' ? 'active' : '' %>">Telegram</a>
         <a href="/admin/marketing/templates?platform=discord" class="filter-chip <%= platform === 'discord' ? 'active' : '' %>">Discord</a>
         <a href="/admin/marketing/templates?platform=email" class="filter-chip <%= platform === 'email' ? 'active' : '' %>">Email</a>
@@ -54,7 +52,7 @@
         <div class="tmpl-item">
           <div style="flex:1;">
             <strong><%= t.name %></strong>
-            <span class="plat-badge" style="background:<%= t.platform === 'whatsapp' ? '#e8f5e9' : t.platform === 'telegram' ? '#e3f2fd' : t.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= t.platform %></span>
+            <span class="plat-badge" style="background:<%= t.platform === 'telegram' ? '#e3f2fd' : t.platform === 'discord' ? '#ede7f6' : '#ffebee' %>;"><%= t.platform %></span>
             <div style="font-size:12px;color:#666;margin-top:3px;max-height:40px;overflow:hidden;"><%= t.content.slice(0,120) %><%= t.content.length > 120 ? '...' : '' %></div>
           </div>
           <form method="POST" action="/admin/marketing/templates/delete/<%= t.id %>" style="display:inline;">

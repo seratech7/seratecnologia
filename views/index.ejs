@@ -268,21 +268,22 @@ function q(urlParams) {
   </aside>
 
   <% if (flashProducts && flashProducts.length > 0) { %>
-  <section class="flash-section">
+  <section class="flash-section flash-featured">
     <div class="flash-header">
       <div class="flash-header-left">
         <i class="fas fa-bolt"></i>
-        <h2>Ofertas Relâmpago</h2>
+        <h2><%= flashProducts[0].category_icon || '⚡' %> <%= flashProducts[0].category_name || 'Ofertas Relâmpago' %></h2>
+        <span class="flash-badge-header"><i class="fas fa-clock"></i> TEMPO LIMITADO</span>
       </div>
       <div class="flash-timer" id="flashTimer">
         <i class="fas fa-clock"></i>
         <span id="flashCountdown"></span>
       </div>
-      <a href="/?sort=flash" class="flash-ver-todas">Ver todas <i class="fas fa-arrow-right"></i></a>
+      <a href="/?sort=flash&category=<%= flashProducts[0].category_name ? flashProducts[0].category_name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') : '' %>" class="flash-ver-todas">Ver todas <i class="fas fa-arrow-right"></i></a>
     </div>
-    <div class="flash-grid">
+    <div class="flash-grid flash-grid-featured">
       <% flashProducts.forEach(function(p) { %>
-        <a href="/produto/<%= p.id %>" class="flash-card">
+        <a href="/produto/<%= p.id %>" class="flash-card flash-card-featured">
           <div class="flash-card-image">
             <img src="<%= p.image || '' %>" alt="<%= p.name %>" loading="lazy">
             <span class="flash-card-badge"><i class="fas fa-bolt"></i> -<%= Math.round((1 - p.flash_price / p.price) * 100) %>%</span>

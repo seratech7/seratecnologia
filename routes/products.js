@@ -52,7 +52,8 @@ router.get('/', (req, res) => {
     sql += ' ORDER BY ' + orderBy;
 
     const products = db.query(sql, params) || [];
-    const banners = db.getActiveBanners() || [];
+    const heroBanners = db.getBannersByPosition('hero') || [];
+    const miniBanners = db.getBannersByPosition('mini') || [];
     const flashProducts = db.getFlashSales() || [];
 
     res.render('index', {
@@ -60,7 +61,8 @@ router.get('/', (req, res) => {
       products,
       categories,
       locations,
-      banners,
+      banners: heroBanners,
+      miniBanners,
       flashProducts,
       search: search || '',
       selectedCategory: category || '',
