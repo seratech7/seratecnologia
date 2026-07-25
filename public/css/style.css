@@ -3665,3 +3665,90 @@ img { max-width: 100%; height: auto; display: block; }
 
 .admin-table .sale-products { max-width: 220px; }
 .admin-table .sale-products div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* =========================================
+   MOBILE ADMIN (<= 480px)
+   ========================================= */
+@media (max-width: 480px) {
+  .admin-sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+    transition: transform 0.25s ease;
+  }
+  .admin-sidebar.open { transform: translateX(0); }
+
+  .admin-main { margin-left: 0; padding: 12px; }
+
+  .admin-sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+  .admin-sidebar-overlay.open { display: block; }
+
+  .sidebar-toggle {
+    display: flex !important;
+    align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .admin-header-bar { gap: 6px; }
+  .admin-header-bar h2 { font-size: 15px; }
+
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 12px; gap: 8px; }
+  .stat-icon { width: 36px; height: 36px; font-size: 14px; }
+  .stat-number { font-size: 20px; }
+
+  .admin-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; font-size: 13px; }
+  .admin-table table { min-width: 600px; }
+  .admin-table th, .admin-table td { padding: 8px 10px; }
+
+  .admin-form .form-row { grid-template-columns: 1fr; }
+  .admin-form input, .admin-form select, .admin-form textarea { font-size: 16px; }
+  .admin-form label { font-size: 14px; }
+
+  .btn { padding: 10px 16px; font-size: 14px; }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+  .page-header { flex-direction: column; align-items: stretch; gap: 8px; }
+  .page-header .btn { text-align: center; }
+
+  .card { padding: 14px; }
+  .card h3 { font-size: 15px; }
+
+  .badge-msg { font-size: 10px; padding: 1px 5px; min-width: 16px; height: 16px; }
+
+  .sidebar-nav a { padding: 14px 16px; font-size: 14px; }
+
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  .modal { width: 95vw; margin: 10px; }
+
+  .search-box input { font-size: 14px; padding: 8px 12px; }
+
+  .pagination { gap: 4px; font-size: 13px; }
+  .pagination a, .pagination span { padding: 6px 10px; }
+
+  .admin-header-bar .header-actions { gap: 6px; }
+  .admin-header-bar .header-actions .btn span { display: none; }
+
+  .flash-grid { grid-template-columns: 1fr; }
+
+  .notif-bell { width: 36px; height: 36px; font-size: 16px; }
+}
+
+@media (max-width: 360px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .products-grid { grid-template-columns: 1fr; }
+  .admin-main { padding: 8px; }
+}
