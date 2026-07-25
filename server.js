@@ -13,6 +13,10 @@ const { backupDatabase } = require('./backup-db');
 const { autoSave } = require('./auto-save');
 const fs = require('fs');
 const authRoutes = require('./routes/auth');
+
+// Secret path prefixes (change these in .env to hide admin/seller panels)
+const SECRET_ADMIN = (process.env.ADMIN_PATH || '/admin').replace(/\/+$/, '');
+const SECRET_SELLER = (process.env.SELLER_PATH || '/seller').replace(/\/+$/, '');
 const adminRoutes = require('./routes/admin');
 const sellerRoutes = require('./routes/seller');
 const sellerProfileRoutes = require('./routes/seller-profile');
@@ -130,8 +134,13 @@ app.use(session({
 }));
 
 app.use(generalLimiter);
-app.use('/admin/login', loginLimiter);
-app.use('/seller/login', loginLimiter);
+
+// Login rate limiters — apply at secret paths before rewrite
+app.use(SECRET_ADMIN + '/login', loginLimiter);
+app.use(SECRET_SELLER + '/login', loginLimiter);
+// Also apply at default paths for backward compat when using defaults
+if (SECRET_ADMIN !== '/admin') app.use('/admin/login', loginLimiter);
+if (SECRET_SELLER !== '/seller') app.use('/seller/login', loginLimiter);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
@@ -148,12 +157,57 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// Rewrite secret paths to internal paths
+app.use((req, res, next) => {
+  var p = req.path;
+  if (SECRET_ADMIN !== '/admin' && (p === SECRET_ADMIN || p.indexOf(SECRET_ADMIN + '/') === 0)) {
+    req.url = '/admin' + p.substring(SECRET_ADMIN.length) + (req.url.indexOf('?') >= 0 ? req.url.substring(req.url.indexOf('?')) : '');
+  } else if (SECRET_SELLER !== '/seller' && (p === SECRET_SELLER || p.indexOf(SECRET_SELLER + '/') === 0)) {
+    req.url = '/seller' + p.substring(SECRET_SELLER.length) + (req.url.indexOf('?') >= 0 ? req.url.substring(req.url.indexOf('?')) : '');
+  }
+  next();
+});
+
+// Override res.redirect to rewrite internal paths back to secret paths
+// Also patch res.send/res.render to rewrite paths in HTML
+app.use((req, res, next) => {
+  var origRedirect = res.redirect.bind(res);
+  res.redirect = function(url) {
+    if (typeof url === 'string') {
+      if (SECRET_ADMIN !== '/admin' && url.indexOf('/admin') === 0) {
+        url = SECRET_ADMIN + url.substring(6);
+      } else if (SECRET_SELLER !== '/seller' && url.indexOf('/seller') === 0) {
+        url = SECRET_SELLER + url.substring(7);
+      }
+    }
+    return origRedirect(url);
+  };
+
+  // Patch send to rewrite /admin/ and /seller/ in HTML
+  if (SECRET_ADMIN !== '/admin' || SECRET_SELLER !== '/seller') {
+    var origSend = res.send.bind(res);
+    res.send = function(body) {
+      if (body && typeof body === 'string' && (!res.get('Content-Type') || res.get('Content-Type').indexOf('text/html') === 0 || res.get('Content-Type').indexOf('text/plain') === 0)) {
+        if (SECRET_ADMIN !== '/admin') body = body.split('/admin/').join(SECRET_ADMIN + '/');
+        if (SECRET_SELLER !== '/seller') body = body.split('/seller/').join(SECRET_SELLER + '/');
+        // Also rewrite bare /admin and /seller in quotes (action/href without trailing slash)
+        if (SECRET_ADMIN !== '/admin') body = body.split('"/admin"').join('"' + SECRET_ADMIN + '"');
+        if (SECRET_SELLER !== '/seller') body = body.split('"/seller"').join('"' + SECRET_SELLER + '"');
+      }
+      return origSend(body);
+    };
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   res.locals.admin = req.session.adminId ? true : false;
   res.locals.seller = req.session.sellerId ? true : false;
   res.locals.currentPath = req.path;
   res.locals.session = req.session;
   res.locals.query = req.query;
+  res.locals.adminPath = SECRET_ADMIN;
+  res.locals.sellerPath = SECRET_SELLER;
   if (req.session.sellerId && db.getUnreadMessageCount) {
     res.locals.unreadChat = db.getUnreadMessageCount(req.session.sellerId);
   }
@@ -340,8 +394,8 @@ async function start() {
   await initDb();
   app.listen(PORT, () => {
     console.log(`🚀 SeraTecnologia rodando em http://localhost:${PORT}`);
-    console.log(`📊 Painel Admin: http://localhost:${PORT}/admin/login`);
-    console.log(`🛒 Painel Vendedor: http://localhost:${PORT}/seller/login`);
+    console.log(`📊 Painel Admin: http://localhost:${PORT}${SECRET_ADMIN}/login`);
+    console.log(`🛒 Painel Vendedor: http://localhost:${PORT}${SECRET_SELLER}/login`);
 
     backupDatabase();
     setInterval(backupDatabase, 3600000);
