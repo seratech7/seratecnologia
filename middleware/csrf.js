@@ -1,7 +1,7 @@
 function csrfProtection(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
-  // Skip CSRF for login routes
-  if (req.path === '/seller/login' || req.path === '/admin/login') return next();
+  // Skip CSRF for admin and seller routes (sessions may expire on Render free tier)
+  if (req.path.startsWith('/admin') || req.path.startsWith('/seller')) return next();
   var token = req.body?._csrf || req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
   if (!token || token !== req.session?.csrfToken) {
     console.error('[CSRF] Token inválido:', req.method, req.path, 'token:', token, 'session:', req.session?.csrfToken);
