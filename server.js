@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const { initDb } = require('./database/db');
+const db = require('./database/db');
 const { backupDatabase } = require('./backup-db');
 const { autoSave } = require('./auto-save');
 const fs = require('fs');

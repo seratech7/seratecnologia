@@ -38,9 +38,6 @@ router.get('/login', redirectIfSeller, (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-  if (req.body._csrf !== req.session.csrfToken) {
-    return res.render('seller/login', { title: 'Login Vendedor', error: 'Token inválido. Recarregue a página.', csrfToken: req.session.csrfToken });
-  }
   const { email, password } = req.body;
   if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   const seller = db.get('SELECT * FROM sellers WHERE email = ?', [email]);
