@@ -115,8 +115,8 @@
       <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
         <i class="fas fa-broom"></i> <span>Limpar Dados</span>
       </a>
-      <a href="/admin/debug" class="<%= currentPath === '/admin/debug' ? 'active' : '' %>">
-        <i class="fas fa-bug"></i> <span>Diagnóstico</span>
+      <a href="/admin/diagnostico" class="<%= currentPath.indexOf('/admin/diagnostico') === 0 ? 'active' : '' %>">
+        <i class="fas fa-stethoscope"></i> <span>Diagnóstico</span>
       </a>
 
       <% if (!admin && seller) { %>

@@ -1109,7 +1109,7 @@ router.post('/products/reactivate-all', requireAdmin, (req, res) => {
   res.redirect('/admin/products');
 });
 
-router.get('/debug', requireAdmin, (req, res) => {
+router.get('/diagnostico', requireAdmin, (req, res) => {
   const dbState = {
     products: (db.get('SELECT COUNT(*) as c FROM products') || {}).c || 0,
     productsActive: (db.get("SELECT COUNT(*) as c FROM products WHERE status = 'active'") || {}).c || 0,
@@ -1128,7 +1128,7 @@ router.get('/debug', requireAdmin, (req, res) => {
 router.post('/reseed-categories', requireAdmin, (req, res) => {
   const existing = db.get('SELECT COUNT(*) as c FROM categories');
   if (existing && existing.c > 0) {
-    return res.redirect('/admin/debug?msg=categorias+ja+existem');
+    return res.redirect('/admin/diagnostico?msg=categorias+ja+existem');
   }
   const cats = [
     ['HDs e Armazenamento', 'hds-armazenamento', '💾'],
@@ -1154,7 +1154,7 @@ router.post('/reseed-categories', requireAdmin, (req, res) => {
 router.post('/reseed-ads', requireAdmin, (req, res) => {
   const existing = db.get('SELECT COUNT(*) as c FROM ads');
   if (existing && existing.c > 0) {
-    return res.redirect('/admin/debug?msg=anuncios+ja+existem');
+    return res.redirect('/admin/diagnostico?msg=anuncios+ja+existem');
   }
   const defaultAds = [
     ['SSD Kingston NV2 1TB', '<i class="fas fa-bolt"></i> SSD Kingston NV2 1TB — R$ 349,90', '/produto/1', '', 15, 86400],
