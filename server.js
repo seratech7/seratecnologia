@@ -120,9 +120,9 @@ app.use(express.json({ limit: '1mb' }));
 
 app.set('trust proxy', 1);
 
-var SQLiteStore = require('connect-sqlite3')(session);
+var FileStore = require('session-file-store')(session);
 app.use(session({
-  store: new SQLiteStore({ db: 'sessions.sqlite', dir: __dirname, table: 'sessions' }),
+  store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 604800, reapInterval: 3600 }),
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
   resave: false,
   saveUninitialized: false,
