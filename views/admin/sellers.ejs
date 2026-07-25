@@ -62,6 +62,7 @@
             <td><%= s.active_count || 0 %></td>
             <td><%= new Date(s.created_at).toLocaleDateString('pt-BR') %></td>
             <td class="actions-cell">
+              <a href="/admin/sellers/edit/<%= s.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
               <form action="/admin/sellers/toggle/<%= s.id %>" method="POST" class="inline-form" onsubmit="return confirm('<%= s.status === 'active' ? 'Desativar' : 'Ativar' %> este vendedor?')">
                 <button type="submit" class="btn-icon" title="<%= s.status === 'active' ? 'Desativar' : 'Ativar' %>">
                   <i class="fas fa-<%= s.status === 'active' ? 'ban' : 'check' %>"></i>

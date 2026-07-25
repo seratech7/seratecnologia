@@ -382,6 +382,45 @@ router.get('/sellers/:id', (req, res) => {
   });
 });
 
+router.get('/sellers/edit/:id', (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers');
+  res.render('admin/seller-form', { title: 'Editar Vendedor - ' + seller.name, seller, error: null });
+});
+
+router.post('/sellers/edit/:id', (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers');
+
+  const { name, email, phone, whatsapp, password, bio, website, pix_key, commission_pct, bank_info, sales_count, status } = req.body;
+
+  if (!name || !email) {
+    seller.name = name; seller.email = email; seller.phone = phone; seller.whatsapp = whatsapp;
+    seller.bio = bio; seller.website = website; seller.pix_key = pix_key;
+    seller.commission_pct = commission_pct; seller.bank_info = bank_info;
+    seller.sales_count = sales_count; seller.status = status;
+    return res.render('admin/seller-form', { title: 'Editar Vendedor - ' + name, seller, error: 'Nome e email são obrigatórios' });
+  }
+
+  try {
+    if (password && String(password).length >= 6) {
+      const hash = bcrypt.hashSync(password, 10);
+      db.run("UPDATE sellers SET name=?, email=?, phone=?, whatsapp=?, password_hash=?, bio=?, website=?, pix_key=?, commission_pct=?, bank_info=?, sales_count=?, status=? WHERE id=?",
+        [name, email, phone || '', whatsapp || '', hash, bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, bank_info || '', parseInt(sales_count) || 0, status || 'active', req.params.id]);
+    } else {
+      db.run("UPDATE sellers SET name=?, email=?, phone=?, whatsapp=?, bio=?, website=?, pix_key=?, commission_pct=?, bank_info=?, sales_count=?, status=? WHERE id=?",
+        [name, email, phone || '', whatsapp || '', bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, bank_info || '', parseInt(sales_count) || 0, status || 'active', req.params.id]);
+    }
+  } catch (e) {
+    seller.name = name; seller.email = email; seller.phone = phone; seller.whatsapp = whatsapp;
+    seller.bio = bio; seller.website = website; seller.pix_key = pix_key;
+    seller.commission_pct = commission_pct; seller.bank_info = bank_info;
+    seller.sales_count = sales_count; seller.status = status;
+    return res.render('admin/seller-form', { title: 'Editar Vendedor - ' + name, seller, error: 'Email já cadastrado para outro vendedor' });
+  }
+  res.redirect('/admin/sellers/' + req.params.id);
+});
+
 router.get('/categories', (req, res) => {
   const categories = db.query('SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count FROM categories c ORDER BY c.name');
   res.render('admin/categories', { title: 'Categorias - Painel Admin', categories, error: null });

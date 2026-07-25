@@ -178,6 +178,9 @@
       <h2><i class="fas fa-cog"></i> Ações</h2>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <a href="/admin/sellers/edit/<%= seller.id %>" class="btn btn-primary">
+        <i class="fas fa-edit"></i> Editar Dados
+      </a>
       <form action="/admin/sellers/toggle/<%= seller.id %>" method="POST" onsubmit="return confirm('<%= seller.status === 'active' ? 'Desativar' : 'Ativar' %> este vendedor?')">
         <button type="submit" class="btn <%= seller.status === 'active' ? 'btn-warning' : 'btn-success' %>">
           <i class="fas fa-<%= seller.status === 'active' ? 'ban' : 'check' %>"></i> <%= seller.status === 'active' ? 'Desativar' : 'Ativar' %> Vendedor
