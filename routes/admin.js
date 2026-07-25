@@ -1103,6 +1103,12 @@ router.post('/products/bulk', requireAdmin, (req, res) => {
   res.redirect('/admin/products');
 });
 
+router.post('/products/reactivate-all', requireAdmin, (req, res) => {
+  db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP");
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'reactivate_all', 'Reativou todos os produtos');
+  res.redirect('/admin/products');
+});
+
 // ========== GOALS ==========
 router.get('/metas', requireSuperAdmin, (req, res) => {
   var goals = db.getAllGoals();
