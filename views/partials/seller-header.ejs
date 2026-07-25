@@ -10,6 +10,7 @@
 <body class="admin-page">
 
 <div class="admin-layout">
+  <div class="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
   <aside class="admin-sidebar seller-sidebar">
     <div class="sidebar-brand">
       <a href="/seller/dashboard">
@@ -70,3 +71,6 @@
   </aside>
 
   <div class="admin-main">
+    <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Menu">
+      <i class="fas fa-bars"></i>
+    </button>

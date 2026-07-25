@@ -17,6 +17,13 @@
 <% } %>
 
 <script>
+function toggleAdminSidebar() {
+  var sidebar = document.querySelector('.admin-sidebar');
+  var overlay = document.querySelector('.admin-sidebar-overlay');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('open');
+}
+
 function showToast(text, type) {
   type = type || 'info';
   var container = document.getElementById('toastContainer');
