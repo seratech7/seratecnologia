@@ -1222,6 +1222,8 @@ router.get('/telegram', requireAdmin, (req, res) => {
   var cfg = {
     telegram_bot_token: (db.get("SELECT value FROM config WHERE key = 'telegram_bot_token'") || {}).value || '',
     telegram_group_id: (db.get("SELECT value FROM config WHERE key = 'telegram_group_id'") || {}).value || '',
+    telegram_last_group_id: (db.get("SELECT value FROM config WHERE key = 'telegram_last_group_id'") || {}).value || '',
+    telegram_last_group_name: (db.get("SELECT value FROM config WHERE key = 'telegram_last_group_name'") || {}).value || '',
   };
   var status = telegramBot ? telegramBot.getBotStatus() : { running: false, token: false, groupId: '' };
   var linkedSellers = db.query("SELECT id, name, email, telegram_id FROM sellers WHERE telegram_id IS NOT NULL AND telegram_id != ''") || [];
