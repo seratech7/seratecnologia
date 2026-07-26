@@ -5,6 +5,19 @@
   <p>Histórico de vendas dos seus produtos</p>
 </div>
 
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+  <a href="/seller/sales" class="btn-secondary" style="font-size:12px;padding:4px 10px;<%= (typeof period === 'undefined' || period === 'all') ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : '' %>">Todas</a>
+  <a href="/seller/sales?period=7d<%= search ? '&search='+search : '' %>" class="btn-secondary" style="font-size:12px;padding:4px 10px;<%= period === '7d' ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : '' %>">7 dias</a>
+  <a href="/seller/sales?period=30d<%= search ? '&search='+search : '' %>" class="btn-secondary" style="font-size:12px;padding:4px 10px;<%= period === '30d' ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : '' %>">30 dias</a>
+  <a href="/seller/sales?period=90d<%= search ? '&search='+search : '' %>" class="btn-secondary" style="font-size:12px;padding:4px 10px;<%= period === '90d' ? 'background:var(--primary);color:#fff;border-color:var(--primary);' : '' %>">90 dias</a>
+  <form method="GET" action="/seller/sales" style="display:flex;gap:4px;margin-left:auto;">
+    <input type="hidden" name="period" value="<%= period || 'all' %>">
+    <input type="text" name="search" placeholder="Buscar comprador/produto..." value="<%= search || '' %>" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;width:200px;">
+    <button type="submit" class="btn-primary" style="padding:4px 10px;font-size:12px;"><i class="fas fa-search"></i></button>
+    <% if (search) { %><a href="/seller/sales?period=<%= period || 'all' %>" class="btn-secondary" style="padding:4px 10px;font-size:12px;"><i class="fas fa-times"></i></a><% } %>
+  </form>
+</div>
+
 <% if (query && query.error === 'prova_foto') { %>
   <div style="background:#fdecea;color:#c62828;padding:12px 16px;border-radius:8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
     <i class="fas fa-exclamation-circle"></i> Para alterar para este status é obrigatório enviar <strong>pelo menos 1 foto</strong> como comprovante.
@@ -102,7 +115,7 @@
 <% if (totalPages > 1) { %>
 <div style="display:flex;gap:8px;justify-content:center;margin-top:20px;">
   <% for(var p=1;p<=totalPages;p++){ %>
-    <a href="/seller/sales?page=<%= p %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;"><%= p %></a>
+    <a href="/seller/sales?page=<%= p %><%= period !== 'all' ? '&period='+period : '' %><%= search ? '&search='+encodeURIComponent(search) : '' %>" class="btn-small" style="<%= p===page?'background:var(--primary);color:#fff;':'' %>min-width:36px;text-align:center;text-decoration:none;"><%= p %></a>
   <% } %>
 </div>
 <% } %>

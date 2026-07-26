@@ -78,18 +78,31 @@ router.get('/dashboard', (req, res) => {
   var leaderboard = activeGoal ? db.getGoalLeaderboard(activeGoal.id) : [];
   var pendingQuestions = db.query("SELECT COUNT(*) as c FROM product_questions WHERE seller_id = ? AND (answer IS NULL OR answer = '')", [sid]);
   pendingQuestions = pendingQuestions && pendingQuestions[0] ? pendingQuestions[0].c : 0;
+  var pendingPayoutVal = db.get("SELECT COALESCE(SUM(amount),0) as total FROM payouts WHERE seller_id = ? AND status = 'pending'", [sid]);
+  var pendingPayout = pendingPayoutVal ? pendingPayoutVal.total : 0;
+  var lastMonthSales = db.get("SELECT COUNT(*) as c, COALESCE(SUM(product_price),0) as rev FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-60 days') AND created_at < datetime('now', '-30 days')", [sid]);
+  var lowStock = db.query("SELECT id, name, quantity FROM products WHERE seller_id = ? AND status = 'active' AND quantity <= 5 ORDER BY quantity ASC LIMIT 10", [sid]);
 
   res.render('seller/dashboard', {
     title: 'Meu Painel - Vendedor',
     stats: { total: total.count, active: active.count, pending: pending.count, rejected: rejected.count },
-    recent, salesSummary, chartData, topProducts, totalViews, goal: goalProgress, activeGoal, leaderboard, pendingQuestions, period
+    recent, salesSummary, chartData, topProducts, totalViews, goal: goalProgress, activeGoal, leaderboard, pendingQuestions, period, pendingPayout, lastMonthSales, lowStock
   });
 });
 
 // ========== PRODUCTS ==========
 router.get('/products', (req, res) => {
-  var products = db.query('SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? ORDER BY p.created_at DESC', [req.session.sellerId]);
-  res.render('seller/products', { title: 'Meus Produtos', products });
+  var search = req.query.search || '';
+  var filter = req.query.filter || 'all';
+  var where = 'WHERE p.seller_id = ?';
+  var params = [req.session.sellerId];
+  if (filter === 'active') { where += " AND p.status = 'active'"; }
+  else if (filter === 'pending') { where += " AND p.status = 'pending'"; }
+  else if (filter === 'rejected') { where += " AND p.status = 'rejected'"; }
+  else if (filter === 'lowstock') { where += " AND p.quantity <= 5 AND p.status = 'active'"; }
+  if (search) { where += ' AND (p.name LIKE ? OR p.code LIKE ?)'; params.push('%' + search + '%', '%' + search + '%'); }
+  var products = db.query('SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ' + where + ' ORDER BY p.created_at DESC', params);
+  res.render('seller/products', { title: 'Meus Produtos', products, search, filter });
 });
 
 router.get('/products/new', (req, res) => {
@@ -208,10 +221,23 @@ router.get('/sales', requireSeller, (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = 30;
     const offset = (page - 1) * limit;
-    const total = db.get('SELECT COUNT(*) as c FROM sales WHERE seller_id = ?', [req.session.sellerId]);
-    const sales = db.query('SELECT * FROM sales WHERE seller_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [req.session.sellerId, limit, offset]);
+    const search = req.query.search || '';
+    const period = req.query.period || 'all';
+    var where = 'WHERE seller_id = ?';
+    var params = [req.session.sellerId];
+    if (period === '7d') { where += " AND created_at >= datetime('now', '-7 days')"; }
+    else if (period === '30d') { where += " AND created_at >= datetime('now', '-30 days')"; }
+    else if (period === '90d') { where += " AND created_at >= datetime('now', '-90 days')"; }
+    if (search) {
+      where += ' AND (buyer_name LIKE ? OR buyer_email LIKE ? OR product_name LIKE ? OR product_code LIKE ?)';
+      params.push('%' + search + '%', '%' + search + '%', '%' + search + '%', '%' + search + '%');
+    }
+    var countParams = params.slice();
+    var total = db.get('SELECT COUNT(*) as c FROM sales ' + where, countParams);
+    var dataParams = params.concat([limit, offset]);
+    const sales = db.query('SELECT * FROM sales ' + where + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', dataParams);
     const totalPages = Math.ceil((total ? total.c : 0) / limit);
-    res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages });
+    res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages, search, period });
   } catch(e) {
     console.error('ERRO /seller/sales:', e);
     res.status(500).send('Erro: ' + e.message);

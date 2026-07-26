@@ -26,6 +26,7 @@
       </a>
       <a href="/seller/products" class="<%= currentPath.startsWith('/seller/products') ? 'active' : '' %>">
         <i class="fas fa-box"></i> Meus Produtos
+        <% if (typeof pendingProductsCount !== 'undefined' && pendingProductsCount > 0) { %><span class="badge-msg" style="background:#ff9800;"><%= pendingProductsCount %></span><% } %>
       </a>
       <a href="/seller/products/new" class="<%= currentPath === '/seller/products/new' ? 'active' : '' %>">
         <i class="fas fa-plus-circle"></i> Novo Produto
@@ -41,6 +42,7 @@
       </a>
       <a href="/seller/questions" class="<%= currentPath === '/seller/questions' ? 'active' : '' %>">
         <i class="fas fa-question-circle"></i> Perguntas
+        <% if (typeof pendingQuestionsCount !== 'undefined' && pendingQuestionsCount > 0) { %><span class="badge-msg"><%= pendingQuestionsCount %></span><% } %>
       </a>
       <a href="/seller/placar" class="<%= currentPath === '/seller/placar' ? 'active' : '' %>">
         <i class="fas fa-ranking-star"></i> Placar

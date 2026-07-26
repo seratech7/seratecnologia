@@ -4,17 +4,24 @@
     <h1><i class="fas fa-box"></i> Meus Produtos</h1>
     <a href="/seller/products/new" class="btn-primary"><i class="fas fa-plus"></i> Novo Produto</a>
   </div>
-  <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;">
-    <a href="/seller/products" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Todos</a>
-    <a href="/seller/products?filter=active" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Ativos</a>
-    <a href="/seller/products?filter=pending" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Pendentes</a>
-    <a href="/seller/products?filter=rejected" class="btn-secondary" style="font-size:13px;padding:6px 12px;">Rejeitados</a>
+  <div style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <a href="/seller/products" class="btn-secondary" style="font-size:13px;padding:6px 12px;<%= filter === 'all' || !filter ? 'background:var(--primary);color:#fff;' : '' %>">Todos</a>
+    <a href="/seller/products?filter=active" class="btn-secondary" style="font-size:13px;padding:6px 12px;<%= filter === 'active' ? 'background:var(--primary);color:#fff;' : '' %>">Ativos</a>
+    <a href="/seller/products?filter=pending" class="btn-secondary" style="font-size:13px;padding:6px 12px;<%= filter === 'pending' ? 'background:var(--primary);color:#fff;' : '' %>">Pendentes</a>
+    <a href="/seller/products?filter=rejected" class="btn-secondary" style="font-size:13px;padding:6px 12px;<%= filter === 'rejected' ? 'background:var(--primary);color:#fff;' : '' %>">Rejeitados</a>
+    <a href="/seller/products?filter=lowstock" class="btn-secondary" style="font-size:13px;padding:6px 12px;color:#e65100;<%= filter === 'lowstock' ? 'background:#e65100;color:#fff;' : '' %>"><i class="fas fa-exclamation-triangle"></i> Estoque Baixo</a>
+    <form method="GET" action="/seller/products" style="display:flex;gap:4px;margin-left:auto;">
+      <input type="hidden" name="filter" value="<%= filter %>">
+      <input type="text" name="search" placeholder="Buscar produto..." value="<%= search || '' %>" style="padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;width:180px;">
+      <button type="submit" class="btn-primary" style="padding:5px 12px;font-size:13px;"><i class="fas fa-search"></i></button>
+      <% if (search) { %><a href="/seller/products?filter=<%= filter %>" class="btn-secondary" style="padding:5px 10px;font-size:13px;"><i class="fas fa-times"></i></a><% } %>
+    </form>
   </div>
   <div class="table-container">
     <table class="admin-table">
       <thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Categoria</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
       <tbody>
-        <% if (products.length === 0) { %><tr><td colspan="7" class="empty-row">Nenhum produto</td></tr><% } %>
+        <% if (products.length === 0) { %><tr><td colspan="7" class="empty-row">Nenhum produto encontrado</td></tr><% } %>
         <% products.forEach(p => { %>
           <tr>
             <td class="product-cell">

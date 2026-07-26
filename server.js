@@ -213,6 +213,11 @@ app.use((req, res, next) => {
   res.locals.sellerPath = SECRET_SELLER;
   if (req.session.sellerId && db.getUnreadMessageCount) {
     res.locals.unreadChat = db.getUnreadMessageCount(req.session.sellerId);
+    var sid = req.session.sellerId;
+    var pq = db.query("SELECT COUNT(*) as c FROM product_questions WHERE seller_id = ? AND (answer IS NULL OR answer = '')", [sid]);
+    res.locals.pendingQuestionsCount = pq && pq[0] ? pq[0].c : 0;
+    var pp = db.get("SELECT COUNT(*) as c FROM products WHERE seller_id = ? AND status = 'pending'", [sid]);
+    res.locals.pendingProductsCount = pp ? pp.c : 0;
   }
   // Generate CSRF token
   if (!req.session.csrfToken) {
