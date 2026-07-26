@@ -405,11 +405,6 @@ async function start() {
     setInterval(autoSave, 7200000);
 
     try {
-      var telToken = process.env.TELEGRAM_BOT_TOKEN || db.get("SELECT value FROM config WHERE key = 'telegram_bot_token'");
-      if (telToken && telToken.value) telToken = telToken.value;
-      if (telToken) {
-        db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('telegram_bot_token', ?)", [String(telToken)]);
-      }
       var telegram = require('./lib/telegram');
       telegram.startBot();
     } catch(e) {
