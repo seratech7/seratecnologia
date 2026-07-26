@@ -391,6 +391,8 @@ app.use((err, req, res, next) => {
 async function start() {
   const uploadsDir = path.join(__dirname, 'public', 'uploads');
   if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+  const sessionsDir = path.join(__dirname, 'sessions');
+  if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir, { recursive: true });
 
   await initDb();
   app.listen(PORT, () => {
