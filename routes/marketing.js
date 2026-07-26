@@ -35,52 +35,13 @@ module.exports = function() {
     const templates = db.getMarketingTemplates();
     res.render('admin/marketing/index', {
       title: 'Marketing Central', currentPath: '/admin/marketing',
-      telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
       stats, campaigns, templates,
       error: null, success: null
     });
   });
-
-  // ============================================================
-  //  TELEGRAM
-  // ============================================================
-  router.get('/marketing/telegram', (req, res) => {
-    const templates = db.getMarketingTemplates('telegram');
-    res.render('admin/marketing/telegram', {
-      title: 'Telegram Marketing', currentPath: '/admin/marketing/telegram',
-      botToken: process.env.TELEGRAM_BOT_TOKEN || '',
-      chatId: process.env.TELEGRAM_CHAT_ID || '',
-      templates,
-      error: null, success: null
-    });
-  });
-
-  router.post('/marketing/telegram/send', async (req, res) => {
-    const { message } = req.body;
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chat = process.env.TELEGRAM_CHAT_ID;
-    if (!token || !chat) return res.redirect('/admin/marketing/telegram?error=Configure TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID no .env');
-    if (!message) return res.redirect('/admin/marketing/telegram?error=Digite a mensagem');
-    try {
-      const data = JSON.stringify({ chat_id: chat, text: message, parse_mode: 'HTML', disable_web_page_preview: false });
-      const r = await reqPromise(`https://api.telegram.org/bot${token}/sendMessage`, 'POST', data);
-      if (r.status === 200) res.redirect('/admin/marketing/telegram?success=Mensagem enviada ao Telegram');
-      else res.redirect('/admin/marketing/telegram?error=Erro Telegram: ' + r.status);
-    } catch (e) { res.redirect('/admin/marketing/telegram?error=' + e.message); }
-  });
-
-  router.post('/marketing/telegram/test', async (req, res) => {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    if (!token) return res.json({ ok: false, error: 'Token não configurado' });
-    try {
-      const r = await reqPromise(`https://api.telegram.org/bot${token}/getMe`);
-      const d = JSON.parse(r.body);
-      res.json({ ok: r.status === 200, bot: d.ok ? d.result.username : null, error: d.description });
-    } catch (e) { res.json({ ok: false, error: e.message }); }
-  });
-
+  
   // ============================================================
   //  DISCORD
   // ============================================================
@@ -203,7 +164,6 @@ module.exports = function() {
     res.render('admin/marketing/campaigns', {
       title: 'Campanhas', currentPath: '/admin/marketing/campaigns',
       campaigns, templates,
-      telegramConfigured: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       emailConfigured: !!process.env.SENDGRID_API_KEY,
       error: null, success: null
@@ -216,22 +176,6 @@ module.exports = function() {
     const selected = Array.isArray(platforms) ? platforms : [platforms];
     const campaignId = db.createMarketingCampaign(name||'Campanha ' + new Date().toLocaleString(), message, selected.join(','), target||'all', req.session.adminId||0);
     const results = [];
-
-    // Telegram
-    if (selected.includes('telegram')) {
-      const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
-      if (token && chat) {
-        try {
-          const d = JSON.stringify({ chat_id: chat, text: message, parse_mode: 'HTML' });
-          const r = await reqPromise(`https://api.telegram.org/bot${token}/sendMessage`, 'POST', d);
-          const ok = r.status === 200;
-          db.addMarketingCampaignResult(campaignId, 'telegram', chat, ok ? 'sent' : 'failed', ok ? '' : 'Status ' + r.status);
-          if (ok) db.updateMarketingCampaignStats(campaignId, 1, 0);
-          else db.updateMarketingCampaignStats(campaignId, 0, 1);
-          results.push('Telegram: ' + (ok ? 'OK' : 'Status ' + r.status));
-        } catch (e) { db.addMarketingCampaignResult(campaignId, 'telegram', chat, 'failed', e.message); db.updateMarketingCampaignStats(campaignId, 0, 1); results.push('Telegram: erro'); }
-      } else { results.push('Telegram: não configurado'); }
-    }
 
     // Discord
     if (selected.includes('discord')) {
@@ -340,12 +284,7 @@ module.exports = function() {
     const product = db.get('SELECT * FROM products WHERE id = ?', [productId]);
     if (!product) return res.redirect('/admin/marketing/autopromo?error=Produto não encontrado');
 
-    if (platform === 'telegram') {
-      const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
-      if (token && chat) {
-        try { const d = JSON.stringify({ chat_id: chat, text: message, parse_mode: 'HTML' }); await reqPromise(`https://api.telegram.org/bot${token}/sendMessage`, 'POST', d); res.redirect('/admin/marketing/autopromo?success=Enviado ao Telegram'); } catch (e) { res.redirect('/admin/marketing/autopromo?error=' + e.message); }
-      } else { res.redirect('/admin/marketing/autopromo?error=Telegram não configurado'); }
-    } else if (platform === 'discord') {
+    if (platform === 'discord') {
       const url = process.env.DISCORD_WEBHOOK_URL;
       if (url) {
         try { const d = JSON.stringify({ content: message }); await reqPromise(url, 'POST', d, { 'Content-Type': 'application/json' }); res.redirect('/admin/marketing/autopromo?success=Enviado ao Discord'); } catch (e) { res.redirect('/admin/marketing/autopromo?error=' + e.message); }
@@ -427,12 +366,7 @@ module.exports = function() {
     var code = coupon.code;
     var msg = (message || 'Cupom exclusivo: ' + code).replace('{code}', code).replace('{valor}', coupon.discount_value || '');
 
-    if (target === 'telegram') {
-      var token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
-      if (token && chat) {
-        try { var d = JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'HTML' }); await reqPromise('https://api.telegram.org/bot' + token + '/sendMessage', 'POST', d); res.redirect('/admin/marketing/coupons?success=Cupom enviado ao Telegram'); } catch(e) { res.redirect('/admin/marketing/coupons?error=' + e.message); }
-      } else { res.redirect('/admin/marketing/coupons?error=Telegram não configurado'); }
-    } else if (target === 'discord') {
+    if (target === 'discord') {
       var url = process.env.DISCORD_WEBHOOK_URL;
       if (url) {
         try { var d = JSON.stringify({ content: msg }); await reqPromise(url, 'POST', d, { 'Content-Type': 'application/json' }); res.redirect('/admin/marketing/coupons?success=Cupom enviado ao Discord'); } catch(e) { res.redirect('/admin/marketing/coupons?error=' + e.message); }

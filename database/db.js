@@ -84,10 +84,8 @@ async function initDb() {
     if (!cols.includes('sales_count')) db.run("ALTER TABLE sellers ADD COLUMN sales_count INTEGER DEFAULT 0");
     if (!cols.includes('website')) db.run("ALTER TABLE sellers ADD COLUMN website TEXT DEFAULT ''");
     if (!cols.includes('whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN whatsapp TEXT DEFAULT ''");
-    if (!cols.includes('pix_key')) db.run("ALTER TABLE sellers ADD COLUMN pix_key TEXT DEFAULT ''");
-    if (!cols.includes('notify_whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN notify_whatsapp TEXT DEFAULT ''");
-    if (!cols.includes('notify_signal')) db.run("ALTER TABLE sellers ADD COLUMN notify_signal TEXT DEFAULT ''");
-    if (!cols.includes('telegram_id')) db.run("ALTER TABLE sellers ADD COLUMN telegram_id TEXT DEFAULT ''");
+  if (!cols.includes('pix_key')) db.run("ALTER TABLE sellers ADD COLUMN pix_key TEXT DEFAULT ''");
+  if (!cols.includes('pix_type')) db.run("ALTER TABLE sellers ADD COLUMN pix_type TEXT DEFAULT ''");
   }
 
   const tableInfo = db.exec("PRAGMA table_info(products)");
@@ -276,9 +274,7 @@ async function initDb() {
     'default_product_status': 'pending',
     'pix_key_platform': '',
     'max_products_per_seller': '50',
-    'flash_category_id': '',
-    'telegram_bot_token': process.env.TELEGRAM_BOT_TOKEN || '8996495413:AAG1DfCjwuMSPXreK9_6Cq16G5_P6kokc9Y',
-    'telegram_group_id': process.env.TELEGRAM_GROUP_ID || ''
+    'flash_category_id': ''
   };
   Object.keys(defaultConfigs).forEach(function(key) {
     var existing = get("SELECT value FROM config WHERE key = ?", [key]);

@@ -20,11 +20,6 @@
   <!-- Platform Cards -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin-bottom:24px;">
     
-    <a href="/admin/marketing/telegram" class="platform-card" style="border-left:4px solid #0088cc;">
-      <div class="plat-icon" style="color:#0088cc;"><i class="fab fa-telegram-plane"></i></div>
-      <div class="plat-name">Telegram</div>
-      <div class="plat-status"><span class="badge badge-<%= telegramConfigured ? 'success' : 'muted' %>"><%= telegramConfigured ? 'Configurado' : 'Não configurado' %></span></div>
-    </a>
     <a href="/admin/marketing/discord" class="platform-card" style="border-left:4px solid #5865F2;">
       <div class="plat-icon" style="color:#5865F2;"><i class="fab fa-discord"></i></div>
       <div class="plat-name">Discord</div>
@@ -94,7 +89,6 @@
       <p style="font-size:13px;color:#666;margin-bottom:12px;">Disparo em todas as plataformas com 1 clique</p>
       <form method="POST" action="/admin/marketing/campaigns/disparar">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <input type="hidden" name="platforms" value="telegram">
         <input type="hidden" name="platforms" value="discord">
         <textarea name="message" class="admin-input" rows="3" placeholder="Digite a mensagem para disparo rápido..." style="font-size:13px;"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;">
