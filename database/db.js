@@ -276,7 +276,9 @@ async function initDb() {
     'default_product_status': 'pending',
     'pix_key_platform': '',
     'max_products_per_seller': '50',
-    'flash_category_id': ''
+    'flash_category_id': '',
+    'telegram_bot_token': process.env.TELEGRAM_BOT_TOKEN || '8996495413:AAG1DfCjwuMSPXreK9_6Cq16G5_P6kokc9Y',
+    'telegram_group_id': process.env.TELEGRAM_GROUP_ID || ''
   };
   Object.keys(defaultConfigs).forEach(function(key) {
     var existing = get("SELECT value FROM config WHERE key = ?", [key]);
