@@ -1240,10 +1240,11 @@ router.post('/telegram/save', requireAdmin, (req, res) => {
   var { bot_token, group_id } = req.body;
   db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('telegram_bot_token', ?)", [bot_token || '']);
   db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('telegram_group_id', ?)", [group_id || '']);
-  if (telegramBot) {
-    telegramBot.stopBot();
-    telegramBot.startBot();
-  }
+  try {
+    var tel = require('../lib/telegram');
+    if (tel.getBotStatus().running) tel.stopBot();
+    tel.startBot();
+  } catch(e) { console.error('[Telegram] Erro ao reiniciar:', e.message); }
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'telegram_config', 'Configurou Telegram Bot');
   res.redirect('/admin/telegram');
 });
