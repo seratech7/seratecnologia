@@ -70,7 +70,8 @@ router.get('/', (req, res) => {
       selectedLocation: location || '',
       priceMin: price_min || '',
       priceMax: price_max || '',
-      selectedSort: sort || ''
+      selectedSort: sort || '',
+      homepageError: ''
     });
   } catch (e) {
     console.error('Homepage error:', e);
@@ -82,7 +83,8 @@ router.get('/', (req, res) => {
       banners: [],
       flashProducts: [],
       search: '', selectedCategory: '', selectedCondition: '',
-      selectedLocation: '', priceMin: '', priceMax: '', selectedSort: ''
+      selectedLocation: '', priceMin: '', priceMax: '', selectedSort: '',
+      homepageError: e.message
     });
   }
 });

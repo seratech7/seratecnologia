@@ -333,6 +333,11 @@ function q(urlParams) {
         <i class="fas fa-box-open"></i>
         <h3>Nenhum produto encontrado</h3>
         <p>Tente buscar por outros termos ou navegue pelas categorias.</p>
+        <% if (typeof homepageError !== 'undefined' && homepageError) { %>
+          <p style="color:#e74c3c;font-size:12px;margin-top:8px;background:#fdecea;padding:8px 12px;border-radius:6px;">
+            <strong>Erro interno:</strong> <%= homepageError %>
+          </p>
+        <% } %>
         <a href="/" class="btn-empty-reset"><i class="fas fa-times-circle"></i> Limpar filtros</a>
       </div>
     <% } else { %>
