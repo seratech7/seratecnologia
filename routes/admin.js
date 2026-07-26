@@ -1216,8 +1216,6 @@ router.get('/placar', requireAdmin, (req, res) => {
 });
 
 // ========== TELEGRAM BOT ==========
-var telegramBot = null;
-
 router.get('/telegram', requireAdmin, (req, res) => {
   var cfg = {
     telegram_bot_token: (db.get("SELECT value FROM config WHERE key = 'telegram_bot_token'") || {}).value || '',
@@ -1225,7 +1223,7 @@ router.get('/telegram', requireAdmin, (req, res) => {
     telegram_last_group_id: (db.get("SELECT value FROM config WHERE key = 'telegram_last_group_id'") || {}).value || '',
     telegram_last_group_name: (db.get("SELECT value FROM config WHERE key = 'telegram_last_group_name'") || {}).value || '',
   };
-  var status = telegramBot ? telegramBot.getBotStatus() : { running: false, token: false, groupId: '' };
+  try { var status = require('../lib/telegram').getBotStatus(); } catch(e) { var status = { running: false, token: false, groupId: '' }; }
   var linkedSellers = db.query("SELECT id, name, email, telegram_id FROM sellers WHERE telegram_id IS NOT NULL AND telegram_id != ''") || [];
   res.render('admin/telegram', {
     title: 'Telegram Bot',
@@ -1248,32 +1246,23 @@ router.post('/telegram/save', requireAdmin, (req, res) => {
 });
 
 router.post('/telegram/test', requireAdmin, (req, res) => {
-  if (!telegramBot) return res.redirect('/admin/telegram');
-  var ok = telegramBot.sendToGroup('🔔 Mensagem de teste do painel admin SeraTecnologia');
-  res.redirect('/admin/telegram?msg=' + (ok ? 'teste+enviado' : 'erro+ao+enviar'));
+  try {
+    require('../lib/telegram').sendToGroup('🔔 Mensagem de teste do painel admin SeraTecnologia');
+    res.redirect('/admin/telegram?msg=teste+enviado');
+  } catch(e) { res.redirect('/admin/telegram?msg=erro+ao+enviar'); }
 });
 
 router.post('/telegram/send', requireAdmin, (req, res) => {
   var { message, parse_mode } = req.body;
   if (!message) return res.redirect('/admin/telegram');
-  if (!telegramBot) return res.redirect('/admin/telegram');
-  telegramBot.sendToGroup(message, parse_mode === 'markdown' ? 'Markdown' : undefined);
-  db.logActivity('admin', req.session.adminId, req.session.adminName, 'telegram_send', 'Enviou mensagem no Telegram');
+  try {
+    require('../lib/telegram').sendToGroup(message, parse_mode === 'markdown' ? 'Markdown' : undefined);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'telegram_send', 'Enviou mensagem no Telegram');
+  } catch(e) { console.error('[Telegram] Erro ao enviar:', e.message); }
   res.redirect('/admin/telegram');
 });
 
 return router;
 };
 
-function initTelegramBot() {
-  if (telegramBot) return;
-  try {
-    telegramBot = require('../lib/telegram');
-    telegramBot.startBot();
-  } catch(e) {
-    console.error('[Telegram] Erro ao carregar módulo:', e.message);
-  }
-}
-
-// Export init function for server.js
-module.exports.initBot = initTelegramBot;
+// Bot is started in server.js, admin routes use it directly
