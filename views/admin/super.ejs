@@ -1,0 +1,119 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/super' }) %>
+
+<style>
+.super-section { background:#fff; border-radius:10px; padding:20px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.super-section h2 { margin:0 0 16px; font-size:18px; display:flex; align-items:center; gap:8px; color:#333; }
+.super-table { width:100%; border-collapse:collapse; font-size:14px; }
+.super-table th { text-align:left; padding:8px 10px; border-bottom:2px solid #e0e0e0; color:#555; font-weight:600; font-size:12px; text-transform:uppercase; }
+.super-table td { padding:8px 10px; border-bottom:1px solid #eee; vertical-align:middle; }
+.super-table tr:hover td { background:#fafafa; }
+.super-table .key-cell { max-width:250px; word-break:break-all; font-family:monospace; font-size:13px; }
+.super-table .val-cell { max-width:350px; word-break:break-all; font-size:13px; }
+.sql-textarea { width:100%; min-height:120px; font-family:'Consolas','Courier New',monospace; font-size:13px; padding:10px; border:1px solid #ddd; border-radius:6px; resize:vertical; }
+.sql-result { overflow-x:auto; margin-top:12px; }
+.sql-result table { font-size:12px; border-collapse:collapse; }
+.sql-result th { background:#f5f5f5; padding:6px 10px; text-align:left; border:1px solid #ddd; font-weight:600; }
+.sql-result td { padding:6px 10px; border:1px solid #ddd; }
+.sql-result .ok { color:#2e7d32; font-weight:600; }
+.sql-result .err { color:#c62828; background:#ffebee; padding:10px; border-radius:6px; font-family:monospace; font-size:13px; }
+</style>
+
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-crown"></i> Super Panel</h1>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+
+  <!-- CONFIG EDITOR -->
+  <div class="super-section">
+    <h2><i class="fas fa-cogs"></i> Config Keys</h2>
+    <table class="super-table">
+      <thead><tr><th style="width:40%;">Key</th><th>Value</th><th style="width:120px;">Ações</th></tr></thead>
+      <tbody>
+        <% (configs || []).forEach(function(c) { %>
+          <tr>
+            <td class="key-cell"><%= c.key %></td>
+            <td class="val-cell"><%= c.value %></td>
+            <td>
+              <form method="POST" action="/admin/super/config/delete" style="display:inline;" onsubmit="return confirm('Deletar config <%= c.key %>?')">
+                <input type="hidden" name="key" value="<%= c.key %>">
+                <button class="btn btn-sm btn-danger" title="Deletar"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <hr style="margin:16px 0;border:none;border-top:1px solid #eee;">
+    <form method="POST" action="/admin/super/config" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;"><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Key</label><input type="text" name="key" class="form-control" placeholder="ex: max_products_per_seller" required></div>
+      <div style="flex:2;min-width:250px;"><label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Value</label><input type="text" name="value" class="form-control" placeholder="Valor"></div>
+      <button type="submit" class="btn btn-primary" style="margin-bottom:1px;"><i class="fas fa-plus"></i> Add/Update</button>
+    </form>
+  </div>
+
+  <!-- ADMIN ROLES -->
+  <div class="super-section">
+    <h2><i class="fas fa-users-cog"></i> Admin Roles</h2>
+    <table class="super-table">
+      <thead><tr><th>ID</th><th>Username</th><th>Display</th><th>Role</th><th>Ações</th></tr></thead>
+      <tbody>
+        <% (admins || []).forEach(function(a) { %>
+          <tr>
+            <td><%= a.id %></td>
+            <td><%= a.username %></td>
+            <td><%= a.display_name || '-' %></td>
+            <td><span class="status-badge small" style="background:<%= a.role === 'super_admin' ? '#fff3e0' : '#e8f5e9' %>;color:<%= a.role === 'super_admin' ? '#e65100' : '#2e7d32' %>;"><%= a.role %></span></td>
+            <td>
+              <form method="POST" action="/admin/super/admin-role" style="display:flex;gap:4px;">
+                <input type="hidden" name="admin_id" value="<%= a.id %>">
+                <select name="role" class="form-control" style="padding:4px 6px;font-size:12px;width:130px;">
+                  <option value="admin" <%= a.role === 'admin' ? 'selected' : '' %>>admin</option>
+                  <option value="super_admin" <%= a.role === 'super_admin' ? 'selected' : '' %>>super_admin</option>
+                </select>
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-check"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SQL CONSOLE -->
+  <div class="super-section">
+    <h2><i class="fas fa-terminal"></i> SQL Console</h2>
+    <div class="alert alert-warning" style="font-size:13px;">
+      <i class="fas fa-exclamation-triangle"></i> <strong>Cuidado!</strong> Comandos <code>DELETE</code>, <code>UPDATE</code>, <code>DROP</code>, <code>INSERT</code> são executados imediatamente. Apenas <code>SELECT</code> e <code>PRAGMA</code> retornam resultados.
+    </div>
+    <form method="POST" action="/admin/super/sql">
+      <textarea name="query" class="sql-textarea" placeholder="SELECT * FROM sales LIMIT 10"><%= typeof sqlQuery !== 'undefined' ? sqlQuery : '' %></textarea>
+      <div style="margin-top:8px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> Executar</button>
+        <button type="button" class="btn btn-secondary" onclick="document.querySelector('textarea[name=query]').value=''">Limpar</button>
+      </div>
+    </form>
+    <% if (typeof sqlResult !== 'undefined' && sqlResult !== null) { %>
+      <div class="sql-result">
+        <% if (sqlError) { %>
+          <div class="err"><%= sqlError %></div>
+        <% } else if (Array.isArray(sqlResult)) { %>
+          <% if (sqlResult.length === 0) { %>
+            <div style="color:#999;padding:10px;">0 rows returned</div>
+          <% } else { %>
+            <table>
+              <thead><tr><% Object.keys(sqlResult[0]).forEach(function(k) { %><th><%= k %></th><% }) %></tr></thead>
+              <tbody><% sqlResult.forEach(function(r) { %><tr><% Object.values(r).forEach(function(v) { %><td><%= v !== null ? v : 'NULL' %></td><% }) %></tr><% }) %></tbody>
+            </table>
+            <div style="color:#666;font-size:12px;margin-top:6px;"><%= sqlResult.length %> row(s)</div>
+          <% } %>
+        <% } else { %>
+          <div class="ok"><i class="fas fa-check-circle"></i> Comando executado com sucesso</div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

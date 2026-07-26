@@ -150,6 +150,21 @@ router.post('/sales/status/:id', (req, res) => {
   res.redirect(req.get('Referer') || '/admin/sales');
 });
 
+router.get('/sales/edit/:id', requireSuperAdmin, (req, res) => {
+  var sale = db.get("SELECT s.*, sl.name as seller_name FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id WHERE s.id = ?", [req.params.id]);
+  if (!sale) return res.redirect('/admin/sales');
+  res.render('admin/sale-form', { title: 'Editar Venda #' + sale.id, sale, msg: req.query.msg || '' });
+});
+
+router.post('/sales/edit/:id', requireSuperAdmin, (req, res) => {
+  var s = req.body;
+  db.run("UPDATE sales SET product_code=?, product_name=?, product_price=?, buyer_name=?, buyer_document=?, buyer_phone=?, buyer_email=?, buyer_address=?, status=?, payment_method=?, tracking_code=?, carrier=?, tracking_status=? WHERE id=?", [
+    s.product_code||'', s.product_name||'', parseFloat(s.product_price)||0, s.buyer_name||'', s.buyer_document||'', s.buyer_phone||'', s.buyer_email||'', s.buyer_address||'', s.status||'pending', s.payment_method||'', s.tracking_code||'', s.carrier||'', s.tracking_status||'', req.params.id
+  ]);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'sale_edit', 'Editou venda #' + req.params.id);
+  res.redirect('/admin/sales/edit/' + req.params.id + '?msg=salvo');
+});
+
 router.get('/products', (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = 20;
@@ -1213,6 +1228,51 @@ router.get('/placar', requireAdmin, (req, res) => {
   var selectedGoal = goalId ? db.get("SELECT * FROM seller_goals WHERE id = ?", [goalId]) : (db.getActiveGoal() || null);
   var leaderboard = selectedGoal ? db.getGoalLeaderboard(selectedGoal.id) : [];
   res.render('admin/placar', { title: 'Placar de Metas', goals, selectedGoal, leaderboard });
+});
+
+router.get('/super', requireSuperAdmin, (req, res) => {
+  var configs = db.query("SELECT key, value FROM config ORDER BY key");
+  var admins = db.query("SELECT id, username, display_name, role FROM admins");
+  res.render('admin/super', { title: 'Super Panel', configs, admins, msg: req.query.msg || '' });
+});
+
+router.post('/super/config', requireSuperAdmin, (req, res) => {
+  var { key, value } = req.body;
+  if (key) {
+    db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key.trim(), value || '']);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'super_config', 'Editou config: ' + key);
+  }
+  res.redirect('/admin/super');
+});
+
+router.post('/super/config/delete', requireSuperAdmin, (req, res) => {
+  db.run("DELETE FROM config WHERE key = ?", [req.body.key]);
+  res.redirect('/admin/super');
+});
+
+router.post('/super/sql', requireSuperAdmin, (req, res) => {
+  var sql = req.body.query && req.body.query.trim();
+  if (!sql) return res.redirect('/admin/super');
+  var result = null, error = null;
+  try {
+    if (sql.toUpperCase().startsWith('SELECT') || sql.toUpperCase().startsWith('PRAGMA')) {
+      result = db.query(sql);
+    } else {
+      db.run(sql);
+      result = { affected: 'OK' };
+    }
+  } catch(e) { error = e.message; }
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'super_sql', 'Executou SQL: ' + sql.substring(0,80));
+  res.render('admin/super', { title: 'Super Panel', configs: db.query("SELECT key, value FROM config ORDER BY key"), admins: db.query("SELECT id, username, display_name, role FROM admins"), msg: '', sqlResult: result, sqlError: error, sqlQuery: sql });
+});
+
+router.post('/super/admin-role', requireSuperAdmin, (req, res) => {
+  var { admin_id, role } = req.body;
+  if (admin_id && role) {
+    db.run("UPDATE admins SET role = ? WHERE id = ?", [role, admin_id]);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'super_admin_role', 'Alterou role do admin #' + admin_id + ' para ' + role);
+  }
+  res.redirect('/admin/super');
 });
 
 return router;

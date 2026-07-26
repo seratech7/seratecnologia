@@ -14,7 +14,7 @@ function requireAdmin(req, res, next) {
 function requireSuperAdmin(req, res, next) {
   if (req.session && req.session.adminId) {
     var admin = db.get("SELECT role FROM admins WHERE id = ?", [req.session.adminId]);
-    if (admin && admin.role === 'admin') {
+    if (admin && (admin.role === 'super_admin' || admin.role === 'admin')) {
       req.adminRole = admin.role;
       return next();
     }

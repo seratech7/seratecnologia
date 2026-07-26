@@ -1,0 +1,90 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/sales' }) %>
+
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-pen"></i> <%= title %></h1>
+    <a href="/admin/sales" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+<% var savedMsg = typeof msg !== 'undefined' && msg === 'salvo'; %>
+  <% if (savedMsg) { %>
+    <div class="alert alert-success"><i class="fas fa-check-circle"></i> Venda atualizada com sucesso!</div>
+  <% } %>
+
+  <form method="POST" style="max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <input type="hidden" name="_method" value="POST">
+
+    <div class="form-group">
+      <label>Código do Produto</label>
+      <input type="text" name="product_code" class="form-control" value="<%= sale.product_code || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Nome do Produto</label>
+      <input type="text" name="product_name" class="form-control" value="<%= sale.product_name || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Preço (R$)</label>
+      <input type="number" step="0.01" name="product_price" class="form-control" value="<%= sale.product_price || 0 %>">
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select name="status" class="form-control">
+        <% ['pending','approved','shipped','delivered','cancelled'].forEach(function(s) { %>
+          <option value="<%= s %>" <%= sale.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;border-top:1px solid #ddd;padding-top:12px;">
+      <h4 style="margin:0 0 8px;color:#555;"><i class="fas fa-user"></i> Comprador</h4>
+    </div>
+    <div class="form-group">
+      <label>Nome</label>
+      <input type="text" name="buyer_name" class="form-control" value="<%= sale.buyer_name || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Documento (CPF/CNPJ)</label>
+      <input type="text" name="buyer_document" class="form-control" value="<%= sale.buyer_document || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Telefone</label>
+      <input type="text" name="buyer_phone" class="form-control" value="<%= sale.buyer_phone || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" name="buyer_email" class="form-control" value="<%= sale.buyer_email || '' %>">
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Endereço</label>
+      <textarea name="buyer_address" class="form-control" rows="2"><%= sale.buyer_address || '' %></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;border-top:1px solid #ddd;padding-top:12px;">
+      <h4 style="margin:0 0 8px;color:#555;"><i class="fas fa-truck"></i> Entrega / Rastreio</h4>
+    </div>
+    <div class="form-group">
+      <label>Código de Rastreio</label>
+      <input type="text" name="tracking_code" class="form-control" value="<%= sale.tracking_code || '' %>">
+    </div>
+    <div class="form-group">
+      <label>Transportadora</label>
+      <input type="text" name="carrier" class="form-control" value="<%= sale.carrier || '' %>">
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label>Status do Rastreio</label>
+      <input type="text" name="tracking_status" class="form-control" value="<%= sale.tracking_status || '' %>" placeholder="Ex: Em trânsito, Entregue, etc.">
+    </div>
+    <div class="form-group" style="grid-column:1/-1;border-top:1px solid #ddd;padding-top:12px;">
+      <h4 style="margin:0 0 8px;color:#555;"><i class="fas fa-credit-card"></i> Pagamento</h4>
+    </div>
+    <div class="form-group">
+      <label>Forma de Pagamento</label>
+      <input type="text" name="payment_method" class="form-control" value="<%= sale.payment_method || '' %>" placeholder="Ex: PIX, Cartão, Boleto">
+    </div>
+
+    <div style="grid-column:1/-1;margin-top:16px;display:flex;gap:12px;">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Alterações</button>
+      <a href="/admin/sales" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/admin-footer') %>
