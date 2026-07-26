@@ -1,0 +1,103 @@
+<%- include('../partials/admin-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fab fa-telegram-plane"></i> Telegram Bot</h1>
+  </div>
+
+  <% if (typeof msg !== 'undefined' && msg) { %>
+    <div class="alert alert-success"><i class="fas fa-check-circle"></i> <%= msg %></div>
+  <% } %>
+
+  <div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#0088cc,#006699);"><i class="fab fa-telegram-plane"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= botStatus.running ? '✅ Online' : '❌ Offline' %></span>
+        <span class="stat-label">Status do Bot</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:linear-gradient(135deg,#25D366,#128C7E);"><i class="fas fa-users"></i></div>
+      <div class="stat-info">
+        <span class="stat-number"><%= linkedSellers.length %></span>
+        <span class="stat-label">Vendedores Vinculados</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h3><i class="fas fa-cog"></i> Configuração do Bot</h3>
+    <form action="/admin/telegram/save" method="POST" class="admin-form">
+      <div class="form-group">
+        <label>Token do Bot (obtenha em <a href="https://t.me/BotFather" target="_blank">@BotFather</a>)</label>
+        <input type="text" name="bot_token" value="<%= cfg.telegram_bot_token %>" placeholder="123456789:ABCdefGHIjklmNOPqrSTUvwxYZ" style="font-family:monospace;font-size:13px;">
+      </div>
+      <div class="form-group">
+        <label>ID do Grupo (onde o bot está como admin)</label>
+        <input type="text" name="group_id" value="<%= cfg.telegram_group_id %>" placeholder="-1001234567890" style="font-family:monospace;font-size:13px;">
+        <span style="font-size:12px;color:#999;">Adicione o bot ao grupo, envie /start e veja o ID no console do servidor</span>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar e Reiniciar Bot</button>
+        <a href="/admin/telegram/test" class="btn" style="background:#0088cc;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;text-decoration:none;">
+          <i class="fas fa-paper-plane"></i> Enviar Teste
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="form-card">
+    <h3><i class="fas fa-bullhorn"></i> Enviar Mensagem para o Grupo</h3>
+    <form action="/admin/telegram/send" method="POST" class="admin-form">
+      <div class="form-group">
+        <label>Mensagem</label>
+        <textarea name="message" rows="4" placeholder="Digite a mensagem..." style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:14px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" name="parse_mode" value="markdown"> Usar formatação Markdown
+        </label>
+      </div>
+      <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Enviar</button>
+    </form>
+  </div>
+
+  <% if (linkedSellers.length > 0) { %>
+  <div class="table-container">
+    <h3 style="margin:16px 0;"><i class="fas fa-link"></i> Vendedores Vinculados ao Telegram</h3>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Vendedor</th>
+          <th>Email</th>
+          <th>Telegram ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% linkedSellers.forEach(function(s) { %>
+          <tr>
+            <td><%= s.name %></td>
+            <td><%= s.email %></td>
+            <td style="font-family:monospace;"><%= s.telegram_id %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+
+  <div class="form-card">
+    <h3><i class="fas fa-info-circle"></i> Como Configurar</h3>
+    <ol style="line-height:2;padding-left:20px;">
+      <li>Crie um bot no <a href="https://t.me/BotFather" target="_blank">@BotFather</a> e copie o token</li>
+      <li>Cole o token acima e clique em <strong>Salvar</strong></li>
+      <li>Crie um grupo no Telegram e adicione o bot como administrador</li>
+      <li>Envie <code>/start</code> no grupo — o bot responderá</li>
+      <li>Para obter o ID do grupo, envie qualquer mensagem no grupo e veja os logs do servidor</li>
+      <li>Vendedores podem vincular suas contas enviando <code>/vendedor_id seu@email.com</code> no chat com o bot</li>
+    </ol>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

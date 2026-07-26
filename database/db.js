@@ -87,6 +87,7 @@ async function initDb() {
     if (!cols.includes('pix_key')) db.run("ALTER TABLE sellers ADD COLUMN pix_key TEXT DEFAULT ''");
     if (!cols.includes('notify_whatsapp')) db.run("ALTER TABLE sellers ADD COLUMN notify_whatsapp TEXT DEFAULT ''");
     if (!cols.includes('notify_signal')) db.run("ALTER TABLE sellers ADD COLUMN notify_signal TEXT DEFAULT ''");
+    if (!cols.includes('telegram_id')) db.run("ALTER TABLE sellers ADD COLUMN telegram_id TEXT DEFAULT ''");
   }
 
   const tableInfo = db.exec("PRAGMA table_info(products)");

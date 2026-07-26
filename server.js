@@ -403,6 +403,13 @@ async function start() {
 
     setTimeout(autoSave, 120000);
     setInterval(autoSave, 7200000);
+
+    try {
+      var telegram = require('./lib/telegram');
+      telegram.startBot();
+    } catch(e) {
+      console.log('[Telegram] Módulo não carregado:', e.message);
+    }
   });
 }
 

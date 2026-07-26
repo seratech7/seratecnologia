@@ -1215,5 +1215,64 @@ router.get('/placar', requireAdmin, (req, res) => {
   res.render('admin/placar', { title: 'Placar de Metas', goals, selectedGoal, leaderboard });
 });
 
+// ========== TELEGRAM BOT ==========
+var telegramBot = null;
+
+router.get('/telegram', requireAdmin, (req, res) => {
+  var cfg = {
+    telegram_bot_token: (db.get("SELECT value FROM config WHERE key = 'telegram_bot_token'") || {}).value || '',
+    telegram_group_id: (db.get("SELECT value FROM config WHERE key = 'telegram_group_id'") || {}).value || '',
+  };
+  var status = telegramBot ? telegramBot.getBotStatus() : { running: false, token: false, groupId: '' };
+  var linkedSellers = db.query("SELECT id, name, email, telegram_id FROM sellers WHERE telegram_id IS NOT NULL AND telegram_id != ''") || [];
+  res.render('admin/telegram', {
+    title: 'Telegram Bot',
+    cfg: cfg,
+    botStatus: status,
+    linkedSellers: linkedSellers,
+    msg: req.query.msg ? req.query.msg.replace(/\+/g, ' ') : ''
+  });
+});
+
+router.post('/telegram/save', requireAdmin, (req, res) => {
+  var { bot_token, group_id } = req.body;
+  db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('telegram_bot_token', ?)", [bot_token || '']);
+  db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('telegram_group_id', ?)", [group_id || '']);
+  if (telegramBot) {
+    telegramBot.stopBot();
+    telegramBot.startBot();
+  }
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'telegram_config', 'Configurou Telegram Bot');
+  res.redirect('/admin/telegram');
+});
+
+router.post('/telegram/test', requireAdmin, (req, res) => {
+  if (!telegramBot) return res.redirect('/admin/telegram');
+  var ok = telegramBot.sendToGroup('🔔 Mensagem de teste do painel admin SeraTecnologia');
+  res.redirect('/admin/telegram?msg=' + (ok ? 'teste+enviado' : 'erro+ao+enviar'));
+});
+
+router.post('/telegram/send', requireAdmin, (req, res) => {
+  var { message, parse_mode } = req.body;
+  if (!message) return res.redirect('/admin/telegram');
+  if (!telegramBot) return res.redirect('/admin/telegram');
+  telegramBot.sendToGroup(message, parse_mode === 'markdown' ? 'Markdown' : undefined);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'telegram_send', 'Enviou mensagem no Telegram');
+  res.redirect('/admin/telegram');
+});
+
 return router;
 };
+
+function initTelegramBot() {
+  if (telegramBot) return;
+  try {
+    telegramBot = require('../lib/telegram');
+    telegramBot.startBot();
+  } catch(e) {
+    console.error('[Telegram] Erro ao carregar módulo:', e.message);
+  }
+}
+
+// Export init function for server.js
+module.exports.initBot = initTelegramBot;
