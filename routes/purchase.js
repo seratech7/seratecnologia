@@ -32,7 +32,7 @@ router.get('/comprar', function(req, res) {
 });
 
 router.get('/api/produto/:codigo', function(req, res) {
-  var p = db.get("SELECT p.id, p.name, p.price, p.image, p.code, p.location, s.pix_key as seller_pix, s.name as seller_name, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [req.params.codigo]);
+  var p = db.get("SELECT p.id, p.name, p.price, p.image, p.code, p.location, p.quantity, s.pix_key as seller_pix, s.name as seller_name, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [req.params.codigo]);
   if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
   res.json(p);
 });
@@ -52,9 +52,10 @@ router.post('/api/finalizar-compra', function(req, res) {
       return res.status(400).json({ error: 'Email inválido' });
     }
 
-    var produto = db.get("SELECT p.*, s.name as seller_name, s.pix_key as seller_pix, s.whatsapp as seller_whatsapp, s.notify_whatsapp, s.notify_signal FROM products p LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [codigo]);
+    var produto = db.get("SELECT p.*, s.name as seller_name, s.pix_key as seller_pix, s.whatsapp as seller_whatsapp, s.notify_whatsapp FROM products p LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [codigo]);
     if (!produto) return res.status(404).json({ error: 'Produto não encontrado' });
     if (!produto.seller_id) return res.status(400).json({ error: 'Produto sem vendedor' });
+    if ((produto.quantity || 0) <= 0) return res.status(400).json({ error: 'Produto sem estoque disponível' });
 
     // Apply coupon discount
     var finalPrice = produto.price;
@@ -89,14 +90,6 @@ router.post('/api/finalizar-compra', function(req, res) {
     var vendaMsg = '🛒 NOVA VENDA!\nProduto: ' + produto.name + '\nCódigo: ' + produto.code + '\nValor: R$ ' + finalPrice.toFixed(2) + '\nComprador: ' + nome + '\nWhatsApp: ' + telefone + '\nEmail: ' + email;
 
     db.addNotification(produto.seller_id.toString(), 'sale', 'Nova venda: ' + produto.name + ' - R$ ' + finalPrice.toFixed(2), 'shopping-cart', '/seller/sales');
-
-    if (produto.notify_signal) {
-      var sigNum = produto.notify_signal.replace(/\D/g, '');
-      if (sigNum) {
-        var sigMsg = encodeURIComponent(vendaMsg);
-        db.addNotification(produto.seller_id.toString(), 'signal', 'Clique para enviar notificação via Signal', 'comment', 'https://signal.me/#p/' + sigNum + '?text=' + sigMsg);
-      }
-    }
 
     res.json({ success: true, message: 'Compra registrada com sucesso!', trackingCode: trackingCode, saleId: saleId });
   } catch (e) {

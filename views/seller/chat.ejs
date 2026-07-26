@@ -58,7 +58,7 @@
                   <em>Produto anexado</em>
                 </div>
               <% } %>
-              <%- m.content.replace(/\n/g, '<br>') %>
+              <%= m.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>') %>
             </div>
             <div class="msg-time"><%= new Date(m.created_at).toLocaleString('pt-BR') %></div>
           </div>

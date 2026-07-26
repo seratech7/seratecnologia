@@ -137,6 +137,7 @@ router.post('/sales/cancel/:id', (req, res) => {
   const sale = db.get("SELECT * FROM sales WHERE id = ?", [req.params.id]);
   if (sale && sale.status !== 'cancelled' && sale.status !== 'delivered') {
     db.run("UPDATE sales SET status = 'cancelled' WHERE id = ?", [req.params.id]);
+    if (sale.product_id) db.run("UPDATE products SET quantity = quantity + 1 WHERE id = ?", [sale.product_id]);
   }
   res.redirect(req.get('Referer') || '/admin/sales');
 });
@@ -145,7 +146,15 @@ router.post('/sales/status/:id', (req, res) => {
   const { status } = req.body;
   const allowed = ['pending','approved','shipped','delivered','cancelled'];
   if (allowed.includes(status)) {
+    var sale = db.get("SELECT product_id FROM sales WHERE id = ?", [req.params.id]);
     db.run("UPDATE sales SET status = ? WHERE id = ? AND status != 'cancelled' AND status != 'delivered'", [status, req.params.id]);
+    if (status === 'approved' && sale && sale.product_id) {
+      db.run("UPDATE products SET quantity = MAX(0, quantity - 1) WHERE id = ?", [sale.product_id]);
+      var prod = db.get("SELECT quantity FROM products WHERE id = ?", [sale.product_id]);
+      if (prod && prod.quantity <= 0) {
+        db.run("UPDATE products SET status = 'inactive' WHERE id = ? AND status = 'active'", [sale.product_id]);
+      }
+    }
   }
   res.redirect(req.get('Referer') || '/admin/sales');
 });
@@ -948,7 +957,7 @@ router.get('/logs', (req, res) => {
 
 // ========== BACKUP ==========
 router.get('/backup', (req, res) => {
-  var dbPath = path.join(__dirname, '..', 'database', 'data.db');
+  var dbPath = path.join(__dirname, '..', 'database.sqlite');
   res.download(dbPath, 'backup-seratecnologia-' + new Date().toISOString().slice(0,10) + '.db');
 });
 

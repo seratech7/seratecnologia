@@ -104,9 +104,7 @@
                   <form action="/admin/products/approve/<%= p.id %>" method="POST" class="inline-form">
                     <button type="submit" class="btn-icon" style="background:#e8f5e9;color:#2e7d32;" title="Aprovar"><i class="fas fa-check"></i></button>
                   </form>
-                  <form action="/admin/products/reject/<%= p.id %>" method="POST" class="inline-form" onsubmit="var r=prompt('Motivo da rejeição:');if(r===null)return false;var i=document.createElement('input');i.type='hidden';i.name='rejection_reason';i.value=r;this.appendChild(i)">
-                    <button type="submit" class="btn-icon" style="background:#fdecea;color:#e74c3c;" title="Rejeitar"><i class="fas fa-times"></i></button>
-                  </form>
+                  <button type="button" class="btn-icon" style="background:#fdecea;color:#e74c3c;" title="Rejeitar" onclick="openRejectModal(<%= p.id %>, '<%= p.name.replace(/'/g, "\\'") %>')"><i class="fas fa-times"></i></button>
                 <% } %>
                 <form action="/admin/products/feature/<%= p.id %>" method="POST" class="inline-form">
                   <button type="submit" class="btn-icon" style="<%= p.featured ? 'background:#fff3cd;color:#f9a825;' : '' %>" title="<%= p.featured ? 'Remover destaque' : 'Destacar' %>"><i class="fas fa-star"></i></button>
@@ -151,3 +149,34 @@
 </div>
 
 <%- include('../partials/admin-footer') %>
+
+<!-- Rejection Modal -->
+<div id="rejectModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:450px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+    <h3 style="margin:0 0 4px;color:#c62828;"><i class="fas fa-times-circle"></i> Rejeitar Produto</h3>
+    <p style="font-size:14px;color:#666;margin:0 0 14px;" id="rejectProductName"></p>
+    <form method="POST" id="rejectForm">
+      <div class="form-group">
+        <label for="rejection_reason" style="display:block;font-size:13px;font-weight:600;color:#555;margin-bottom:4px;">Motivo da rejeição</label>
+        <textarea id="rejection_reason" name="rejection_reason" rows="3" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;" placeholder="Explique ao vendedor por que o produto foi rejeitado..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+        <button type="button" onclick="closeRejectModal()" class="btn-primary" style="background:#999;">Cancelar</button>
+        <button type="submit" class="btn-primary" style="background:#c62828;"><i class="fas fa-times"></i> Rejeitar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openRejectModal(id, name) {
+  document.getElementById('rejectProductName').textContent = name;
+  document.getElementById('rejectForm').action = '/admin/products/reject/' + id;
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').style.display = 'none';
+}
+document.getElementById('rejectModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRejectModal();
+});
+</script>

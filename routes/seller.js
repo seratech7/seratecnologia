@@ -279,6 +279,8 @@ router.post('/wallet/solicitar-saque', requireSeller, (req, res) => {
   if (val <= 0) return res.redirect('/seller/wallet?erro=Valor inválido');
   if (val > balance) return res.redirect('/seller/wallet?erro=Saldo insuficiente');
   if (val < 10) return res.redirect('/seller/wallet?erro=Valor mínimo é R$ 10,00');
+  var pend = db.get("SELECT COUNT(*) as c FROM payouts WHERE seller_id = ? AND status = 'pending'", [req.session.sellerId]);
+  if (pend && pend.c > 0) return res.redirect('/seller/wallet?erro=Você já tem um saque pendente');
   db.createPayout(req.session.sellerId, val, bank_info || '', payment_method || 'pix');
   db.addNotification('admin', 'payout', 'Saque solicitado: ' + req.session.sellerName + ' - R$ ' + val.toFixed(2), 'money-bill', '/admin/financeiro');
   res.redirect('/seller/wallet?sucesso=Saque solicitado com sucesso');
@@ -443,6 +445,29 @@ router.get('/chat/api/mensagens/:id', requireSeller, (req, res) => {
 router.get('/chat/api/nao-lidas', requireSeller, (req, res) => {
   var count = db.getUnreadMessageCount(req.session.sellerId);
   res.json({ count: count });
+});
+
+// ========== NOTIFICATIONS ==========
+router.get('/notifications', requireSeller, (req, res) => {
+  var ip = req.session.sellerId.toString();
+  var notifs = db.getNotifications(ip, 50, 0);
+  var count = db.getNotificationCount(ip);
+  res.render('seller/notifications', { title: 'Notificações', notifications: notifs, count });
+});
+
+router.post('/notifications/read/:id', requireSeller, (req, res) => {
+  db.markNotificationRead(req.params.id, req.session.sellerId.toString());
+  res.redirect(req.get('Referer') || '/seller/notifications');
+});
+
+router.post('/notifications/read-all', requireSeller, (req, res) => {
+  db.markAllNotificationsRead(req.session.sellerId.toString());
+  res.redirect(req.get('Referer') || '/seller/notifications');
+});
+
+router.get('/notifications/count', requireSeller, (req, res) => {
+  var count = db.getNotificationCount(req.session.sellerId.toString());
+  res.json({ count: count || 0 });
 });
 
 return router;
