@@ -4,6 +4,7 @@
     <h1><i class="fas fa-cog"></i> Configurações</h1>
   </div>
   <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
   <div class="form-card">
     <form method="POST" action="/seller/configuracoes" class="admin-form">
       <h3>Notificações</h3>
@@ -13,10 +14,40 @@
       <div class="form-group" style="margin:12px 0;">
         <label><input type="checkbox" name="notify_email_approve" value="1" <%= seller && seller.notify_email_approve ? 'checked' : '' %>> Receber email quando produto for aprovado</label>
       </div>
-      <p style="font-size:13px;color:#666;margin-top:16px;"><i class="fas fa-info-circle"></i> As metas agora são definidas pelo administrador. <a href="/seller/placar">Veja o placar atual</a>.</p>
       <div class="form-actions">
         <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
       </div>
+    </form>
+  </div>
+
+  <div class="form-card" style="margin-top:20px;">
+    <h3><i class="fas fa-lock"></i> Alterar Senha</h3>
+    <form method="POST" action="/seller/change-password" class="admin-form" onsubmit="return this.querySelector('[name=new_password]').value === this.querySelector('[name=confirm_password]').value || (alert('Senhas não conferem'), false)">
+      <div class="form-group">
+        <label for="current_password">Senha atual *</label>
+        <input type="password" id="current_password" name="current_password" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="new_password">Nova senha *</label>
+          <input type="password" id="new_password" name="new_password" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirmar nova senha *</label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Alterar Senha</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="form-card" style="margin-top:20px;border:1px solid #ffcdd2;">
+    <h3 style="color:#c62828;"><i class="fas fa-exclamation-triangle"></i> Zona de Perigo</h3>
+    <p style="font-size:13px;color:#666;">Ao solicitar a exclusão, sua conta será desativada e você não poderá mais fazer login. Um administrador será notificado.</p>
+    <form method="POST" action="/seller/request-delete" onsubmit="return confirm('Tem certeza que deseja solicitar exclusão da sua conta?')">
+      <button type="submit" class="btn-primary" style="background:#c62828;"><i class="fas fa-trash"></i> Solicitar Exclusão da Conta</button>
     </form>
   </div>
 </div>

@@ -104,7 +104,7 @@
                   <form action="/admin/products/approve/<%= p.id %>" method="POST" class="inline-form">
                     <button type="submit" class="btn-icon" style="background:#e8f5e9;color:#2e7d32;" title="Aprovar"><i class="fas fa-check"></i></button>
                   </form>
-                  <form action="/admin/products/reject/<%= p.id %>" method="POST" class="inline-form">
+                  <form action="/admin/products/reject/<%= p.id %>" method="POST" class="inline-form" onsubmit="var r=prompt('Motivo da rejeição:');if(r===null)return false;var i=document.createElement('input');i.type='hidden';i.name='rejection_reason';i.value=r;this.appendChild(i)">
                     <button type="submit" class="btn-icon" style="background:#fdecea;color:#e74c3c;" title="Rejeitar"><i class="fas fa-times"></i></button>
                   </form>
                 <% } %>

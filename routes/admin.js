@@ -216,8 +216,9 @@ router.post('/products/approve/:id', (req, res) => {
 router.post('/products/reject/:id', (req, res) => {
   var id = parseInt(req.params.id);
   if (!id) return res.redirect('/admin/products');
-  db.run("UPDATE products SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
-  res.redirect('/admin/products');
+  var reason = (req.body.rejection_reason || '').trim();
+  db.run("UPDATE products SET status = 'rejected', rejection_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [reason, id]);
+  res.redirect(req.get('Referer') || '/admin/products');
 });
 
 router.post('/products/feature/:id', (req, res) => {
@@ -246,6 +247,7 @@ router.post('/products/new', upload.array('images', 3), (req, res) => {
   const cleanDesc = (description || '').toString().trim().slice(0, 2000);
   const cleanLocation = (location || 'Brasil').toString().trim().slice(0, 100);
   const cleanPrice = Math.max(0, parseFloat(price) || 0);
+  const cleanQty = Math.max(0, parseInt(req.body.quantity) || 0);
 
   if (!cleanName) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
@@ -260,8 +262,8 @@ router.post('/products/new', upload.array('images', 3), (req, res) => {
   if (req.files && req.files.length > 0) mainImage = '/uploads/' + req.files[0].filename;
 
   db.run(
-    'INSERT INTO products (name, description, price, category_id, seller_id, image, condition, location, status, featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0]
+    'INSERT INTO products (name, description, price, quantity, category_id, seller_id, image, condition, location, status, featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [cleanName, cleanDesc, cleanPrice, cleanQty, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0]
   );
   var lastId = db.get('SELECT MAX(id) as id FROM products');
   if (lastId) db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lastId.id]);
@@ -302,6 +304,7 @@ router.post('/products/edit/:id', upload.array('images', 3), (req, res) => {
   const cleanDesc = (description || '').toString().trim().slice(0, 2000);
   const cleanLocation = (location || 'Brasil').toString().trim().slice(0, 100);
   const cleanPrice = Math.max(0, parseFloat(price) || 0);
+  const cleanQty = Math.max(0, parseInt(req.body.quantity) || 0);
 
   if (!cleanName) {
     const categories = db.query('SELECT * FROM categories ORDER BY name');
@@ -318,8 +321,8 @@ router.post('/products/edit/:id', upload.array('images', 3), (req, res) => {
   if (req.files && req.files.length > 0) mainImage = '/uploads/' + req.files[0].filename;
 
   db.run(
-    'UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, seller_id = ?, image = ?, condition = ?, location = ?, status = ?, featured = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [cleanName, cleanDesc, cleanPrice, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0, req.params.id]
+    'UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category_id = ?, seller_id = ?, image = ?, condition = ?, location = ?, status = ?, featured = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    [cleanName, cleanDesc, cleanPrice, cleanQty, category_id || null, seller_id || null, mainImage, condition || 'new', cleanLocation, status || 'active', featured ? 1 : 0, req.params.id]
   );
 
   // Save extra images

@@ -51,10 +51,6 @@
       <a href="/seller/configuracoes" class="<%= currentPath === '/seller/configuracoes' ? 'active' : '' %>">
         <i class="fas fa-cog"></i> Configurações
       </a>
-      <a href="/seller/chat" class="<%= currentPath.startsWith('/seller/chat') ? 'active' : '' %>">
-        <i class="fas fa-comments"></i> Chat
-        <% if (typeof unreadChat !== 'undefined' && unreadChat > 0) { %><span class="badge-msg"><%= unreadChat %></span><% } %>
-      </a>
       <a href="/seller/profile" class="<%= currentPath === '/seller/profile' ? 'active' : '' %>">
         <i class="fas fa-user-cog"></i> Meu Perfil
       </a>

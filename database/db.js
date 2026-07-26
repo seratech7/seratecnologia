@@ -128,6 +128,8 @@ async function initDb() {
     var fpNames = fpCols[0].values.map(function(r) { return r[1]; });
     if (!fpNames.includes('flash_price')) db.run("ALTER TABLE products ADD COLUMN flash_price REAL DEFAULT NULL");
     if (!fpNames.includes('flash_ends_at')) db.run("ALTER TABLE products ADD COLUMN flash_ends_at DATETIME DEFAULT NULL");
+    if (!fpNames.includes('quantity')) db.run("ALTER TABLE products ADD COLUMN quantity INTEGER DEFAULT 0");
+    if (!fpNames.includes('rejection_reason')) db.run("ALTER TABLE products ADD COLUMN rejection_reason TEXT DEFAULT ''");
   }
 
   const adminPass = process.env.ADMIN_PASSWORD;

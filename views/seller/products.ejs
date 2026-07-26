@@ -30,10 +30,12 @@
               <% } else if (p.status === 'pending') { %><span class="status-badge" style="background:#fff3cd;color:#856404;">Pendente</span>
               <% } else if (p.status === 'rejected') { %><span class="status-badge" style="background:#fdecea;color:#e74c3c;">Rejeitado</span>
               <% } else { %><span class="status-badge inactive">Inativo</span><% } %>
+              <% if (p.status === 'rejected' && p.rejection_reason) { %><div style="font-size:11px;color:#c62828;margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<%= p.rejection_reason %>"><i class="fas fa-comment"></i> <%= p.rejection_reason %></div><% } %>
             </td>
             <td><%= new Date(p.created_at).toLocaleDateString('pt-BR') %></td>
             <td class="actions-cell">
               <a href="/seller/products/edit/<%= p.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+              <% if (p.status === 'active') { %><a href="/product/<%= p.code || p.id %>" target="_blank" class="btn-icon" style="color:#2196f3;" title="Ver na loja"><i class="fas fa-external-link-alt"></i></a><% } %>
               <form action="/seller/products/clone/<%= p.id %>" method="POST" class="inline-form">
                 <button type="submit" class="btn-icon" style="color:#7c4dff;" title="Clonar"><i class="fas fa-copy"></i></button>
               </form>

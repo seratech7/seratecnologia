@@ -12,8 +12,6 @@ const router = express.Router();
 router.get('/profile', requireSeller, (req, res) => {
   const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
   if (!seller) return res.redirect('/seller/logout');
-  const mpConn = db.get('SELECT id FROM mp_connections WHERE seller_id = ?', [req.session.sellerId]);
-  seller.mp_connected = !!mpConn;
   res.render('seller/profile', { title: 'Meu Perfil', seller, error: null, success: null });
 });
 
@@ -59,13 +57,15 @@ router.use(requireSeller);
 // ========== DASHBOARD ==========
 router.get('/dashboard', (req, res) => {
   var sid = req.session.sellerId;
+  var period = parseInt(req.query.period, 10) || 30;
+  if (![7, 15, 30, 90].includes(period)) period = 30;
   var total = db.get('SELECT COUNT(*) as count FROM products WHERE seller_id = ?', [sid]) || {count:0};
   var active = db.get("SELECT COUNT(*) as count FROM products WHERE seller_id = ? AND status = 'active'", [sid]) || {count:0};
   var pending = db.get("SELECT COUNT(*) as count FROM products WHERE seller_id = ? AND status = 'pending'", [sid]) || {count:0};
   var recent = db.query('SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? ORDER BY p.created_at DESC LIMIT 5', [sid]);
   var rejected = db.get("SELECT COUNT(*) as count FROM products WHERE seller_id = ? AND status = 'rejected'", [sid]) || {count:0};
   var salesSummary = db.getSellerSalesSummary(sid);
-  var chartData = db.getSellerChartData(sid, 30);
+  var chartData = db.getSellerChartData(sid, period);
   var topProducts = db.getSellerTopProducts(sid);
   var totalViews = db.getSellerProductViews(sid);
   var activeGoal = db.getActiveGoal();
@@ -77,7 +77,7 @@ router.get('/dashboard', (req, res) => {
   res.render('seller/dashboard', {
     title: 'Meu Painel - Vendedor',
     stats: { total: total.count, active: active.count, pending: pending.count, rejected: rejected.count },
-    recent, salesSummary, chartData, topProducts, totalViews, goal: goalProgress, activeGoal, leaderboard, pendingQuestions
+    recent, salesSummary, chartData, topProducts, totalViews, goal: goalProgress, activeGoal, leaderboard, pendingQuestions, period
   });
 });
 
@@ -102,12 +102,13 @@ router.post('/products/new', upload.array('images', 5), (req, res) => {
   var cleanDesc = (description || '').toString().trim().slice(0, 2000);
   var cleanLocation = (location || 'Brasil').toString().trim().slice(0, 100);
   var cleanPrice = Math.max(0, parseFloat(price) || 0);
+  var cleanQty = Math.max(0, parseInt(req.body.quantity) || 0);
   if (!cleanName) { const categories = db.query('SELECT * FROM categories ORDER BY name'); return res.render('seller/product-form', { title: 'Novo Produto', product: null, categories, error: 'Nome inválido' }); }
   if (cleanPrice <= 0) { const categories = db.query('SELECT * FROM categories ORDER BY name'); return res.render('seller/product-form', { title: 'Novo Produto', product: null, categories, error: 'Preço deve ser maior que zero' }); }
   var mainImage = null;
   if (req.files && req.files.length > 0) mainImage = '/uploads/' + req.files[0].filename;
-  db.run('INSERT INTO products (name, description, price, category_id, seller_id, image, condition, location, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [cleanName, cleanDesc, cleanPrice, category_id || null, req.session.sellerId, mainImage, condition || 'new', cleanLocation, 'pending']);
+  db.run('INSERT INTO products (name, description, price, quantity, category_id, seller_id, image, condition, location, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [cleanName, cleanDesc, cleanPrice, cleanQty, category_id || null, req.session.sellerId, mainImage, condition || 'new', cleanLocation, 'pending']);
   var lastId = db.get('SELECT MAX(id) as id FROM products');
   if (lastId) db.run("UPDATE products SET code = 'PROD-' || upper(substr(hex(randomblob(4)), 1, 8)) WHERE id = ?", [lastId.id]);
   // Save extra images
@@ -148,12 +149,13 @@ router.post('/products/edit/:id', upload.array('images', 5), (req, res) => {
   var cleanDesc = (description || '').toString().trim().slice(0, 2000);
   var cleanLocation = (location || 'Brasil').toString().trim().slice(0, 100);
   var cleanPrice = Math.max(0, parseFloat(price) || 0);
+  var cleanQty = Math.max(0, parseInt(req.body.quantity) || 0);
   if (!cleanName) { const categories = db.query('SELECT * FROM categories ORDER BY name'); return res.render('seller/product-form', { title: 'Editar Produto', product, categories, error: 'Nome inválido' }); }
   if (cleanPrice <= 0) { const categories = db.query('SELECT * FROM categories ORDER BY name'); return res.render('seller/product-form', { title: 'Editar Produto', product, categories, error: 'Preço deve ser maior que zero' }); }
   var image = product.image;
   if (req.files && req.files.length > 0) image = '/uploads/' + req.files[0].filename;
-  db.run("UPDATE products SET name = ?, description = ?, price = ?, category_id = ?, image = ?, condition = ?, location = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND seller_id = ?",
-    [cleanName, cleanDesc, cleanPrice, category_id || null, image, condition || 'new', cleanLocation, req.params.id, req.session.sellerId]);
+  db.run("UPDATE products SET name = ?, description = ?, price = ?, quantity = ?, category_id = ?, image = ?, condition = ?, location = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND seller_id = ?",
+    [cleanName, cleanDesc, cleanPrice, cleanQty, category_id || null, image, condition || 'new', cleanLocation, req.params.id, req.session.sellerId]);
   // Save extra images
   if (req.files && req.files.length > 1) {
     for (var i = 1; i < req.files.length; i++) {
@@ -344,6 +346,28 @@ router.post('/configuracoes', requireSeller, (req, res) => {
   };
   db.updateSellerNotifPrefs(req.session.sellerId, prefs);
   res.redirect('/seller/configuracoes?sucesso=Salvo');
+});
+
+router.post('/change-password', requireSeller, (req, res) => {
+  var seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
+  if (!seller) return res.redirect('/seller/logout');
+  var { current_password, new_password, confirm_password } = req.body;
+  if (!bcrypt.compareSync(current_password, seller.password_hash)) {
+    return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Senha atual incorreta' });
+  }
+  if (new_password !== confirm_password || new_password.length < 6) {
+    return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Nova senha inválida ou não confere' });
+  }
+  var hash = bcrypt.hashSync(new_password, 10);
+  db.run('UPDATE sellers SET password_hash = ? WHERE id = ?', [hash, req.session.sellerId]);
+  res.redirect('/seller/configuracoes?sucesso=Senha alterada com sucesso!');
+});
+
+router.post('/request-delete', requireSeller, (req, res) => {
+  db.run("UPDATE sellers SET status = 'inactive' WHERE id = ?", [req.session.sellerId]);
+  db.addNotification('all', 'danger', 'Vendedor "' + req.session.sellerName + '" solicitou exclusão da conta.', 'user-times', '/admin/sellers');
+  req.session.destroy();
+  res.redirect('/seller/login');
 });
 
 // ========== PLACAR / SCOREBOARD ==========

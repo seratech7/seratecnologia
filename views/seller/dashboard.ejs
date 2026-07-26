@@ -35,7 +35,12 @@
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
     <div class="form-card">
-      <h3><i class="fas fa-chart-bar"></i> Vendas (últimos 30 dias)</h3>
+      <h3><i class="fas fa-chart-bar"></i> Vendas</h3>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+        <% [7, 15, 30, 90].forEach(function(p) { %>
+          <a href="/seller/dashboard?period=<%= p %>" class="btn-secondary" style="font-size:12px;padding:3px 10px;<%= (typeof period !== 'undefined' && period === p) ? 'background:var(--primary);color:#fff;' : '' %>"><%= p %> dias</a>
+        <% }) %>
+      </div>
       <% if (chartData && chartData.length > 0) { %>
       <div style="display:flex;align-items:end;gap:2px;height:120px;padding-top:16px;">
         <% var maxVal = Math.max(...chartData.map(function(d){return d.sales}), 1); %>
