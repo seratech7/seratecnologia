@@ -1,0 +1,175 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/seguranca' }) %>
+
+<style>
+.seg-section { background:#fff; border-radius:10px; padding:20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.seg-section h2 { margin:0 0 16px; font-size:17px; display:flex; align-items:center; gap:8px; }
+.seg-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.seg-field { margin-bottom:12px; }
+.seg-field label { display:block; font-size:12px; font-weight:600; color:#555; margin-bottom:3px; }
+.seg-field .hint { font-size:11px; color:#999; margin-top:2px; }
+.seg-section .form-control { width:100%; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; }
+.seg-section select.form-control { width:auto; min-width:120px; }
+.toggle-wrap { display:flex; align-items:center; gap:10px; margin:6px 0; }
+.toggle-wrap input[type=checkbox] { width:18px; height:18px; cursor:pointer; }
+.log-table { width:100%; border-collapse:collapse; font-size:13px; }
+.log-table th { text-align:left; padding:6px 8px; border-bottom:2px solid #e0e0e0; color:#555; font-weight:600; font-size:11px; text-transform:uppercase; }
+.log-table td { padding:6px 8px; border-bottom:1px solid #eee; font-size:12px; }
+.log-table .badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+.approve-btn { background:#e8f5e9; color:#2e7d32; }
+.deny-btn { background:#fdecea; color:#c62828; }
+</style>
+
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-shield-alt"></i> Segurança</h1>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+
+  <form method="POST" action="/admin/seguranca">
+  <!-- ACESSO -->
+  <div class="seg-section">
+    <h2><i class="fas fa-lock"></i> Controle de Acesso</h2>
+    <div class="seg-grid">
+      <div class="seg-field">
+        <label>Modo Manutenção</label>
+        <div class="toggle-wrap">
+          <input type="hidden" name="maintenance_mode" value="0">
+          <input type="checkbox" name="maintenance_mode" value="1" <%= configs.maintenance_mode === '1' ? 'checked' : '' %>>
+          <span style="font-size:13px;"><%= configs.maintenance_mode === '1' ? 'Ativado' : 'Desativado' %></span>
+        </div>
+        <div class="hint">Quando ativo, apenas admins veem o site. Público vê página de manutenção.</div>
+      </div>
+      <div class="seg-field">
+        <label>Mensagem de Manutenção</label>
+        <input type="text" name="maintenance_message" class="form-control" value="<%= configs.maintenance_message || 'Em manutenção. Voltamos em breve!' %>">
+      </div>
+    </div>
+  </div>
+
+  <!-- TAXA DE REQUISIÇÕES -->
+  <div class="seg-section">
+    <h2><i class="fas fa-tachometer-alt"></i> Rate Limiting</h2>
+    <div class="seg-grid">
+      <div class="seg-field">
+        <label>Requisições por janela (geral)</label>
+        <input type="number" name="rate_limit_max" class="form-control" value="<%= configs.rate_limit_max || '300' %>" min="10">
+        <div class="hint">Máximo de requisições que um IP pode fazer na janela abaixo.</div>
+      </div>
+      <div class="seg-field">
+        <label>Janela de tempo (minutos)</label>
+        <input type="number" name="rate_limit_window" class="form-control" value="<%= configs.rate_limit_window || '15' %>" min="1">
+        <div class="hint">Tempo em minutos para resetar o contador.</div>
+      </div>
+      <div class="seg-field">
+        <label>Tentativas de login por janela</label>
+        <input type="number" name="login_limit_max" class="form-control" value="<%= configs.login_limit_max || '10' %>" min="1">
+      </div>
+      <div class="seg-field">
+        <label>Janela de login (minutos)</label>
+        <input type="number" name="login_limit_window" class="form-control" value="<%= configs.login_limit_window || '15' %>" min="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- POLÍTICA DE SENHA -->
+  <div class="seg-section">
+    <h2><i class="fas fa-key"></i> Política de Senha</h2>
+    <div class="seg-grid">
+      <div class="seg-field">
+        <label>Tamanho mínimo</label>
+        <input type="number" name="password_min_length" class="form-control" value="<%= configs.password_min_length || '6' %>" min="4" max="100">
+      </div>
+      <div class="seg-field">
+        <label>Exigir caractere especial</label>
+        <div class="toggle-wrap">
+          <input type="hidden" name="password_require_special" value="0">
+          <input type="checkbox" name="password_require_special" value="1" <%= configs.password_require_special === '1' ? 'checked' : '' %>>
+          <span style="font-size:13px;"><%= configs.password_require_special === '1' ? 'Sim' : 'Não' %></span>
+        </div>
+      </div>
+      <div class="seg-field">
+        <label>Exigir número</label>
+        <div class="toggle-wrap">
+          <input type="hidden" name="password_require_number" value="0">
+          <input type="checkbox" name="password_require_number" value="1" <%= configs.password_require_number === '1' ? 'checked' : '' %>>
+          <span style="font-size:13px;"><%= configs.password_require_number === '1' ? 'Sim' : 'Não' %></span>
+        </div>
+      </div>
+      <div class="seg-field">
+        <label>Exigir maiúscula</label>
+        <div class="toggle-wrap">
+          <input type="hidden" name="password_require_upper" value="0">
+          <input type="checkbox" name="password_require_upper" value="1" <%= configs.password_require_upper === '1' ? 'checked' : '' %>>
+          <span style="font-size:13px;"><%= configs.password_require_upper === '1' ? 'Sim' : 'Não' %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="seg-section">
+    <h2><i class="fas fa-upload"></i> Upload de Arquivos</h2>
+    <div class="seg-field" style="max-width:300px;">
+      <label>Tamanho máximo (MB)</label>
+      <input type="number" name="upload_max_size" class="form-control" value="<%= configs.upload_max_size || '5' %>" min="1" max="50">
+    </div>
+  </div>
+
+  <!-- CSP -->
+  <div class="seg-section">
+    <h2><i class="fas fa-shield-virus"></i> Content Security Policy</h2>
+    <div class="seg-field">
+      <label>Ativar CSP</label>
+      <div class="toggle-wrap">
+        <input type="hidden" name="csp_enabled" value="0">
+        <input type="checkbox" name="csp_enabled" value="1" <%= configs.csp_enabled !== '0' ? 'checked' : '' %>>
+        <span style="font-size:13px;"><%= configs.csp_enabled !== '0' ? 'Ativado' : 'Desativado' %></span>
+      </div>
+      <div class="hint">Recomendado manter ativo. Desative apenas se estiver com problemas de script/style.</div>
+    </div>
+  </div>
+
+  <!-- SESSÕES -->
+  <div class="seg-section">
+    <h2><i class="fas fa-sign-out-alt"></i> Sessões</h2>
+    <p style="font-size:13px;color:#666;margin:0 0 12px;">Invalida todas as sessões ativas de vendedores e admins, forçando um novo login.</p>
+    <div style="display:flex;gap:8px;">
+      <button type="submit" name="action" value="force_logout_sellers" class="btn-primary" style="background:#e65100;" onclick="return confirm('Forçar logout de TODOS os vendedores?')"><i class="fas fa-sign-out-alt"></i> Logout Vendedores</button>
+      <button type="submit" name="action" value="force_logout_admins" class="btn-primary" style="background:#c62828;" onclick="return confirm('Forçar logout de TODOS os admins (inclusive você)?')"><i class="fas fa-sign-out-alt"></i> Logout Admins</button>
+    </div>
+  </div>
+
+  <!-- SALVAR -->
+  <div style="display:flex;gap:8px;margin-top:16px;">
+    <button type="submit" name="action" value="save" class="btn-primary"><i class="fas fa-save"></i> Salvar Configurações</button>
+  </div>
+  </form>
+
+  <!-- TENTATIVAS DE LOGIN -->
+  <div class="seg-section">
+    <h2><i class="fas fa-history"></i> Tentativas de Login</h2>
+    <% if (!loginAttempts || loginAttempts.length === 0) { %>
+      <p style="color:#999;font-size:13px;">Nenhuma tentativa registrada.</p>
+    <% } else { %>
+      <div style="overflow-x:auto;">
+      <table class="log-table">
+        <thead><tr><th>IP</th><th>Usuário</th><th>Tipo</th><th>Resultado</th><th>Data</th></tr></thead>
+        <tbody>
+          <% loginAttempts.forEach(function(a) { %>
+            <tr>
+              <td style="font-family:monospace;"><%= a.ip %></td>
+              <td><%= a.username || '-' %></td>
+              <td><span class="badge" style="background:#e3f2fd;color:#1565c0;"><%= a.type %></span></td>
+              <td><span class="badge <%= a.success === 1 ? 'approve-btn' : 'deny-btn' %>"><%= a.success === 1 ? 'Sucesso' : 'Falha' %></span></td>
+              <td style="font-size:11px;color:#888;"><%= new Date(a.created_at).toLocaleString('pt-BR') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

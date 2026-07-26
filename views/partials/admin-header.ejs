@@ -121,6 +121,9 @@
       <a href="/admin/diagnostico" class="<%= currentPath.indexOf('/admin/diagnostico') === 0 ? 'active' : '' %>">
         <i class="fas fa-stethoscope"></i> <span>Diagnóstico</span>
       </a>
+      <a href="/admin/seguranca" class="<%= currentPath === '/admin/seguranca' ? 'active' : '' %>">
+        <i class="fas fa-shield-alt"></i> <span>Segurança</span>
+      </a>
 
       <% if (!admin && seller) { %>
       <div class="nav-section-label">Vendedor</div>

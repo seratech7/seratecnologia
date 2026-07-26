@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Manutenção' %> | MarketPlace</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/fonts/fontawesome.min.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#f5f5f5; margin:0; font-family:sans-serif; }
+    .maintenance-box { text-align:center; padding:40px; max-width:500px; }
+    .maintenance-box .icon { font-size:64px; color:#ff9800; margin-bottom:16px; }
+    .maintenance-box h1 { font-size:28px; color:#333; margin:0 0 12px; }
+    .maintenance-box p { font-size:16px; color:#666; line-height:1.6; }
+  </style>
+</head>
+<body>
+  <div class="maintenance-box">
+    <div class="icon"><i class="fas fa-tools"></i></div>
+    <h1><%= message || 'Em manutenção' %></h1>
+    <p>Estamos realizando melhorias. Voltamos em breve!</p>
+  </div>
+</body>
+</html>

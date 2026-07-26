@@ -1242,6 +1242,43 @@ router.get('/placar', requireAdmin, (req, res) => {
   res.render('admin/placar', { title: 'Placar de Metas', goals, selectedGoal, leaderboard });
 });
 
+// ========== SEGURANCA ==========
+router.get('/seguranca', requireSuperAdmin, (req, res) => {
+  var keys = ['maintenance_mode','maintenance_message','rate_limit_max','rate_limit_window','login_limit_max','login_limit_window','password_min_length','password_require_special','password_require_number','password_require_upper','upload_max_size','csp_enabled'];
+  var configs = {};
+  keys.forEach(function(k) {
+    var r = db.get("SELECT value FROM config WHERE key = ?", [k]);
+    configs[k] = r ? r.value : '';
+  });
+  var loginAttempts = db.getLoginAttempts(100);
+  res.render('admin/seguranca', { title: 'Segurança', configs, loginAttempts, msg: req.query.msg || '' });
+});
+
+router.post('/seguranca', requireSuperAdmin, (req, res) => {
+  var action = req.body.action;
+  if (action === 'save') {
+    var keys = ['maintenance_mode','maintenance_message','rate_limit_max','rate_limit_window','login_limit_max','login_limit_window','password_min_length','password_require_special','password_require_number','password_require_upper','upload_max_size','csp_enabled'];
+    keys.forEach(function(k) {
+      var val = req.body[k] !== undefined ? req.body[k] : '';
+      db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [k, val.toString()]);
+    });
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'security', 'Alterou configurações de segurança');
+    return res.redirect('/admin/seguranca?msg=Configurações salvas!');
+  }
+  if (action === 'force_logout_sellers') {
+    db.run("DELETE FROM sessions WHERE sid IN (SELECT s.sid FROM sessions s WHERE s.sid LIKE '%seller%')");
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'security', 'Forçou logout de todos os vendedores');
+    return res.redirect('/admin/seguranca?msg=Logout forçado de todos os vendedores!');
+  }
+  if (action === 'force_logout_admins') {
+    db.run("DELETE FROM sessions");
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'security', 'Forçou logout de todos os admins');
+    req.session.destroy();
+    return res.redirect('/admin/login');
+  }
+  res.redirect('/admin/seguranca');
+});
+
 router.get('/super', requireSuperAdmin, (req, res) => {
   var configs = db.query("SELECT key, value FROM config ORDER BY key");
   var admins = db.query("SELECT id, username, display_name, role FROM admins");

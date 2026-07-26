@@ -27,6 +27,7 @@ const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
 const { toggleMiddleware } = require('./middleware/toggles');
 const { csrfProtection } = require('./middleware/csrf');
+const { securityMiddleware } = require('./middleware/security');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -230,6 +231,7 @@ app.use((req, res, next) => {
 });
 
 app.use(toggleMiddleware);
+app.use(securityMiddleware);
 
 // CSRF protection for all non-GET requests
 app.use(csrfProtection);
@@ -246,18 +248,6 @@ app.use((req, res, next) => {
     res.locals.customCSS = '';
     res.locals.customJS = '';
   }
-  next();
-});
-
-// Maintenance mode check
-app.use((req, res, next) => {
-  if (req.path.startsWith('/admin') || req.path.startsWith('/seller') || req.path === '/admin/login') return next();
-  try {
-    var maintenance = require('./database/db').get("SELECT value FROM config WHERE key = 'maintenance_mode'");
-    if (maintenance && maintenance.value === '1' && !req.session.adminId) {
-      return res.status(503).sendFile(path.join(__dirname, 'public', 'maintenance.html'));
-    }
-  } catch(e) {}
   next();
 });
 
@@ -283,19 +273,6 @@ app.use(function(req, res, next) {
     } catch(e) { /* silent */ }
   }
 
-  next();
-});
-
-// IP Block middleware
-app.use((req, res, next) => {
-  if (req.path.startsWith('/admin')) return next();
-  try {
-    var ip = req.ip || req.connection.remoteAddress || 'unknown';
-    var db = require('./database/db');
-    if (db.isIpBlocked(ip)) {
-      return res.status(403).send('Seu IP foi bloqueado.');
-    }
-  } catch(e) {}
   next();
 });
 

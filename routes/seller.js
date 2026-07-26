@@ -37,10 +37,15 @@ router.get('/login', redirectIfSeller, (req, res) => {
 
 router.post('/login', (req, res) => {
   const { email, password } = req.body;
+  var ip = req.ip || req.connection.remoteAddress || '';
   if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   const seller = db.get('SELECT * FROM sellers WHERE email = ?', [email]);
-  if (!seller || !bcrypt.compareSync(password, seller.password_hash)) return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken });
+  if (!seller || !bcrypt.compareSync(password, seller.password_hash)) {
+    db.logLoginAttempt(ip, email, 'seller', false);
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken });
+  }
   if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.', csrfToken: req.session.csrfToken });
+  db.logLoginAttempt(ip, email, 'seller', true);
   req.session.sellerId = seller.id;
   req.session.sellerName = seller.name;
   req.session.sellerPhone = seller.whatsapp || seller.phone || '';

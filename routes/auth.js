@@ -10,17 +10,21 @@ router.get('/login', redirectIfAdmin, (req, res) => {
 
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
+  var ip = req.ip || req.connection.remoteAddress || '';
 
   if (!username || !password) {
+    db.logLoginAttempt(ip, username, 'admin', false);
     return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   }
 
   const admin = db.get('SELECT * FROM admins WHERE username = ?', [username]);
 
   if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
+    db.logLoginAttempt(ip, username, 'admin', false);
     return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Usuário ou senha inválidos', csrfToken: req.session.csrfToken });
   }
 
+  db.logLoginAttempt(ip, username, 'admin', true);
   req.session.adminId = admin.id;
   req.session.adminName = admin.display_name;
   res.redirect('/admin/dashboard');
