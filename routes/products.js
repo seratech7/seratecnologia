@@ -75,6 +75,8 @@ router.get('/', (req, res) => {
     });
   } catch (e) {
     console.error('Homepage error:', e);
+    console.error('Homepage error stack:', e && e.stack);
+    console.error('Homepage error type:', typeof e, e && e.constructor && e.constructor.name);
     res.render('index', {
       title: 'SeraTecnologia',
       products: [],
@@ -84,7 +86,7 @@ router.get('/', (req, res) => {
       flashProducts: [],
       search: '', selectedCategory: '', selectedCondition: '',
       selectedLocation: '', priceMin: '', priceMax: '', selectedSort: '',
-      homepageError: e.message
+      homepageError: (e && e.message) || (e && e.toString()) || JSON.stringify(e) || 'Erro desconhecido'
     });
   }
 });
