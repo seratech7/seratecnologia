@@ -226,10 +226,18 @@ router.post('/products/approve/:id', (req, res) => {
   if (!id) return res.redirect('/admin/products');
   var p = db.get("SELECT status FROM products WHERE id = ?", [id]);
   if (!p) return res.redirect('/admin/products');
+  var wasApproved = p.status === 'active';
   db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
   var check = db.get("SELECT status FROM products WHERE id = ?", [id]);
   if (check && check.status !== 'active') {
     db.run("UPDATE products SET status = 'active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", [id]);
+  }
+  // Auto-anúncio: notifica Discord + IndexNow quando um produto novo é aprovado
+  if (!wasApproved) {
+    try {
+      const automation = require('../utils/automation');
+      automation.announceNewProduct(db, id).catch(() => {});
+    } catch (e) { /* automação não bloqueia aprovação */ }
   }
   res.redirect('/admin/products');
 });

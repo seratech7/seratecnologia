@@ -1,0 +1,57 @@
+<%- include('partials/header') %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+
+<div class="card">
+  <h2>Configurações</h2>
+  <form id="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="grid grid-2">
+      <div class="field">
+        <label>Nome do site</label>
+        <input class="input" type="text" name="site_name" value="<%= settings.site_name %>">
+      </div>
+      <div class="field">
+        <label>Confirmações mínimas para depósito</label>
+        <input class="input" type="number" name="min_confirmations" value="<%= settings.min_confirmations %>" min="1">
+      </div>
+      <div class="field">
+        <label>Taxa de saque (XMR)</label>
+        <input class="input" type="text" name="withdrawal_fee_xmr" value="<%= settings.withdrawal_fee_xmr %>">
+      </div>
+      <div class="field">
+        <label>Modo de manutenção</label>
+        <select class="select" name="maintenance_mode">
+          <option value="0" <%= settings.maintenance_mode === '0' ? 'selected' : '' %>>Desativado</option>
+          <option value="1" <%= settings.maintenance_mode === '1' ? 'selected' : '' %>>Ativado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Saques habilitados</label>
+        <select class="select" name="withdrawal_enabled">
+          <option value="1" <%= settings.withdrawal_enabled === '1' ? 'selected' : '' %>>Habilitado</option>
+          <option value="0" <%= settings.withdrawal_enabled === '0' ? 'selected' : '' %>>Desabilitado</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Cadastro de novos usuários</label>
+        <select class="select" name="registration_open">
+          <option value="1" <%= settings.registration_open === '1' ? 'selected' : '' %>>Aberto</option>
+          <option value="0" <%= settings.registration_open === '0' ? 'selected' : '' %>>Fechado</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" type="submit">Salvar configurações</button>
+  </form>
+</div>
+
+<script>
+document.getElementById('settings-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  apiPost('<%= adminPath %>/settings', new URLSearchParams(new FormData(this)), function () {
+    toast('Configurações salvas');
+    setTimeout(function () { location.reload(); }, 800);
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

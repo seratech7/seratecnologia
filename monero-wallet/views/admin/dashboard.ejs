@@ -1,0 +1,93 @@
+<%- include('partials/header') %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+
+<div class="balance-hero">
+  <div>
+    <div class="balance-label">Saldo da conta-mestra (XMR)</div>
+    <div class="balance-value">
+      <% if (balance) { %>
+        <%= fmt(balance.balance) %> <small>XMR</small>
+      <% } else { %>
+        <small class="muted">carteira indisponível</small>
+      <% } %>
+    </div>
+    <div class="muted">Desbloqueado: <%= balance ? fmt(balance.unlocked) : '-' %> XMR</div>
+  </div>
+  <div class="balance-actions">
+    <a class="btn" href="<%= adminPath %>/wallet">Gerenciar conta-mestra</a>
+    <a class="btn btn-warn" href="<%= adminPath %>/withdrawals">
+      Saques pendentes: <strong><%= pendingWithdrawals %></strong>
+    </a>
+  </div>
+</div>
+
+<div class="stats-row mt">
+  <div class="stat"><div class="v"><%= users %></div><div class="l">Usuários</div></div>
+  <div class="stat"><div class="v"><%= activeUsers %></div><div class="l">Ativos</div></div>
+  <div class="stat"><div class="v"><%= blockedUsers %></div><div class="l">Bloqueados</div></div>
+  <div class="stat"><div class="v"><%= pendingDeposits %></div><div class="l">Depósitos pendentes</div></div>
+  <div class="stat"><div class="v"><%= pendingWithdrawals %></div><div class="l">Saques pendentes</div></div>
+  <div class="stat"><div class="v"><%= fmt(totalDeposited) %></div><div class="l">XMR depositado</div></div>
+  <div class="stat"><div class="v"><%= fmt(totalWithdrawn) %></div><div class="l">XMR sacado</div></div>
+  <div class="stat"><div class="v"><%= fmt(totalHeld) %></div><div class="l">XMR em reserva</div></div>
+</div>
+
+<div class="grid grid-3 mt">
+  <div class="card">
+    <h3>Depósitos recentes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Usuário</th><th>Valor</th><th>Status</th></tr></thead>
+        <tbody>
+          <% recentDeposits.forEach(function(d) { %>
+            <tr>
+              <td><%= d.user_name || d.user_email || '—' %></td>
+              <td class="pos mono"><%= fmt(d.amount_atomic) %></td>
+              <td><span class="badge badge-<%= d.status %>"><%= d.status %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <a class="btn btn-sm btn-ghost mt" href="<%= adminPath %>/deposits">Ver todos</a>
+  </div>
+
+  <div class="card">
+    <h3>Saques recentes</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Usuário</th><th>Valor</th><th>Status</th></tr></thead>
+        <tbody>
+          <% recentWithdrawals.forEach(function(w) { %>
+            <tr>
+              <td><%= w.user_name || w.user_email || '—' %></td>
+              <td class="neg mono"><%= fmt(w.amount_atomic) %></td>
+              <td><span class="badge badge-<%= w.status %>"><%= w.status %></span></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <a class="btn btn-sm btn-ghost mt" href="<%= adminPath %>/withdrawals">Ver todos</a>
+  </div>
+
+  <div class="card">
+    <h3>Novos usuários</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Email</th><th>Saldo</th></tr></thead>
+        <tbody>
+          <% recentUsers.forEach(function(u) { %>
+            <tr>
+              <td><%= u.email %></td>
+              <td class="mono"><%= fmt(u.balance_atomic) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <a class="btn btn-sm btn-ghost mt" href="<%= adminPath %>/users">Ver todos</a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

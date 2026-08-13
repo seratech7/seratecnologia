@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+
+<div class="grid grid-2">
+  <div class="card">
+    <h2>Depositar XMR</h2>
+    <p class="muted mb">Deposite Monero enviando para o endereço abaixo. O valor cai na conta-mestra e é creditado automaticamente na sua carteira após a confirmação na rede.</p>
+
+    <div class="qr-wrap">
+      <% if (qr) { %>
+        <img src="<%= qr %>" alt="QR code de depósito">
+      <% } else { %>
+        <div class="alert alert-info">QR indisponível no momento.</div>
+      <% } %>
+    </div>
+
+    <div class="field mt">
+      <label>Endereço de depósito (conta-mestra)</label>
+      <div class="address-box">
+        <code><%= address %></code>
+        <button class="btn btn-sm btn-ghost" data-copy="<%= address %>">Copiar</button>
+      </div>
+    </div>
+
+    <button class="btn btn-ghost btn-sm" id="btn-new-address">Gerar novo endereço</button>
+    <div class="hint mt">Recomendamos usar um endereço diferente para cada depósito para melhor privacidade.</div>
+  </div>
+
+  <div class="card">
+    <h3>Histórico de depósitos</h3>
+    <% if (deposits.length === 0) { %>
+      <p class="muted">Nenhum depósito ainda.</p>
+    <% } else { %>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Valor</th><th>Confirmações</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody>
+            <% deposits.forEach(function(d) { %>
+              <tr>
+                <td class="pos mono"><%= fmt(d.amount_atomic) %> XMR</td>
+                <td class="mono"><%= d.confirmations %></td>
+                <td><span class="badge badge-<%= d.status %>"><%= d.status %></span></td>
+                <td class="muted"><%= d.created_at %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+document.getElementById('btn-new-address').addEventListener('click', function () {
+  apiPost('/deposit/refresh', {}, function (json) {
+    if (json.address) { location.reload(); }
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

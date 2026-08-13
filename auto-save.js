@@ -3,12 +3,13 @@ const path = require('path');
 const { backupDatabase } = require('./backup-db');
 
 const repoDir = __dirname;
-const token = process.env.GITHUB_TOKEN;
-const remoteUrl = `https://seratech7:${token}@github.com/seratech7/seratecnologia.git`;
+// NEVER embed the token in the git remote URL — it would be persisted in .git/config.
+// Push relies on the local credential helper (Windows Credential Manager) or GITHUB_TOKEN set as an env var
+// consumed by git itself. If neither is available, the push simply fails (safe).
 
-function run(cmd) {
+function run(cmd, env) {
   try {
-    return execSync(cmd, { cwd: repoDir, encoding: 'utf8', stdio: 'pipe' }).trim();
+    return execSync(cmd, { cwd: repoDir, encoding: 'utf8', stdio: 'pipe', env: env || process.env, timeout: 60000 }).trim();
   } catch (e) {
     return null;
   }
@@ -16,10 +17,6 @@ function run(cmd) {
 
 function autoSave() {
   backupDatabase();
-
-  if (token) {
-    run(`git remote set-url origin "${remoteUrl}"`);
-  }
 
   const hasChanges = run('git status --porcelain');
   if (!hasChanges) {
@@ -33,13 +30,13 @@ function autoSave() {
   const timestamp = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const msg = `auto: ${timestamp}`;
 
-  const commit = run(`git commit -m "${msg}"`);
-  const push = run('git push origin master');
+  run(`git commit -m "${msg}"`);
 
+  const push = run('git push origin master');
   if (push) {
     console.log(`[autosave] ok: ${msg}`);
   } else {
-    console.log('[autosave] push falhou');
+    console.log('[autosave] push falhou (sem credencial disponível ou erro)');
   }
 }
 

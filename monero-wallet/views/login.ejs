@@ -1,0 +1,28 @@
+<%- include('partials/header') %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+
+<div class="form-box">
+  <div class="card">
+    <h2 class="text-center">Entrar na sua carteira</h2>
+    <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+    <form method="POST" action="/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label>Email</label>
+        <input class="input" type="email" name="email" required autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input class="input" type="password" name="password" required autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label>Código 2FA <span class="hint">(apenas se ativado)</span></label>
+        <input class="input" type="text" name="totp" placeholder="000000" inputmode="numeric">
+      </div>
+      <button class="btn btn-block btn-xmr" type="submit">Entrar</button>
+    </form>
+    <p class="text-center mt muted">Não tem conta? <a href="/register">Criar conta</a></p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

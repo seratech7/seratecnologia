@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> · <%= siteName %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="site">
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="logo">◉ <%= siteName %></a>
+      <nav class="nav-links">
+        <% if (session && session.userId) { %>
+          <a href="/wallet">Carteira</a>
+          <a href="/deposit">Depositar</a>
+          <a href="/withdraw">Sacar</a>
+          <a href="/history">Histórico</a>
+          <a href="/account/2fa">Segurança</a>
+          <form method="POST" action="/logout" style="display:inline">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn btn-link" type="submit">Sair</button>
+          </form>
+        <% } else { %>
+          <a href="/login">Entrar</a>
+          <a href="/register">Criar conta</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container main">
+    <% if (flash && flash.length) { %>
+      <% flash.forEach(function(f) { %>
+        <div class="alert alert-<%= f.type %>"><%= f.text %></div>
+      <% }) %>
+    <% } %>

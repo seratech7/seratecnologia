@@ -426,5 +426,53 @@ module.exports = function() {
     });
   });
 
+  // ============================================================
+  //  AUTOMAÇÃO (agendador, indexação, promoção automática)
+  // ============================================================
+  router.get('/marketing/automation', (req, res) => {
+    const automation = require('../utils/automation');
+    let state = {};
+    try {
+      const fs = require('fs');
+      state = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'automation-state.json'), 'utf8'));
+    } catch (e) {}
+    res.render('admin/marketing/automation', {
+      title: 'Automação', currentPath: '/admin/marketing/automation',
+      baseUrl: automation.SITE_URL,
+      siteName: automation.SITE_NAME,
+      indexNowConfigured: !!process.env.INDEXNOW_KEY,
+      googleConfigured: !!process.env.GOOGLE_INDEXING_KEY,
+      discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
+      autoDisabled: process.env.AUTO_DISABLED === 'true',
+      promoteHour: process.env.AUTO_PROMOTE_HOUR || '9',
+      annHour: process.env.AUTO_ANN_HOUR || '18',
+      state,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/automation/index', async (req, res) => {
+    try {
+      const { autoIndexNewProducts } = require('../utils/scheduler');
+      const r = await autoIndexNewProducts();
+      const detail = [];
+      if (r.indexNow) detail.push('IndexNow: ' + (r.indexNow.ok ? 'ok (' + r.indexNow.status + ')' : r.indexNow.reason || r.indexNow.status));
+      if (r.google) detail.push('Google: ' + (r.google.ok ? 'ok (' + r.google.results.length + ' URLs)' : r.google.reason || ''));
+      res.redirect('/admin/marketing/automation?success=' + encodeURIComponent((r.indexed + ' produtos indexados. ' + detail.join(' | '))));
+    } catch (e) {
+      res.redirect('/admin/marketing/automation?error=' + encodeURIComponent(e.message));
+    }
+  });
+
+  router.post('/marketing/automation/promote', async (req, res) => {
+    try {
+      const { autoPromoteDaily } = require('../utils/scheduler');
+      const results = await autoPromoteDaily();
+      res.redirect('/admin/marketing/automation?success=' + encodeURIComponent('Promoção executada: ' + results.join(' | ')));
+    } catch (e) {
+      res.redirect('/admin/marketing/automation?error=' + encodeURIComponent(e.message));
+    }
+  });
+
   return router;
 };

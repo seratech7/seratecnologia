@@ -395,6 +395,15 @@ app.get('/robots.txt', (req, res) => {
   res.send('User-agent: *\nAllow: /\nSitemap: ' + baseUrl + '/sitemap.xml\n');
 });
 
+// IndexNow key file (necessário para indexação instantânea Bing/Seznam/Yandex)
+app.get('/:idxkey.txt', (req, res) => {
+  var key = process.env.INDEXNOW_KEY || '';
+  if (!key) return res.status(404).send('not found');
+  if (req.params.idxkey !== key) return res.status(404).send('not found');
+  res.type('text/plain');
+  res.send(key);
+});
+
 app.use((req, res) => {
   res.status(404).render('404', { title: 'Página não encontrada' });
 });
@@ -425,6 +434,12 @@ async function start() {
 
     setTimeout(autoSave, 120000);
     setInterval(autoSave, 7200000);
+
+    // Agendador de automação (indexação, promoção diária)
+    try {
+      const { startScheduler } = require('./utils/scheduler');
+      startScheduler();
+    } catch (e) { console.error('Erro iniciando agendador:', e.message); }
   });
 }
 

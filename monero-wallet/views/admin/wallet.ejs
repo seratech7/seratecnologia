@@ -1,0 +1,91 @@
+<%- include('partials/header') %>
+<meta name="csrf-token" content="<%= csrfToken %>">
+
+<div class="grid grid-2">
+  <div class="card">
+    <h3>Conta-Mestra (hot wallet)</h3>
+    <% if (error) { %>
+      <div class="alert alert-error">Erro ao conectar na carteira: <%= error %></div>
+    <% } %>
+    <div class="stats-row mb">
+      <div class="stat"><div class="v"><%= balance ? fmt(balance.balance) : '—' %></div><div class="l">Saldo total (XMR)</div></div>
+      <div class="stat"><div class="v"><%= balance ? fmt(balance.unlocked) : '—' %></div><div class="l">Desbloqueado</div></div>
+      <div class="stat"><div class="v"><%= fmt(totalUserBalances) %></div><div class="l">Saldo dos usuários</div></div>
+    </div>
+    <p class="muted">Modo: <strong><%= mode.toUpperCase() %></strong></p>
+    <% if (primary) { %>
+      <div class="field">
+        <label>Endereço principal</label>
+        <div class="address-box">
+          <code><%= primary %></code>
+          <button class="btn btn-sm btn-ghost" data-copy="<%= primary %>">Copiar</button>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="mt" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-sm" id="btn-scan">Executar scan</button>
+      <button class="btn btn-sm btn-ghost" id="btn-rescan">Rescan blockchain</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Simular depósito <span class="muted">(modo mock)</span></h3>
+    <p class="muted mb">Somente em modo mock. Crie uma transferência simulada para testar o fluxo de confirmação e crédito.</p>
+    <form id="simulate-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label>Endereço de depósito (do usuário)</label>
+        <input class="input" type="text" name="address" placeholder="Cole o endereço de depósito do usuário" required>
+      </div>
+      <div class="field">
+        <label>Valor (XMR)</label>
+        <input class="input" type="text" name="amount" placeholder="0.5" required>
+      </div>
+      <button class="btn btn-sm btn-xmr" type="submit">Simular depósito</button>
+    </form>
+
+    <h3 class="mt">Transferências simuladas</h3>
+    <% if (mockTransfers.length === 0) { %>
+      <p class="muted">Nenhuma transferência simulada.</p>
+    <% } else { %>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Valor</th><th>Confirmações</th><th></th></tr></thead>
+          <tbody>
+            <% mockTransfers.forEach(function(t) { %>
+              <tr>
+                <td class="pos mono"><%= fmt(t.amount_atomic) %> XMR</td>
+                <td class="mono"><%= t.confirmations %></td>
+                <td><button class="btn btn-sm btn-danger" data-remove="<%= t.id %>">Remover</button></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+document.getElementById('btn-scan').addEventListener('click', function () {
+  apiPost('<%= adminPath %>/wallet/scan', {}, function () { toast('Scan executado'); setTimeout(function () { location.reload(); }, 800); });
+});
+document.getElementById('btn-rescan').addEventListener('click', function () {
+  apiPost('<%= adminPath %>/wallet/rescan', {}, function () { toast('Rescan executado'); });
+});
+document.getElementById('simulate-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  apiPost('<%= adminPath %>/wallet/simulate', new URLSearchParams(new FormData(this)), function () {
+    toast('Depósito simulado. Aguarde as confirmações.');
+    setTimeout(function () { location.reload(); }, 800);
+  });
+});
+document.querySelectorAll('[data-remove]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    apiPost('<%= adminPath %>/wallet/simulate/remove', { id: b.dataset.remove }, function () { location.reload(); });
+  });
+});
+</script>
+
+<%- include('partials/footer') %>
