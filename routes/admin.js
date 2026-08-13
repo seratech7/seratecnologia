@@ -526,7 +526,7 @@ router.post('/sellers/notify/:id', (req, res) => {
   if (!seller) return res.redirect('/admin/sellers?msg=Vendedor+n%C3%A3o+encontrado');
   const message = String(req.body.message || '').trim();
   if (!message) return res.redirect('/admin/sellers?msg=Mensagem+vazia');
-  db.addNotification(seller.email, 'seller', message, 'bell', req.body.link || '');
+  db.addNotification(String(seller.id), 'seller', message, 'bell', req.body.link || '');
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'seller_notify', 'Notificou vendedor ' + seller.name + ': ' + message.slice(0, 80));
   res.redirect('/admin/sellers?msg=Notifica%C3%A7%C3%A3o+enviada+para+'+encodeURIComponent(seller.name));
 });
