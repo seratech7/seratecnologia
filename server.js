@@ -153,9 +153,15 @@ if (process.env.NODE_ENV === 'production') {
 var FileStore = require('session-file-store')(session);
 var sessionStore;
 try {
+  var fsmod = require('fs');
   var sessionDir = path.join(__dirname, 'sessions');
-  require('fs').mkdirSync(sessionDir, { recursive: true });
+  fsmod.mkdirSync(sessionDir, { recursive: true });
+  // Teste real de escrita: alguns hosts (ex.: Render free) tem disco somente leitura
+  var probe = path.join(sessionDir, '.probe-' + Date.now());
+  fsmod.writeFileSync(probe, 'ok');
+  fsmod.unlinkSync(probe);
   sessionStore = new FileStore({ path: sessionDir, ttl: 604800, reapInterval: 3600 });
+  console.log('[session] FileStore em ' + sessionDir);
 } catch (e) {
   console.warn('[session] FileStore indisponível, usando MemoryStore:', e.message);
   sessionStore = new session.MemoryStore();
