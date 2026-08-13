@@ -165,10 +165,10 @@ try {
     path: sessionDir,
     ttl: 604800,
     reapInterval: 3600,
-    // Deploy no Render zera o disco: arquivos de sessão antigos somem. Não ficar
-    // logando ENOENT 5x nem erro; devolve sessão nova silenciosamente.
-    retries: 0,
-    fallbackSessionFn: function () { return {}; }
+    // Deploy no Render zera o disco: arquivos de sessão antigos somem.
+    // retries:0 evita o spam "will retry" 5x; o ENOENT propaga e o
+    // express-session regenera a sessão no caminho nativo (gera cookie novo).
+    retries: 0
   });
   console.log('[session] FileStore em ' + sessionDir);
 } catch (e) {
