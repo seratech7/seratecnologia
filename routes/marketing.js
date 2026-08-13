@@ -266,6 +266,37 @@ module.exports = function() {
   });
 
   // ============================================================
+  //  AUTO-RESPOSTA (regras de resposta automática)
+  // ============================================================
+  router.get('/marketing/autoreply', (req, res) => {
+    const replies = db.getAutoReplies();
+    res.render('admin/marketing/autoreply', {
+      title: 'Auto-Resposta', currentPath: '/admin/marketing/autoreply',
+      replies,
+      error: null, success: null
+    });
+  });
+
+  router.post('/marketing/autoreply/save', (req, res) => {
+    const { id, keyword, reply, match_type, active } = req.body;
+    if (!keyword || !reply) return res.redirect('/admin/marketing/autoreply?error=Preencha palavra-chave e resposta');
+    if (id) db.updateAutoReply(id, keyword.trim(), reply.trim(), match_type || 'exact', active === '1' || active === 'on');
+    else db.saveAutoReply(keyword.trim(), reply.trim(), match_type || 'exact', active === '1' || active === 'on');
+    res.redirect('/admin/marketing/autoreply?success=Regra salva');
+  });
+
+  router.post('/marketing/autoreply/delete/:id', (req, res) => {
+    db.deleteAutoReply(req.params.id);
+    res.redirect('/admin/marketing/autoreply?success=Regra removida');
+  });
+
+  router.post('/marketing/autoreply/toggle/:id', (req, res) => {
+    const r = db.getAutoReply(req.params.id);
+    if (r) db.toggleAutoReply(req.params.id, !r.active);
+    res.redirect('/admin/marketing/autoreply?success=Status atualizado');
+  });
+
+  // ============================================================
   //  AUTO-PROMO (Gerar divulgação de produtos)
   // ============================================================
   router.get('/marketing/autopromo', (req, res) => {
@@ -325,11 +356,56 @@ module.exports = function() {
     if (!list) return res.redirect('/admin/marketing/lists?error=Lista não encontrada');
     const members = db.getMarketingListMembers(req.params.id);
     const lists = db.getMarketingLists();
+    let contacts = [];
+    try {
+      contacts = db.query("SELECT DISTINCT name, phone FROM customers WHERE phone IS NOT NULL AND phone != '' ORDER BY name LIMIT 200") || [];
+    } catch (e) { contacts = []; }
     res.render('admin/marketing/list-detail', {
       title: 'Lista: ' + list.name, currentPath: '/admin/marketing/lists',
-      list, members, lists,
+      list, members, lists, contacts,
+      csrfToken: req.session.csrfToken,
       error: null, success: null
     });
+  });
+
+  router.post('/marketing/lists/:id/add-from-contacts', (req, res) => {
+    try {
+      const contacts = db.query("SELECT DISTINCT name, phone FROM customers WHERE phone IS NOT NULL AND phone != ''") || [];
+      let added = 0;
+      contacts.forEach(function(c) {
+        try {
+          const existing = db.get("SELECT id FROM marketing_list_members WHERE list_id = ? AND phone = ?", [req.params.id, c.phone.replace(/\D/g, '')]);
+          if (!existing) {
+            db.addMarketingListMember(req.params.id, c.phone.replace(/\D/g, ''), c.name || '');
+            added++;
+          }
+        } catch (e) {}
+      });
+      res.redirect('/admin/marketing/lists/' + req.params.id + '?success=' + encodeURIComponent(added + ' contatos importados da base'));
+    } catch (e) {
+      res.redirect('/admin/marketing/lists/' + req.params.id + '?error=Erro ao importar contatos');
+    }
+  });
+
+  router.post('/marketing/lists/:id/send', async (req, res) => {
+    const { message } = req.body;
+    const list = db.getMarketingList(req.params.id);
+    if (!list) return res.redirect('/admin/marketing/lists?error=Lista não encontrada');
+    if (!message || !message.trim()) return res.redirect('/admin/marketing/lists/' + req.params.id + '?error=Mensagem obrigatória');
+    const members = db.getMarketingListMembers(req.params.id) || [];
+    if (members.length === 0) return res.redirect('/admin/marketing/lists/' + req.params.id + '?error=Lista vazia');
+    const url = process.env.DISCORD_WEBHOOK_URL;
+    if (!url) return res.redirect('/admin/marketing/lists/' + req.params.id + '?error=Discord não configurado para envio');
+    let sent = 0, failed = 0;
+    for (const m of members) {
+      try {
+        const text = message.replace('{nome}', m.name || '').replace('{telefone}', m.phone || '');
+        await reqPromise(url, 'POST', JSON.stringify({ content: text }), { 'Content-Type': 'application/json' });
+        sent++;
+      } catch (e) { failed++; }
+      await new Promise(r => setTimeout(r, 150));
+    }
+    res.redirect('/admin/marketing/lists/' + req.params.id + '?success=' + encodeURIComponent('Enviado para ' + sent + ' membros' + (failed ? ', ' + failed + ' falharam' : '')));
   });
 
   router.post('/marketing/lists/:id/add', (req, res) => {
@@ -486,12 +562,15 @@ module.exports = function() {
     const abandonedCount = abandoned.length ? abandoned[0].c : 0;
     const pushCount = (db.get('SELECT COUNT(*) as c FROM push_subscriptions') || {}).c || 0;
     const top = attraction.getTopSellers(5);
+    const generatedKeys = req.session.vapidGenerated || null;
+    req.session.vapidGenerated = null;
     res.render('admin/marketing/attraction', {
       title: 'Atração de Visitantes', currentPath: '/admin/marketing/attraction',
       refStats, gaStats, abandonedCount, pushCount, top,
       siteUrl: attraction.SITE_URL,
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       pushConfigured: !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+      generatedKeys,
       error: null, success: null
     });
   });
@@ -519,7 +598,8 @@ module.exports = function() {
     try {
       const webpush = require('web-push');
       const keys = webpush.generateVAPIDKeys();
-      res.redirect('/admin/marketing/attraction?success=' + encodeURIComponent('VAPID geradas! Adicione no .env:\n\nVAPID_PUBLIC_KEY=' + keys.publicKey + '\nVAPID_PRIVATE_KEY=' + keys.privateKey));
+      req.session.vapidGenerated = { publicKey: keys.publicKey, privateKey: keys.privateKey };
+      res.redirect('/admin/marketing/attraction?success=1');
     } catch (e) {
       res.redirect('/admin/marketing/attraction?error=' + encodeURIComponent(e.message));
     }

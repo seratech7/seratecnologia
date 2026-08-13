@@ -162,6 +162,7 @@ router.get('/sales', (req, res) => {
   const summary = {
     pending: db.get("SELECT COUNT(*) as c FROM sales WHERE status='pending'").c,
     approved: db.get("SELECT COUNT(*) as c FROM sales WHERE status='approved'").c,
+    paid: db.get("SELECT COUNT(*) as c FROM sales WHERE status='paid'").c,
     shipped: db.get("SELECT COUNT(*) as c FROM sales WHERE status='shipped'").c,
     delivered: db.get("SELECT COUNT(*) as c FROM sales WHERE status='delivered'").c,
     cancelled: db.get("SELECT COUNT(*) as c FROM sales WHERE status='cancelled'").c,
@@ -400,6 +401,15 @@ router.post('/products/edit/:id', upload.array('images', 3), (req, res) => {
   res.redirect('/admin/products');
 });
 
+router.post('/products/delete-image/:id', (req, res) => {
+  var img = db.get("SELECT * FROM product_images WHERE id = ?", [req.params.id]);
+  if (img) {
+    try { fs.unlinkSync(path.join(__dirname, '..', 'public', img.image)); } catch(e) {}
+    db.run("DELETE FROM product_images WHERE id = ?", [req.params.id]);
+  }
+  res.redirect(req.get('Referer') || '/admin/products');
+});
+
 router.post('/products/delete/:id', (req, res) => {
   var p = db.get('SELECT image FROM products WHERE id = ?', [req.params.id]);
   if (p && p.image) { try { fs.unlinkSync(path.join(__dirname, '..', 'public', p.image)); } catch(e) {} }
@@ -621,11 +631,11 @@ router.get('/ads/new', (req, res) => {
 });
 
 router.post('/ads/new', (req, res) => {
-  const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order } = req.body;
+  const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status } = req.body;
   if (!text) return res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: 'Texto do anúncio é obrigatório' });
   try {
     db.run(
-      'INSERT INTO ads (title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO ads (title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         (title || '').toString().trim().slice(0, 100),
         text.toString().trim().slice(0, 500),
@@ -635,7 +645,8 @@ router.post('/ads/new', (req, res) => {
         parseInt(cooldown) || 86400,
         start_date || null,
         end_date || null,
-        parseInt(sort_order) || 0
+        parseInt(sort_order) || 0,
+        (status === 'active' || status === 'inactive') ? status : 'active'
       ]
     );
   } catch (e) {
@@ -1250,8 +1261,8 @@ router.get('/limpar', requireSuperAdmin, (req, res) => {
 });
 
 router.post('/limpar', requireSuperAdmin, (req, res) => {
-  var daysViews = parseInt(req.query.days_views) || 90;
-  var daysLogs = parseInt(req.query.days_logs) || 180;
+  var daysViews = parseInt(req.body.days_views) || 90;
+  var daysLogs = parseInt(req.body.days_logs) || 180;
   var result = db.cleanupOldData(daysViews, daysLogs);
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'cleanup', 'Limpeza: ' + result.deletedViews + ' views, ' + result.deletedLogs + ' logs');
   res.render('admin/cleanup', { title: 'Limpeza de Dados', result: result, error: null });
@@ -1460,12 +1471,18 @@ router.post('/seguranca', requireSuperAdmin, (req, res) => {
     return res.redirect('/admin/seguranca?msg=Configurações salvas!');
   }
   if (action === 'force_logout_sellers') {
-    db.run("DELETE FROM sessions WHERE sid IN (SELECT s.sid FROM sessions s WHERE s.sid LIKE '%seller%')");
+    db.run("DELETE FROM auth_sessions WHERE user_type = 'seller'");
     db.logActivity('admin', req.session.adminId, req.session.adminName, 'security', 'Forçou logout de todos os vendedores');
     return res.redirect('/admin/seguranca?msg=Logout forçado de todos os vendedores!');
   }
   if (action === 'force_logout_admins') {
-    db.run("DELETE FROM sessions");
+    var currentSid = null;
+    if (req.session.authSidHash) currentSid = req.session.authSidHash;
+    if (currentSid) {
+      db.run("DELETE FROM auth_sessions WHERE user_type = 'admin' AND sid_hash != ?", [currentSid]);
+    } else {
+      db.run("DELETE FROM auth_sessions WHERE user_type = 'admin'");
+    }
     db.logActivity('admin', req.session.adminId, req.session.adminName, 'security', 'Forçou logout de todos os admins');
     req.session.destroy();
     return res.redirect('/admin/login');

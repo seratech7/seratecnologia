@@ -1,0 +1,71 @@
+<%- include('../../partials/admin-header', { title: title, currentPath: '/admin/marketing/autoreply' }) %>
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-robot"></i> Auto-Resposta</h1>
+    <p style="font-size:13px;color:#666;margin:0;">Regras de resposta automática por palavra-chave</p>
+    <a href="/admin/marketing" class="btn-secondary"><i class="fas fa-arrow-left"></i> Painel</a>
+  </div>
+  <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success"><%= success %></div><% } %>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div class="form-card">
+      <h3><i class="fas fa-plus-circle"></i> Nova Regra</h3>
+      <form method="POST" action="/admin/marketing/autoreply/save">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <label>Palavra-chave</label>
+          <input type="text" name="keyword" class="admin-input" required placeholder="Ex: preço, promoção, olá">
+        </div>
+        <div class="form-group">
+          <label>Tipo de correspondência</label>
+          <select name="match_type" class="admin-input">
+            <option value="exact">Exata</option>
+            <option value="contains">Contém</option>
+            <option value="starts">Começa com</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Resposta automática</label>
+          <textarea name="reply" class="admin-input" rows="3" required placeholder="Digite a mensagem de resposta..."></textarea>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="active" value="1" checked> Ativa
+          </label>
+        </div>
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar Regra</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-list"></i> Regras (<%= replies.length %>)</h3>
+      <% if (replies.length === 0) { %><p style="color:#999;font-size:13px;">Nenhuma regra criada.</p><% } else { %>
+      <div style="max-height:400px;overflow-y:auto;">
+      <% replies.forEach(function(r) { %>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid #eee;">
+          <div style="min-width:0;">
+            <div style="font-weight:600;color:#1565c0;"><%= r.keyword %> <span class="badge badge-muted" style="font-size:10px;font-weight:400;"><%= r.match_type %></span></div>
+            <div style="font-size:12px;color:#666;word-break:break-word;"><%= r.reply %></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <form method="POST" action="/admin/marketing/autoreply/toggle/<%= r.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" style="border:none;background:none;cursor:pointer;font-size:14px;" title="Ativar/Desativar"><%= r.active ? '🟢' : '⚪' %></button>
+            </form>
+            <form method="POST" action="/admin/marketing/autoreply/delete/<%= r.id %>" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" style="border:none;background:none;color:#c62828;cursor:pointer;font-size:14px;" onclick="return confirm('Excluir esta regra?')" title="Excluir">✕</button>
+            </form>
+          </div>
+        </div>
+      <% }) %>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<style>
+.btn-secondary { background:#f5f5f5; color:#333; padding:8px 16px; border-radius:6px; text-decoration:none; font-size:13px; border:1px solid #ddd; cursor:pointer; display:inline-block; }
+.btn-secondary:hover { background:#e0e0e0; }
+</style>
+<%- include('../../partials/admin-footer') %>

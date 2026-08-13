@@ -51,6 +51,14 @@
         <button type="submit" class="btn-secondary" style="font-size:12px;"><i class="fas fa-key"></i> Gerar chaves VAPID</button>
       </form>
       <% } %>
+      <% if (generatedKeys) { %>
+      <div style="margin-top:10px;background:var(--hack-bg-2,#111);border:1px solid #333;border-radius:6px;padding:10px;font-size:11px;">
+        <div style="color:#4caf50;font-weight:700;margin-bottom:6px;"><i class="fas fa-check-circle"></i> Chaves geradas (copie para o .env):</div>
+        <div style="word-break:break-all;margin-bottom:6px;"><strong>VAPID_PUBLIC_KEY=</strong><code style="color:var(--hack-cyan);"><%= generatedKeys.publicKey %></code></div>
+        <div style="word-break:break-all;"><strong>VAPID_PRIVATE_KEY=</strong><code style="color:var(--hack-cyan);"><%= generatedKeys.privateKey %></code></div>
+        <div style="color:#ffb74d;margin-top:6px;"><i class="fas fa-info-circle"></i> Adicione no painel do Render e faça deploy para ativar.</div>
+      </div>
+      <% } %>
     </div>
     <div class="afun-card" style="border-top:4px solid #00c853;">
       <div style="font-size:28px;">🏆</div>

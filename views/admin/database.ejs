@@ -127,6 +127,14 @@ document.querySelectorAll('.btn-restore').forEach(function(btn) {
       var form = document.createElement('form');
       form.method = 'POST';
       form.action = '/admin/database/restore/' + encodeURIComponent(file);
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      if (meta && meta.content) {
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_csrf';
+        csrfInput.value = meta.content;
+        form.appendChild(csrfInput);
+      }
       var input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'confirm';
