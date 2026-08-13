@@ -151,9 +151,18 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 var FileStore = require('session-file-store')(session);
+var sessionStore;
+try {
+  var sessionDir = path.join(__dirname, 'sessions');
+  require('fs').mkdirSync(sessionDir, { recursive: true });
+  sessionStore = new FileStore({ path: sessionDir, ttl: 604800, reapInterval: 3600 });
+} catch (e) {
+  console.warn('[session] FileStore indisponível, usando MemoryStore:', e.message);
+  sessionStore = new session.MemoryStore();
+}
 app.use(cookieParser());
 app.use(session({
-  store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 604800, reapInterval: 3600 }),
+  store: sessionStore,
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
   resave: false,
   saveUninitialized: false,
