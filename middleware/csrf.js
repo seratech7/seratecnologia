@@ -2,6 +2,14 @@ function csrfProtection(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
   var token = req.body?._csrf || req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
   if (!token || token !== req.session?.csrfToken) {
+    // Após um deploy no Render o disco é zerado e o cookie antigo aponta para uma
+    // sessão inexistente: o express-session regenera a sessão (csrfToken novo), então
+    // o token da página previamente carregada não bate mais. Em vez de 403 seco nas
+    // telas de login, redireciona para a própria página (GET) para gerar token novo.
+    if (req.path === '/admin/login' || req.path === '/seller/login') {
+      console.warn('[CSRF] Sessão regenerada pós-deploy, redirecionando', req.path);
+      return res.redirect(302, req.path);
+    }
     console.error('[CSRF] Token inválido:', req.method, req.path, 'token:', token, 'session:', req.session?.csrfToken);
     if (req.xhr || req.headers['content-type']?.includes('json')) {
       return res.status(403).json({ error: 'Token CSRF inválido. Recarregue a página.' });

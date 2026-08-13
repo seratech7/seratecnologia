@@ -154,13 +154,22 @@ var FileStore = require('session-file-store')(session);
 var sessionStore;
 try {
   var fsmod = require('fs');
-  var sessionDir = path.join(__dirname, 'sessions');
+  // SESSION_DIR opcional para apontar sessões para um disco persistente (ex.: /var/data/sessions no Render)
+  var sessionDir = process.env.SESSION_DIR ? path.resolve(process.env.SESSION_DIR) : path.join(__dirname, 'sessions');
   fsmod.mkdirSync(sessionDir, { recursive: true });
   // Teste real de escrita: alguns hosts (ex.: Render free) tem disco somente leitura
   var probe = path.join(sessionDir, '.probe-' + Date.now());
   fsmod.writeFileSync(probe, 'ok');
   fsmod.unlinkSync(probe);
-  sessionStore = new FileStore({ path: sessionDir, ttl: 604800, reapInterval: 3600 });
+  sessionStore = new FileStore({
+    path: sessionDir,
+    ttl: 604800,
+    reapInterval: 3600,
+    // Deploy no Render zera o disco: arquivos de sessão antigos somem. Não ficar
+    // logando ENOENT 5x nem erro; devolve sessão nova silenciosamente.
+    retries: 0,
+    fallbackSessionFn: function () { return {}; }
+  });
   console.log('[session] FileStore em ' + sessionDir);
 } catch (e) {
   console.warn('[session] FileStore indisponível, usando MemoryStore:', e.message);
