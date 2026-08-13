@@ -33,13 +33,13 @@
         <button type="submit" class="btn-small" style="background:#ff9800;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;"><i class="fas fa-sync"></i> Recriar Categorias</button>
       </form>
     </div>
-    <div style="padding:12px;background:#f5f5f5;border-radius:8px;font-size:13px;">
+    <div style="padding:12px;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:8px;font-size:13px;">
       <% if (db.categorySample && db.categorySample.length > 0) { %>
         <% db.categorySample.forEach(function(c) { %>
-          <span style="display:inline-block;padding:4px 10px;margin:3px;background:white;border-radius:4px;"><%= c.name %></span>
+          <span style="display:inline-block;padding:4px 10px;margin:3px;background:var(--hack-panel);border:1px solid var(--hack-border);border-radius:4px;color:var(--hack-text);"><%= c.name %></span>
         <% }) %>
       <% } else { %>
-        <span style="color:#999;">Nenhuma categoria encontrada</span>
+        <span style="color:var(--hack-dim);">Nenhuma categoria encontrada</span>
       <% } %>
     </div>
   </div>

@@ -50,7 +50,7 @@
           <i class="fas fa-edit"></i>
         </button>
         <form method="POST" action="/admin/reviews/delete/<%= r.id %>" style="display:inline;" onsubmit="return confirm('Excluir esta avaliação?')">
-          <button class="btn-small" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;"><i class="fas fa-trash"></i></button>
+          <button class="btn-small btn-delete"><i class="fas fa-trash"></i></button>
         </form>
       </td>
     </tr>
@@ -68,22 +68,22 @@
 <% } %>
 <% } %>
 
-<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:12px;padding:24px;max-width:480px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-    <h3 style="margin-top:0;margin-bottom:16px;">Editar Avaliação</h3>
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(160deg,var(--hack-panel),var(--hack-bg-2));border:1px solid var(--hack-border-hi);border-radius:12px;padding:24px;max-width:480px;width:90%;box-shadow:0 0 40px rgba(0,255,156,0.15);">
+    <h3 style="margin-top:0;margin-bottom:16px;color:var(--hack-text-hi);">Editar Avaliação</h3>
     <form method="POST" id="editForm">
       <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Avaliação</label>
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--hack-text);margin-bottom:4px;">Avaliação</label>
         <div id="starPicker" style="font-size:32px;cursor:pointer;">
           <% for(var i=1;i<=5;i++){ %>
-            <i class="fas fa-star" data-val="<%= i %>" style="color:#e0e0e0;"></i>
+            <i class="fas fa-star" data-val="<%= i %>" style="color:var(--hack-border);"></i>
           <% } %>
         </div>
         <input type="hidden" name="rating" id="editRating" value="5">
       </div>
       <div style="margin-bottom:16px;">
-        <label for="editComment" style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Comentário</label>
-        <textarea name="comment" id="editComment" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;resize:vertical;font-family:inherit;font-size:14px;"></textarea>
+        <label for="editComment" style="display:block;font-size:13px;font-weight:600;color:var(--hack-text);margin-bottom:4px;">Comentário</label>
+        <textarea name="comment" id="editComment" rows="3" class="admin-input" style="width:100%;resize:vertical;"></textarea>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -107,7 +107,7 @@ document.querySelectorAll('.btn-edit-review').forEach(function(btn) {
     document.getElementById('editComment').value = comment;
     var stars = document.querySelectorAll('#starPicker i');
     stars.forEach(function(s) {
-      s.style.color = parseInt(s.dataset.val) <= parseInt(rating) ? '#ffc107' : '#e0e0e0';
+      s.style.color = parseInt(s.dataset.val) <= parseInt(rating) ? '#ffc107' : 'var(--hack-border)';
     });
     document.getElementById('editModal').style.display = 'flex';
   });

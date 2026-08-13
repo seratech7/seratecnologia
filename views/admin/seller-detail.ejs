@@ -85,7 +85,7 @@
                 <td style="text-align:center;"><span class="stat-badge sales"><i class="fas fa-shopping-cart"></i> <%= p.sales_count || 0 %></span></td>
                 <td>
                   <% if (p.status === 'active') { %><span class="status-badge active">Ativo</span>
-                  <% } else if (p.status === 'pending') { %><span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
+                  <% } else if (p.status === 'pending') { %><span class="status-badge pending" style="padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
                   <% } else { %><span class="status-badge inactive"><%= p.status %></span><% } %>
                 </td>
                 <td><% if (p.featured) { %><span style="color:#ffd700;"><i class="fas fa-star"></i></span><% } else { %>-<% } %></td>
@@ -126,8 +126,8 @@
               <td><%= s.buyer_name %></td>
               <td class="price-cell"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.product_price) %></td>
               <td>
-                <% if (s.status === 'pending') { %><span style="background:#fff3cd;color:#856404;padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
-                <% } else if (s.status === 'delivered') { %><span style="background:#e0f7fa;color:#00838f;padding:2px 8px;border-radius:4px;font-size:12px;">Entregue</span>
+                <% if (s.status === 'pending') { %><span class="status-badge pending" style="padding:2px 8px;border-radius:4px;font-size:12px;">Pendente</span>
+                <% } else if (s.status === 'delivered') { %><span style="background:rgba(0,229,255,0.10);color:var(--hack-cyan);padding:2px 8px;border-radius:4px;font-size:12px;">Entregue</span>
                 <% } else { %><span style="padding:2px 8px;border-radius:4px;font-size:12px;"><%= s.status %></span><% } %>
               </td>
               <td><%= new Date(s.created_at).toLocaleDateString('pt-BR') %></td>

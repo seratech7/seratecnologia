@@ -8,8 +8,8 @@
     </div>
   </div>
 
-  <% if (error) { %><div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
-  <% if (success) { %><div style="background:#e8f5e9;color:#2e7d32;padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"><i class="fas fa-check-circle"></i> <%= success %></div><% } %>
+  <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
+  <% if (success) { %><div class="alert alert-success" style="margin-bottom:16px;"><i class="fas fa-check-circle"></i> <%= success %></div><% } %>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
     <div style="background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border-radius:10px;padding:16px;">
@@ -40,18 +40,18 @@
         <h2><i class="fas fa-hdd"></i> Banco Atual</h2>
       </div>
       <% if (dbStats) { %>
-      <div style="font-size:13px;color:#555;line-height:2;">
+      <div style="font-size:13px;color:var(--hack-text);line-height:2;">
         <div><strong>Tamanho:</strong> <%= (dbStats.size / 1024).toFixed(1) %> KB</div>
         <div><strong>Última gravação:</strong> <%= dbStats.mtime.toLocaleString('pt-BR') %></div>
       </div>
       <% } else { %>
-      <p style="color:#999;font-size:13px;">Arquivo do banco não encontrado em disco.</p>
+      <p style="color:var(--hack-dim);font-size:13px;">Arquivo do banco não encontrado em disco.</p>
       <% } %>
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
         <form method="POST" action="/admin/database/backup" style="display:inline;">
           <button type="submit" class="btn-primary" style="font-size:13px;padding:8px 14px;"><i class="fas fa-camera"></i> Criar Backup Agora</button>
         </form>
-        <a href="/admin/database/download" class="btn-primary" style="font-size:13px;padding:8px 14px;background:#1565c0;"><i class="fas fa-download"></i> Baixar Banco Atual</a>
+        <a href="/admin/database/download" class="btn-primary" style="font-size:13px;padding:8px 14px;background:linear-gradient(135deg,#1565c0,#0d47a1);"><i class="fas fa-download"></i> Baixar Banco Atual</a>
       </div>
       <p style="font-size:11px;color:#999;margin-top:10px;">O servidor cria backups automáticos a cada hora e mantém os últimos 30.</p>
     </div>
@@ -60,10 +60,10 @@
       <div class="section-header">
         <h2><i class="fas fa-upload"></i> Importar Banco</h2>
       </div>
-      <p style="font-size:13px;color:#666;margin:0 0 10px;">Envie um arquivo .sqlite (ex: baixado de outro servidor) para substituir o banco atual. Um backup automático é criado antes.</p>
+      <p style="font-size:13px;color:var(--hack-dim);margin:0 0 10px;">Envie um arquivo .sqlite (ex: baixado de outro servidor) para substituir o banco atual. Um backup automático é criado antes.</p>
       <form method="POST" action="/admin/database/upload" enctype="multipart/form-data">
         <input type="file" name="files" accept=".sqlite,.db" required style="margin-bottom:10px;width:100%;">
-        <input type="text" name="confirm" placeholder='Digite CONFIRMAR para importar' required style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:10px;">
+        <input type="text" name="confirm" placeholder='Digite CONFIRMAR para importar' required class="admin-input" style="width:100%;margin-bottom:10px;">
         <button type="submit" class="btn-primary" style="font-size:13px;padding:8px 14px;background:#e65100;"><i class="fas fa-upload"></i> Importar Banco</button>
       </form>
     </div>
@@ -74,7 +74,7 @@
       <h2><i class="fas fa-archive"></i> Backups Disponíveis (<%= backups.length %>)</h2>
     </div>
     <% if (backups.length === 0) { %>
-      <p style="color:#999;text-align:center;padding:20px;font-size:13px;">Nenhum backup ainda. Clique em "Criar Backup Agora".</p>
+      <p style="color:var(--hack-dim);text-align:center;padding:20px;font-size:13px;">Nenhum backup ainda. Clique em "Criar Backup Agora".</p>
     <% } else { %>
     <div style="overflow-x:auto;">
     <table class="admin-table">
@@ -94,7 +94,7 @@
           <td style="font-size:13px;"><%= (b.size / 1024).toFixed(1) %> KB</td>
           <td style="white-space:nowrap;">
             <a href="/admin/database/download/<%= b.name %>" class="btn-small" style="margin-right:4px;"><i class="fas fa-download"></i> Baixar</a>
-            <button class="btn-small btn-restore" data-file="<%= b.name %>" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;"><i class="fas fa-history"></i> Restaurar</button>
+            <button class="btn-small btn-restore" data-file="<%= b.name %>" style="background:rgba(255,56,96,0.12);color:var(--hack-red);border:1px solid rgba(255,56,96,0.4);"><i class="fas fa-history"></i> Restaurar</button>
           </td>
         </tr>
         <% }); %>
@@ -104,17 +104,17 @@
     <% } %>
   </div>
 
-  <div class="admin-section" style="margin-top:16px;background:#fff8e1;border:1px solid #ffe082;">
+  <div class="admin-section" style="margin-top:16px;background:rgba(255,204,0,0.05);border:1px solid rgba(255,204,0,0.3);">
     <div class="section-header">
       <h2><i class="fas fa-sync-alt"></i> Como sincronizar entre computador e servidor</h2>
     </div>
-    <ol style="font-size:13px;color:#555;line-height:1.9;margin:0;padding-left:20px;">
+    <ol style="font-size:13px;color:var(--hack-text);line-height:1.9;margin:0;padding-left:20px;">
       <li>No painel de <strong>onde os dados estão</strong> (ex: seu notebook em localhost): clique em <strong>Baixar Banco Atual</strong>.</li>
       <li>No painel de <strong>onde você quer os dados</strong> (ex: site publicado): abra <strong>Importar Banco</strong>, envie o arquivo baixado e digite <strong>CONFIRMAR</strong>.</li>
       <li>Pronto — produtos, vendedores, vendas e configs são copiados para o outro servidor.</li>
     </ol>
-    <p style="font-size:12px;color:#8d6e63;margin:10px 0 0;"><i class="fas fa-info-circle"></i> Backups automáticos são criados a cada hora (últimos 30 mantidos) e sempre antes de importar/restaurar. Faça um backup manual antes de grandes mudanças no código.</p>
-    <p style="font-size:12px;color:#8d6e63;margin:6px 0 0;"><i class="fas fa-server"></i> <strong>Importante (Render):</strong> o Render apaga arquivos a cada novo deploy. Para o banco sobreviver aos deploys, monte um Persistent Disk no Render e defina as variáveis <code style="background:#eee;padding:1px 4px;border-radius:3px;">DB_PATH=/var/data/database.sqlite</code> e <code style="background:#eee;padding:1px 4px;border-radius:3px;">BACKUP_DIR=/var/data/backups</code>.</p>
+    <p style="font-size:12px;color:var(--hack-amber);margin:10px 0 0;"><i class="fas fa-info-circle"></i> Backups automáticos são criados a cada hora (últimos 30 mantidos) e sempre antes de importar/restaurar. Faça um backup manual antes de grandes mudanças no código.</p>
+    <p style="font-size:12px;color:var(--hack-amber);margin:6px 0 0;"><i class="fas fa-server"></i> <strong>Importante (Render):</strong> o Render apaga arquivos a cada novo deploy. Para o banco sobreviver aos deploys, monte um Persistent Disk no Render e defina as variáveis <code style="background:var(--hack-bg-2);padding:1px 4px;border-radius:3px;color:var(--hack-cyan);">DB_PATH=/var/data/database.sqlite</code> e <code style="background:var(--hack-bg-2);padding:1px 4px;border-radius:3px;color:var(--hack-cyan);">BACKUP_DIR=/var/data/backups</code>.</p>
   </div>
 </div>
 

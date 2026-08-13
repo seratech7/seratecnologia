@@ -10,16 +10,16 @@
         <% if (logs.length === 0) { %><tr><td colspan="5" class="empty-row">Nenhuma atividade registrada</td></tr><% } %>
         <% logs.forEach(function(l) { %>
           <tr>
-            <td style="white-space:nowrap;font-size:12px;color:#666;"><%= new Date(l.created_at).toLocaleString('pt-BR') %></td>
+            <td style="white-space:nowrap;font-size:12px;color:var(--hack-dim);"><%= new Date(l.created_at).toLocaleString('pt-BR') %></td>
             <td>
-              <span class="status-badge small" style="background:<%= l.user_type === 'admin' ? '#e3f2fd' : '#fff3cd' %>;color:<%= l.user_type === 'admin' ? '#1565c0' : '#856404' %>;">
+              <span class="status-badge small" style="background:<%= l.user_type === 'admin' ? 'rgba(0,229,255,0.10)' : 'rgba(255,204,0,0.12)' %>;color:<%= l.user_type === 'admin' ? 'var(--hack-cyan)' : 'var(--hack-amber)' %>;">
                 <%= l.user_type === 'admin' ? 'Admin' : 'Vendedor' %>
               </span>
               <%= l.user_name ? '<br><span style="font-size:12px;">' + l.user_name + '</span>' : '' %>
             </td>
             <td style="font-family:monospace;font-size:12px;"><%= l.action %></td>
             <td style="font-size:13px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= l.details %></td>
-            <td style="font-size:12px;color:#999;"><%= l.ip || '-' %></td>
+            <td style="font-size:12px;color:var(--hack-dim);"><%= l.ip || '-' %></td>
           </tr>
         <% }) %>
       </tbody>

@@ -119,17 +119,17 @@
   <div class="form-card" style="margin-top:30px;">
     <h3><i class="fas fa-database"></i> Informações do Sistema</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;">
-      <div style="padding:12px;background:#f5f5f5;border-radius:8px;">
-        <div style="font-size:12px;color:#999;">Ambiente</div>
-        <div style="font-weight:600;"><%= process.env.NODE_ENV || 'development' %></div>
+      <div style="padding:12px;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:8px;">
+        <div style="font-size:12px;color:var(--hack-dim);">Ambiente</div>
+        <div style="font-weight:600;color:var(--hack-text-hi);"><%= process.env.NODE_ENV || 'development' %></div>
       </div>
-      <div style="padding:12px;background:#f5f5f5;border-radius:8px;">
-        <div style="font-size:12px;color:#999;">URL Base</div>
-        <div style="font-weight:600;"><%= process.env.BASE_URL || 'https://seratecnologia-1.onrender.com' %></div>
+      <div style="padding:12px;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:8px;">
+        <div style="font-size:12px;color:var(--hack-dim);">URL Base</div>
+        <div style="font-weight:600;color:var(--hack-text-hi);"><%= process.env.BASE_URL || 'https://seratecnologia-1.onrender.com' %></div>
       </div>
-      <div style="padding:12px;background:#f5f5f5;border-radius:8px;">
-        <div style="font-size:12px;color:#999;">Versão Node</div>
-        <div style="font-weight:600;"><%= process.version %></div>
+      <div style="padding:12px;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:8px;">
+        <div style="font-size:12px;color:var(--hack-dim);">Versão Node</div>
+        <div style="font-weight:600;color:var(--hack-text-hi);"><%= process.version %></div>
       </div>
     </div>
   </div>

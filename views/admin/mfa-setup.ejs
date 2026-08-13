@@ -15,7 +15,7 @@
     <h3 style="margin:0 0 4px;font-size:20px;color:var(--hack-text-hi);"><i class="fas fa-shield-halved" style="color:var(--hack-green);"></i> Configurar Autenticação de Dois Fatores (MFA)</h3>
     <p style="color:var(--hack-dim);font-size:13px;margin:0 0 20px;">Proteja o acesso ao painel com um código gerado no seu app autenticador.</p>
 
-    <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
+    <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
 
     <% if (qrCodeUrl) { %>
     <div class="admin-section">

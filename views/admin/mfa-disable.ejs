@@ -19,7 +19,7 @@
       <i class="fas fa-exclamation-triangle"></i> Desativar MFA reduz a segurança da sua conta.
     </div>
 
-    <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
+    <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
 
     <form method="POST">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
