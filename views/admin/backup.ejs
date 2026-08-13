@@ -1,0 +1,96 @@
+<%- include('../partials/admin-header') %>
+
+<div class="dashboard-header">
+  <h1><i class="fas fa-database"></i> Backup do Banco de Dados</h1>
+  <p>Proteja seus dados com backups automáticos e manuais</p>
+</div>
+
+<% if (success) { %>
+<div style="background:rgba(0,255,156,0.1);color:var(--hack-green);padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;border:1px solid rgba(0,255,156,0.4);">
+  <i class="fas fa-check-circle"></i> <%= success %>
+</div>
+<% } %>
+<% if (error) { %>
+<div style="background:rgba(255,56,96,0.1);color:var(--hack-red);padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;border:1px solid rgba(255,56,96,0.4);">
+  <i class="fas fa-exclamation-circle"></i> <%= error %>
+</div>
+<% } %>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#00c853,#009688);"><i class="fas fa-file-database"></i></div>
+    <div class="stat-info">
+      <span class="stat-number"><%= backups.length %></span>
+      <span class="stat-label">Backups disponíveis</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#2196f3,#1565c0);"><i class="fas fa-weight-hanging"></i></div>
+    <div class="stat-info">
+      <span class="stat-number"><%= (dbSize/1024/1024).toFixed(2) %> MB</span>
+      <span class="stat-label">Tamanho do banco atual</span>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:linear-gradient(135deg,#7c4dff,#536dfe);"><i class="fas fa-clock"></i></div>
+    <div class="stat-info">
+      <span class="stat-number">30</span>
+      <span class="stat-label">Backups mantidos (rotação)</span>
+    </div>
+  </div>
+</div>
+
+<div class="quick-actions">
+  <form method="POST" action="/admin/backup/criar" style="margin:0;">
+    <button class="quick-action-card" type="submit" style="border:none;cursor:pointer;background:var(--hack-panel);border:1px solid var(--hack-border);">
+      <i class="fas fa-plus-circle"></i>
+      <span>Criar Backup Agora</span>
+    </button>
+  </form>
+  <form method="POST" action="/admin/backup/baixar-atual" style="margin:0;">
+    <button class="quick-action-card" type="submit" style="border:none;cursor:pointer;background:var(--hack-panel);border:1px solid var(--hack-border);">
+      <i class="fas fa-download"></i>
+      <span>Baixar Banco Atual</span>
+    </button>
+  </form>
+  <a href="/admin/database" class="quick-action-card">
+    <i class="fas fa-database"></i>
+    <span>Gerenciar Banco</span>
+  </a>
+</div>
+
+<div class="form-card">
+  <h3><i class="fas fa-history"></i> Histórico de Backups</h3>
+  <div class="table-container" style="border:none;box-shadow:none;padding:0;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th data-sort>Arquivo</th>
+          <th data-sort data-num="1">Tamanho</th>
+          <th data-sort>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (backups.length === 0) { %>
+          <tr><td colspan="4" class="empty-row">Nenhum backup encontrado. Crie o primeiro agora.</td></tr>
+        <% } %>
+        <% backups.forEach(function(b) { %>
+          <tr>
+            <td style="font-family:var(--hack-font);"><i class="fas fa-file-archive" style="margin-right:6px;color:var(--hack-cyan);"></i><%= b.name %></td>
+            <td><%= (b.size/1024).toFixed(1) %> KB</td>
+            <td style="font-size:12px;"><%= new Date(b.mtime).toLocaleString('pt-BR') %></td>
+            <td style="white-space:nowrap;">
+              <a href="/admin/backup/baixar/<%= b.name %>" class="btn-icon" title="Baixar"><i class="fas fa-download"></i></a>
+              <form method="POST" action="/admin/backup/restaurar/<%= b.name %>" style="display:inline;" onsubmit="return confirm('Restaurar este backup? O banco atual será substituído.')">
+                <button class="btn-icon" style="color:var(--hack-amber);" title="Restaurar"><i class="fas fa-undo-alt"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

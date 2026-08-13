@@ -312,6 +312,11 @@ body.admin-page::after {
 
 .admin-table tr:active td { background: rgba(0, 255, 156, 0.08); }
 
+.admin-table th { cursor: pointer; }
+
+.admin-table th.sort-asc::after { content: ' ▲'; font-size: 9px; color: var(--hack-green); }
+.admin-table th.sort-desc::after { content: ' ▼'; font-size: 9px; color: var(--hack-cyan); }
+
 .empty-row { color: var(--hack-dim); }
 
 .thumb { border-radius: 6px; border: 1px solid var(--hack-border); }
@@ -717,6 +722,35 @@ body.admin-hacker .login-footer a:hover { color: var(--hack-cyan); }
 /* =========================================
    RESPONSIVE
    ========================================= */
+
+/* Sidebar colapsável (admin-page.sidebar-collapsed) */
+.admin-page.sidebar-collapsed .admin-sidebar { width: 64px; }
+.admin-page.sidebar-collapsed .sidebar-brand a span,
+.admin-page.sidebar-collapsed .sidebar-subtitle,
+.admin-page.sidebar-collapsed .nav-section-label,
+.admin-page.sidebar-collapsed .sidebar-nav a span,
+.admin-page.sidebar-collapsed .sidebar-link { display: none; }
+.admin-page.sidebar-collapsed .sidebar-brand a { justify-content: center; padding: 0; }
+.admin-page.sidebar-collapsed .sidebar-brand { padding: 20px 0; }
+.admin-page.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 14px 0; }
+.admin-page.sidebar-collapsed .sidebar-footer { align-items: center; }
+.admin-page.sidebar-collapsed .sidebar-footer .sidebar-link { display: none; }
+.admin-page.sidebar-collapsed .admin-main { margin-left: 64px; }
+.admin-page.sidebar-collapsed .sidebar-brand a i { font-size: 22px; }
+.admin-page.sidebar-collapsed .nav-section-label { display: block; height: 8px; padding: 0; margin: 12px 0; }
+.admin-page.sidebar-collapsed .nav-section-label::before { content: '—'; }
+
+/* Atalhos de teclado */
+.kbd-hint {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--hack-border-hi);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--hack-cyan);
+  background: var(--hack-bg-2);
+  font-family: var(--hack-font);
+}
 
 @media (max-width: 992px) {
   .admin-sidebar {

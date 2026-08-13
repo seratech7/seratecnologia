@@ -27,7 +27,19 @@ router.get('/dashboard', (req, res) => {
   var pendingPayouts = db.get("SELECT COUNT(*) as c, COALESCE(SUM(amount),0) as total FROM payouts WHERE status = 'pending'");
   var lowStockCount = db.get("SELECT COUNT(*) as c FROM products WHERE status = 'active' AND quantity <= 5");
   var chartSales = db.query("SELECT date(created_at) as day, COUNT(*) as sales FROM sales WHERE status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-30 days') GROUP BY day ORDER BY day ASC");
+  var chartRevenue = db.query("SELECT date(created_at) as day, COALESCE(SUM(product_price),0) as revenue FROM sales WHERE status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-30 days') GROUP BY day ORDER BY day ASC");
   var topSellers = db.query("SELECT s.id, s.name, s.avatar, COUNT(sl.id) as sales_count, COALESCE(SUM(sl.product_price),0) as revenue FROM sellers s LEFT JOIN sales sl ON sl.seller_id = s.id AND sl.status NOT IN ('cancelled','pending') WHERE s.status = 'active' GROUP BY s.id ORDER BY revenue DESC LIMIT 5");
+  var prev30 = db.get("SELECT COALESCE(SUM(product_price),0) as rev FROM sales WHERE status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-60 days') AND created_at < datetime('now', '-30 days')");
+  var curr30 = db.get("SELECT COALESCE(SUM(product_price),0) as rev FROM sales WHERE status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-30 days')");
+  var goal = db.getActiveGoal();
+  var goalProgress = null;
+  if (goal) {
+    var totalGoal = db.get("SELECT COALESCE(SUM(product_price),0) as v FROM sales WHERE status NOT IN ('cancelled','pending') AND date(created_at) >= ? AND date(created_at) <= ?", [goal.start_date, goal.end_date]);
+    var gv = totalGoal ? totalGoal.v : 0;
+    goalProgress = { title: goal.title, type: goal.type, start_date: goal.start_date, end_date: goal.end_date, progress: gv, target: goal.target_value, pct: Math.min(100, Math.round((gv / goal.target_value) * 100)), achieved: gv >= goal.target_value };
+  }
+  var convViews = db.get("SELECT COUNT(*) as c FROM page_views");
+  var convSales = db.get("SELECT COUNT(*) as c FROM sales WHERE status NOT IN ('cancelled','pending')");
 
   res.render('admin/dashboard', {
     title: 'Dashboard - Painel Admin',
@@ -40,10 +52,15 @@ router.get('/dashboard', (req, res) => {
       pendingPayoutsTotal: pendingPayouts ? pendingPayouts.total : 0,
       lowStockCount: lowStockCount ? lowStockCount.c : 0
     },
+    revenueNow: curr30 ? curr30.rev : 0,
+    revenueBefore: prev30 ? prev30.rev : 0,
+    conversionRate: convViews && convViews.c > 0 ? Math.round(((convSales ? convSales.c : 0) / convViews.c) * 1000) / 10 : 0,
+    goalProgress,
     recentProducts: recent,
     featuredProducts,
     recentSales,
     chartSales,
+    chartRevenue,
     topSellers
   });
 });
@@ -97,6 +114,23 @@ router.get('/analytics', (req, res) => {
 });
 
 // ========== SALES ==========
+router.get('/analytics/exportar-csv', (req, res) => {
+  var rows = db.query(`
+    SELECT date(created_at) as dia, COUNT(*) as visualizacoes, COUNT(DISTINCT ip) as visitantes,
+           COUNT(DISTINCT product_id) as produtos_vistos
+    FROM page_views WHERE created_at >= date('now', '-14 days')
+    GROUP BY dia ORDER BY dia ASC
+  `);
+  var headers = ['dia', 'visualizacoes', 'visitantes', 'produtos_vistos'];
+  var csv = headers.join(',') + '\n';
+  rows.forEach(function(r) {
+    csv += headers.map(function(h) { return r[h] !== null && r[h] !== undefined ? r[h] : ''; }).join(',') + '\n';
+  });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename=analytics-14dias.csv');
+  res.send('\ufeff' + csv);
+});
+
 router.get('/sales', (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = 30;
@@ -769,6 +803,7 @@ router.get('/financeiro', (req, res) => {
   var pendingPayoutsCount = db.getPendingPayoutsCount();
   var payouts = db.getPayouts(null, 20, 0);
   var payoutsTotal = db.getPayoutCount(null);
+  var avgTicket = summary.salesCount > 0 ? (summary.salesTotal / summary.salesCount) : 0;
 
   var months = [];
   var now = new Date();
@@ -787,6 +822,7 @@ router.get('/financeiro', (req, res) => {
     payouts: payouts,
     payoutsTotal: payoutsTotal,
     months: months,
+    avgTicket: avgTicket,
     tab: req.query.tab || 'resumo'
   });
 });
@@ -861,6 +897,11 @@ router.post('/notifications/edit/:id', (req, res) => {
 
 router.post('/notifications/delete/:id', (req, res) => {
   db.run('DELETE FROM notifications WHERE id = ?', [req.params.id]);
+  res.redirect('/admin/notifications');
+});
+
+router.post('/notifications/marcar-todas', (req, res) => {
+  db.run('UPDATE notifications SET read = 1 WHERE read = 0');
   res.redirect('/admin/notifications');
 });
 
@@ -1066,6 +1107,48 @@ router.get('/logs', (req, res) => {
 
 // ========== BACKUP ==========
 router.get('/backup', (req, res) => {
+  var backups = getBackups();
+  var dbSize = 0;
+  try { dbSize = fs.statSync(path.join(__dirname, '..', 'database.sqlite')).size; } catch(e) {}
+  res.render('admin/backup', {
+    title: 'Backup - Painel Admin',
+    backups,
+    dbSize,
+    success: req.query.success,
+    error: req.query.error
+  });
+});
+
+router.post('/backup/criar', (req, res) => {
+  try {
+    var file = backupDatabase();
+    res.redirect('/admin/backup?success=Backup criado: ' + encodeURIComponent(file));
+  } catch (e) {
+    res.redirect('/admin/backup?error=Erro ao criar backup: ' + encodeURIComponent(e.message));
+  }
+});
+
+router.get('/backup/baixar/:filename', (req, res) => {
+  try {
+    var file = path.basename(req.params.filename);
+    var p = path.join(__dirname, '..', 'database', 'backups', file);
+    if (!fs.existsSync(p)) return res.redirect('/admin/backup?error=Backup não encontrado');
+    res.download(p, file);
+  } catch (e) {
+    res.redirect('/admin/backup?error=' + encodeURIComponent(e.message));
+  }
+});
+
+router.post('/backup/restaurar/:filename', (req, res) => {
+  try {
+    restoreBackup(path.basename(req.params.filename));
+    res.redirect('/admin/backup?success=Backup restaurado com sucesso');
+  } catch (e) {
+    res.redirect('/admin/backup?error=Erro ao restaurar: ' + encodeURIComponent(e.message));
+  }
+});
+
+router.post('/backup/baixar-atual', (req, res) => {
   var dbPath = path.join(__dirname, '..', 'database.sqlite');
   res.download(dbPath, 'backup-seratecnologia-' + new Date().toISOString().slice(0,10) + '.db');
 });

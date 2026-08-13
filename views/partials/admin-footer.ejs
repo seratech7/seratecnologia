@@ -39,6 +39,82 @@ function showToast(text, type) {
     setTimeout(function() { t.remove(); }, 350);
   }, 4000);
 }
+
+/* ===== UX: ordenação de tabelas + busca por atalho ===== */
+(function() {
+  // Ordenação de tabelas clicando no <th> (data-sortable)
+  document.querySelectorAll('table.admin-table th[data-sort]').forEach(function(th) {
+    th.style.cursor = 'pointer';
+    th.title = 'Clique para ordenar';
+    th.addEventListener('click', function() {
+      var table = th.closest('table');
+      var tbody = table.querySelector('tbody');
+      var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+      var idx = Array.prototype.indexOf.call(th.parentNode.children, th);
+      var dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+      th.dataset.dir = dir;
+      table.querySelectorAll('th[data-sort]').forEach(function(h) { h.classList.remove('sort-asc', 'sort-desc'); });
+      th.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      var isNum = th.dataset.num === '1';
+      rows.sort(function(a, b) {
+        var av = a.children[idx] ? a.children[idx].textContent.trim() : '';
+        var bv = b.children[idx] ? b.children[idx].textContent.trim() : '';
+        if (isNum) {
+          av = parseFloat(String(av).replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+          bv = parseFloat(String(bv).replace(/[^0-9.,-]/g, '').replace(',', '.')) || 0;
+        }
+        if (av < bv) return dir === 'asc' ? -1 : 1;
+        if (av > bv) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      rows.forEach(function(r) { tbody.appendChild(r); });
+    });
+  });
+
+  // Tecla "/" foca a primeira busca visível; "g" + letra navega (d=dashboard, v=vendas, p=produtos)
+  var lastG = 0;
+  document.addEventListener('keydown', function(e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      var sb = document.querySelector('.search-bar input, form[action*="search"] input[name="search"], input[name="search"]');
+      if (sb) { sb.focus(); sb.select(); }
+      return;
+    }
+    if (e.key.toLowerCase() === 'g' && !e.ctrlKey && !e.metaKey) {
+      lastG = Date.now();
+      return;
+    }
+    if (e.key.toLowerCase() === 'd' && lastG && Date.now() - lastG < 1000) { window.location.href = '/admin/dashboard'; }
+    if (e.key.toLowerCase() === 'v' && lastG && Date.now() - lastG < 1000) { window.location.href = '/admin/sales'; }
+    if (e.key.toLowerCase() === 'p' && lastG && Date.now() - lastG < 1000) { window.location.href = '/admin/products'; }
+    if (e.key.toLowerCase() === 's' && lastG && Date.now() - lastG < 1000) { window.location.href = '/admin/sellers'; }
+    if (e.key.toLowerCase() === 'c' && lastG && Date.now() - lastG < 1000) { window.location.href = '/admin/config'; }
+  });
+
+  // Sidebar colapsável (persistida no localStorage)
+  var sb = document.querySelector('.admin-sidebar');
+  var st = document.querySelector('.sidebar-toggle');
+  if (st) {
+    st.title = 'Menu (colapsar/expandir)';
+    st.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (window.innerWidth <= 992) {
+        toggleAdminSidebar();
+        return;
+      }
+      var collapsed = document.body.classList.toggle('sidebar-collapsed');
+      try { localStorage.setItem('adminSidebarCollapsed', collapsed ? '1' : '0'); } catch(err) {}
+    });
+  }
+  try {
+    if (localStorage.getItem('adminSidebarCollapsed') === '1' && window.innerWidth > 992) {
+      document.body.classList.add('sidebar-collapsed');
+    }
+  } catch(err) {}
+})();
 </script>
 
 </body>

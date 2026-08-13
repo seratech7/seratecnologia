@@ -88,6 +88,12 @@
       <div class="value"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(summary.adjustmentsTotal || 0) %></div>
       <div class="sub">Créditos e débitos manuais</div>
     </div>
+    <div class="fin-stat-card" style="background:linear-gradient(135deg,#00897b,#00695c);">
+      <i class="fas fa-ticket-alt icon-bg"></i>
+      <div class="label">Ticket Médio</div>
+      <div class="value"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(avgTicket || 0) %></div>
+      <div class="sub"><%= summary.salesCount %> venda(s) no período</div>
+    </div>
   </div>
 
   <!-- Abas de navegação -->
@@ -114,6 +120,7 @@
         <button type="submit" style="padding:5px 12px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">Filtrar</button>
       </form>
     </div>
+    <a href="/admin/financeiro/exportar-csv?start_date=<%= startDate||'' %>&end_date=<%= endDate||'' %>" class="btn-small"><i class="fas fa-download"></i> Exportar CSV</a>
   </div>
 
   <!-- Gráfico + Comissão global -->

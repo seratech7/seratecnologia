@@ -134,6 +134,9 @@
       <a href="/admin/database" class="<%= currentPath === '/admin/database' ? 'active' : '' %>">
         <i class="fas fa-database"></i> <span>Banco de Dados</span>
       </a>
+      <a href="/admin/backup" class="<%= currentPath === '/admin/backup' ? 'active' : '' %>">
+        <i class="fas fa-file-archive"></i> <span>Backup</span>
+      </a>
 
       <% if (!admin && seller) { %>
       <div class="nav-section-label">Vendedor</div>
@@ -156,12 +159,15 @@
       <a href="/admin/logout" class="sidebar-link logout">
         <i class="fas fa-sign-out-alt"></i> Sair
       </a>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);padding:4px 0 0;line-height:1.7;">
+        <span class="kbd-hint">/</span> buscar &middot; <span class="kbd-hint">g</span>+<span class="kbd-hint">d</span> dashboard
+      </div>
     </div>
   </aside>
 
   <div class="admin-main">
     <div style="display:flex;align-items:center;gap:8px;">
-    <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Menu">
+    <button class="sidebar-toggle" title="Menu" aria-label="Menu">
       <i class="fas fa-bars"></i>
     </button>
       <div class="notif-bell" style="position:relative;margin-left:auto;">

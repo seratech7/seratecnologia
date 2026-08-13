@@ -11,9 +11,16 @@
     <a href="/admin/notifications?filter=unread" class="btn-small" style="<%= filter === 'unread' ? 'background:var(--primary);color:#fff;' : '' %>">Não lidas</a>
     <a href="/admin/notifications?filter=read" class="btn-small" style="<%= filter === 'read' ? 'background:var(--primary);color:#fff;' : '' %>">Lidas</a>
   </div>
-  <button class="btn-small" style="background:var(--primary);color:#fff;" onclick="document.getElementById('newForm').style.display='block'">
-    <i class="fas fa-plus"></i> Nova Notificação
-  </button>
+  <div style="display:flex;gap:8px;">
+    <form method="POST" action="/admin/notifications/marcar-todas">
+      <button class="btn-small" style="background:var(--primary);color:#fff;border:none;cursor:pointer;">
+        <i class="fas fa-check-double"></i> Marcar todas como lidas
+      </button>
+    </form>
+    <button class="btn-small" style="background:var(--primary);color:#fff;" onclick="document.getElementById('newForm').style.display='block'">
+      <i class="fas fa-plus"></i> Nova Notificação
+    </button>
+  </div>
 </div>
 
 <% if (error) { %>
