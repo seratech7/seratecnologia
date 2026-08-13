@@ -406,9 +406,9 @@ function severityLabel(sev) {
 
 // ---------------- ANÁLISE COM IA ----------------
 async function analyzeWithAI(findings) {
-  var apiKey = getConfig('ai_api_key', process.env.AI_API_KEY || '');
-  var baseUrl = (getConfig('ai_base_url', '') || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  var model = getConfig('ai_model', 'gpt-4o-mini');
+  var apiKey = getConfig('ai_api_key', '') || process.env.AI_API_KEY || process.env.GROQ_API_KEY || '';
+  var baseUrl = (getConfig('ai_base_url', '') || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/+$/, '');
+  var model = getConfig('ai_model', '') || process.env.AI_MODEL || 'llama-3.3-70b-versatile';
   if (!apiKey) {
     return null;
   }

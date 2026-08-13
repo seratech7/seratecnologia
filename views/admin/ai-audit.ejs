@@ -107,18 +107,18 @@
     <form method="POST" action="/admin/ai-audit/config" class="aud-config" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
       <div class="f">
         <label>API Key</label>
-        <input type="password" name="ai_api_key" value="<%= aiConfig.api_key %>" placeholder="sk-...">
-        <div class="hint">Compatível com OpenAI, OpenRouter, Groq, etc.</div>
+        <input type="password" name="ai_api_key" value="<%= aiConfig.api_key %>" placeholder="gsk_... (Groq)">
+        <div class="hint">Recomendado: Groq (gratuito, sem cartão). Compatível com OpenAI/OpenRouter/Groq.</div>
       </div>
       <div class="f">
         <label>Base URL</label>
-        <input type="text" name="ai_base_url" value="<%= aiConfig.base_url %>" placeholder="https://api.openai.com/v1">
-        <div class="hint">Endpoint da API (sem barra final).</div>
+        <input type="text" name="ai_base_url" value="<%= aiConfig.base_url %>" placeholder="https://api.groq.com/openai/v1">
+        <div class="hint">Groq: api.groq.com/openai/v1 · OpenAI: api.openai.com/v1</div>
       </div>
       <div class="f">
         <label>Modelo</label>
-        <input type="text" name="ai_model" value="<%= aiConfig.model %>" placeholder="gpt-4o-mini">
-        <div class="hint">Modelo usado para a análise.</div>
+        <input type="text" name="ai_model" value="<%= aiConfig.model %>" placeholder="llama-3.3-70b-versatile">
+        <div class="hint">Groq: llama-3.3-70b-versatile · OpenAI: gpt-4o-mini</div>
       </div>
       <div style="grid-column:1 / -1;">
         <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar Configurações de IA</button>

@@ -1452,8 +1452,8 @@ router.get('/ai-audit', async (req, res) => {
       report: report,
       aiConfig: {
         api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
-        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || 'https://api.openai.com/v1',
-        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || 'gpt-4o-mini'
+        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
+        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || process.env.AI_MODEL || 'llama-3.3-70b-versatile'
       },
       msg: req.query.msg || ''
     });
@@ -1491,8 +1491,8 @@ router.post('/ai-audit/analyze', async (req, res) => {
       report: Object.assign(report, { ai: ai && !ai.error ? ai : null, aiError: ai && ai.error ? ai.error : null }),
       aiConfig: {
         api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
-        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || 'https://api.openai.com/v1',
-        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || 'gpt-4o-mini'
+        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
+        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || process.env.AI_MODEL || 'llama-3.3-70b-versatile'
       },
       msg: ai && ai.error ? 'Falha na análise de IA: ' + ai.error : (ai ? 'Análise de IA gerada com sucesso' : 'Configure uma chave de API de IA para usar a análise inteligente')
     });
