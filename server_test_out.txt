@@ -1,9 +1,8 @@
 🚀 SeraTecnologia rodando em http://localhost:3999
 📊 Painel Admin: http://localhost:3999/admin/login
 🛒 Painel Vendedor: http://localhost:3999/seller/login
-[backup] backup-20260813-144131.sqlite (mantidos últimos 30)
+[backup] backup-20260813-144521.sqlite (mantidos últimos 30)
 [auto] Promoção diária agendado para 14/08/2026, 09:00:00
 [auto] Sorteio mensal agendado para 01/09/2026, 12:00:00
 [auto] Agendador iniciado (ping a cada 6h, promoção diária às 9:00, anúncio às 18:00)
 [auto] Push enviado: {"sent":0,"total":1}
-[backup] backup-20260813-144331.sqlite (mantidos últimos 30)
