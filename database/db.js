@@ -937,6 +937,19 @@ async function initDb() {
     )
   `);
 
+  // === ARMAZENAMENTO PERSISTENTE DE ARQUIVOS (uploads) ===
+  // Guarda cópias das imagens enviadas para que não sumam após deploys
+  // (o disco do Render é efêmero; o banco persiste via DB_PATH/backup).
+  db.run(`
+    CREATE TABLE IF NOT EXISTS file_store (
+      filename TEXT PRIMARY KEY,
+      data BLOB NOT NULL,
+      content_type TEXT DEFAULT '',
+      size INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   saveDb();
 
   return db;

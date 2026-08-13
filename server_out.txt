@@ -1,4 +1,9 @@
+[session] FileStore em C:\Users\ggdra\Documents\Default Project\sessions
+[db] users_auth do admin atualizado (admin:1)
 🚀 SeraTecnologia rodando em http://localhost:3000
 📊 Painel Admin: http://localhost:3000/admin/login
 🛒 Painel Vendedor: http://localhost:3000/seller/login
-[backup] backup-20260724-224403.sqlite (mantidos últimos 7)
+[backup] backup-20260813-200625.sqlite (mantidos últimos 30)
+[auto] Promoção diária agendado para 14/08/2026, 09:00:00
+[auto] Sorteio mensal agendado para 01/09/2026, 12:00:00
+[auto] Agendador iniciado (ping a cada 6h, promoção diária às 9:00, anúncio às 18:00)
