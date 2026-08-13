@@ -145,6 +145,11 @@
 </style>
 
 <script>
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 function toggleNovoChat() {
   var modal = document.getElementById('novoChatModal');
   modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
@@ -162,7 +167,7 @@ function buscarVendedores(q) {
     .then(function(data) {
       if (data.length === 0) { container.innerHTML = '<div style="padding:20px;text-align:center;color:#999;">Nenhum vendedor encontrado</div>'; return; }
       container.innerHTML = data.map(function(s) {
-        return '<a href="/seller/chat/nova/' + s.id + '" class="seller-result-item"><i class="fas fa-user-circle"></i><div><strong>' + s.name + '</strong></div></a>';
+        return '<a href="/seller/chat/nova/' + escapeHtml(s.id) + '" class="seller-result-item"><i class="fas fa-user-circle"></i><div><strong>' + escapeHtml(s.name) + '</strong></div></a>';
       }).join('');
     });
 }
@@ -197,7 +202,7 @@ function filtrarConversas(q) {
           if (m.id > lastId) {
             var div = document.createElement('div');
             div.className = 'chat-message ' + (m.sender_id === <%= session.sellerId %> ? 'mine' : 'theirs');
-            div.innerHTML = '<div class="msg-sender">' + m.sender_name + '</div><div class="msg-content">' + (m.content || '').replace(/\n/g, '<br>') + '</div><div class="msg-time">' + new Date(m.created_at).toLocaleString('pt-BR') + '</div>';
+            div.innerHTML = '<div class="msg-sender">' + escapeHtml(m.sender_name) + '</div><div class="msg-content">' + escapeHtml(m.content || '').replace(/\n/g, '<br>') + '</div><div class="msg-time">' + escapeHtml(new Date(m.created_at).toLocaleString('pt-BR')) + '</div>';
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
             lastId = m.id;

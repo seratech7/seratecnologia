@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const router = express.Router();
 const db = require('../database/db');
 const { requireAdmin, redirectIfAdmin } = require('../middleware/auth');
@@ -25,9 +26,12 @@ router.post('/login', (req, res) => {
   }
 
   db.logLoginAttempt(ip, username, 'admin', true);
-  req.session.adminId = admin.id;
-  req.session.adminName = admin.display_name;
-  res.redirect('/admin/dashboard');
+  req.session.regenerate(function() {
+    req.session.adminId = admin.id;
+    req.session.adminName = admin.display_name;
+    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+    res.redirect('/admin/dashboard');
+  });
 });
 
 router.get('/logout', (req, res) => {

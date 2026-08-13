@@ -1,0 +1,142 @@
+<%- include('../partials/admin-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <div>
+      <h1><i class="fas fa-database"></i> Banco de Dados</h1>
+      <p>Backups automáticos + manual: baixe, restaure ou importe o banco para nunca perder dados.</p>
+    </div>
+  </div>
+
+  <% if (error) { %><div style="background:#fdecea;color:#c62828;padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
+  <% if (success) { %><div style="background:#e8f5e9;color:#2e7d32;padding:10px 16px;border-radius:6px;margin-bottom:16px;font-size:14px;"><i class="fas fa-check-circle"></i> <%= success %></div><% } %>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+    <div style="background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff;border-radius:10px;padding:16px;">
+      <div style="font-size:24px;font-weight:700;"><%= counts.products %></div>
+      <div style="font-size:12px;opacity:.85;">Produtos</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border-radius:10px;padding:16px;">
+      <div style="font-size:24px;font-weight:700;"><%= counts.sellers %></div>
+      <div style="font-size:12px;opacity:.85;">Vendedores</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#e65100,#bf360c);color:#fff;border-radius:10px;padding:16px;">
+      <div style="font-size:24px;font-weight:700;"><%= counts.sales %></div>
+      <div style="font-size:12px;opacity:.85;">Vendas</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#6a1b9a,#4a148c);color:#fff;border-radius:10px;padding:16px;">
+      <div style="font-size:24px;font-weight:700;"><%= counts.payouts %></div>
+      <div style="font-size:12px;opacity:.85;">Saques</div>
+    </div>
+    <div style="background:linear-gradient(135deg,#00838f,#004d40);color:#fff;border-radius:10px;padding:16px;">
+      <div style="font-size:24px;font-weight:700;"><%= counts.reviews %></div>
+      <div style="font-size:12px;opacity:.85;">Avaliações</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <div class="admin-section">
+      <div class="section-header">
+        <h2><i class="fas fa-hdd"></i> Banco Atual</h2>
+      </div>
+      <% if (dbStats) { %>
+      <div style="font-size:13px;color:#555;line-height:2;">
+        <div><strong>Tamanho:</strong> <%= (dbStats.size / 1024).toFixed(1) %> KB</div>
+        <div><strong>Última gravação:</strong> <%= dbStats.mtime.toLocaleString('pt-BR') %></div>
+      </div>
+      <% } else { %>
+      <p style="color:#999;font-size:13px;">Arquivo do banco não encontrado em disco.</p>
+      <% } %>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <form method="POST" action="/admin/database/backup" style="display:inline;">
+          <button type="submit" class="btn-primary" style="font-size:13px;padding:8px 14px;"><i class="fas fa-camera"></i> Criar Backup Agora</button>
+        </form>
+        <a href="/admin/database/download" class="btn-primary" style="font-size:13px;padding:8px 14px;background:#1565c0;"><i class="fas fa-download"></i> Baixar Banco Atual</a>
+      </div>
+      <p style="font-size:11px;color:#999;margin-top:10px;">O servidor cria backups automáticos a cada hora e mantém os últimos 30.</p>
+    </div>
+
+    <div class="admin-section">
+      <div class="section-header">
+        <h2><i class="fas fa-upload"></i> Importar Banco</h2>
+      </div>
+      <p style="font-size:13px;color:#666;margin:0 0 10px;">Envie um arquivo .sqlite (ex: baixado de outro servidor) para substituir o banco atual. Um backup automático é criado antes.</p>
+      <form method="POST" action="/admin/database/upload" enctype="multipart/form-data">
+        <input type="file" name="files" accept=".sqlite,.db" required style="margin-bottom:10px;width:100%;">
+        <input type="text" name="confirm" placeholder='Digite CONFIRMAR para importar' required style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;margin-bottom:10px;">
+        <button type="submit" class="btn-primary" style="font-size:13px;padding:8px 14px;background:#e65100;"><i class="fas fa-upload"></i> Importar Banco</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-section">
+    <div class="section-header">
+      <h2><i class="fas fa-archive"></i> Backups Disponíveis (<%= backups.length %>)</h2>
+    </div>
+    <% if (backups.length === 0) { %>
+      <p style="color:#999;text-align:center;padding:20px;font-size:13px;">Nenhum backup ainda. Clique em "Criar Backup Agora".</p>
+    <% } else { %>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Arquivo</th>
+          <th>Data</th>
+          <th>Tamanho</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% backups.forEach(function(b) { %>
+        <tr>
+          <td style="font-family:monospace;font-size:12px;"><%= b.name %></td>
+          <td style="font-size:13px;"><%= b.mtime.toLocaleString('pt-BR') %></td>
+          <td style="font-size:13px;"><%= (b.size / 1024).toFixed(1) %> KB</td>
+          <td style="white-space:nowrap;">
+            <a href="/admin/database/download/<%= b.name %>" class="btn-small" style="margin-right:4px;"><i class="fas fa-download"></i> Baixar</a>
+            <button class="btn-small btn-restore" data-file="<%= b.name %>" style="background:#fff;color:#c62828;border:1px solid #ffcdd2;"><i class="fas fa-history"></i> Restaurar</button>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    </div>
+    <% } %>
+  </div>
+
+  <div class="admin-section" style="margin-top:16px;background:#fff8e1;border:1px solid #ffe082;">
+    <div class="section-header">
+      <h2><i class="fas fa-sync-alt"></i> Como sincronizar entre computador e servidor</h2>
+    </div>
+    <ol style="font-size:13px;color:#555;line-height:1.9;margin:0;padding-left:20px;">
+      <li>No painel de <strong>onde os dados estão</strong> (ex: seu notebook em localhost): clique em <strong>Baixar Banco Atual</strong>.</li>
+      <li>No painel de <strong>onde você quer os dados</strong> (ex: site publicado): abra <strong>Importar Banco</strong>, envie o arquivo baixado e digite <strong>CONFIRMAR</strong>.</li>
+      <li>Pronto — produtos, vendedores, vendas e configs são copiados para o outro servidor.</li>
+    </ol>
+    <p style="font-size:12px;color:#8d6e63;margin:10px 0 0;"><i class="fas fa-info-circle"></i> Backups automáticos são criados a cada hora (últimos 30 mantidos) e sempre antes de importar/restaurar. Faça um backup manual antes de grandes mudanças no código.</p>
+    <p style="font-size:12px;color:#8d6e63;margin:6px 0 0;"><i class="fas fa-server"></i> <strong>Importante (Render):</strong> o Render apaga arquivos a cada novo deploy. Para o banco sobreviver aos deploys, monte um Persistent Disk no Render e defina as variáveis <code style="background:#eee;padding:1px 4px;border-radius:3px;">DB_PATH=/var/data/database.sqlite</code> e <code style="background:#eee;padding:1px 4px;border-radius:3px;">BACKUP_DIR=/var/data/backups</code>.</p>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.btn-restore').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var file = this.dataset.file;
+    var code = prompt('RESTAURAR O BACKUP: ' + file + '\n\nIsso SUBSTITUI o banco atual (um backup automático será criado antes).\n\nDigite CONFIRMAR para continuar:');
+    if (code === 'CONFIRMAR') {
+      var form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/admin/database/restore/' + encodeURIComponent(file);
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'confirm';
+      input.value = 'CONFIRMAR';
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  });
+});
+</script>
+
+<%- include('../partials/admin-footer') %>

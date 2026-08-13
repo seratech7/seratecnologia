@@ -52,8 +52,9 @@
 </div>
 
 <script>
+function csrfToken() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
 function marcarLida(id) {
-  fetch('/api/notifications/read/' + id, { method: 'POST' }).then(function() {
+  fetch('/api/notifications/read/' + id, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } }).then(function() {
     var el = document.querySelector('.notif-item[data-id="' + id + '"]');
     if (el) {
       el.classList.remove('notif-unread');
@@ -63,7 +64,7 @@ function marcarLida(id) {
   });
 }
 function marcarTodas() {
-  fetch('/api/notifications/read-all', { method: 'POST' }).then(function() {
+  fetch('/api/notifications/read-all', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } }).then(function() {
     document.querySelectorAll('.notif-item.notif-unread').forEach(function(el) {
       el.classList.remove('notif-unread');
       el.classList.add('notif-read');

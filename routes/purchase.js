@@ -102,8 +102,23 @@ router.get('/rastreio', function(req, res) {
   var sale = null;
   var history = [];
   if (code) {
-    sale = db.getSaleByTrackingCode(code);
-    if (sale) history = db.getTrackingHistory(sale.id);
+    var raw = db.getSaleByTrackingCode(code);
+    if (raw) {
+      history = db.getTrackingHistory(raw.id);
+      sale = {
+        id: raw.id,
+        tracking_code: raw.tracking_code,
+        tracking_status: raw.tracking_status,
+        tracking_estimated_days: raw.tracking_estimated_days,
+        status: raw.status,
+        product_code: raw.product_code,
+        product_name: raw.product_name,
+        product_price: raw.product_price,
+        product_image: raw.product_image,
+        seller_name: raw.seller_name,
+        created_at: raw.created_at
+      };
+    }
   }
   res.render('rastreio', { title: 'Rastrear Pedido', sale: sale, history: history, code: code, error: code && !sale ? 'Informe um código de rastreio válido' : null });
 });
@@ -112,7 +127,23 @@ router.get('/api/rastreio/:codigo', function(req, res) {
   var sale = db.getSaleByTrackingCode(req.params.codigo);
   if (!sale) return res.status(404).json({ error: 'Não encontrado' });
   var history = db.getTrackingHistory(sale.id);
-  res.json({ sale: sale, history: history });
+  // Whitelist: never expose buyer PII (name, CPF, phone, email, address) via this endpoint
+  res.json({
+    sale: {
+      id: sale.id,
+      tracking_code: sale.tracking_code,
+      tracking_status: sale.tracking_status,
+      tracking_estimated_days: sale.tracking_estimated_days,
+      status: sale.status,
+      product_code: sale.product_code,
+      product_name: sale.product_name,
+      product_price: sale.product_price,
+      product_image: sale.product_image,
+      seller_name: sale.seller_name,
+      created_at: sale.created_at
+    },
+    history: history
+  });
 });
 
 router.post('/api/gerar-pix', async function(req, res) {

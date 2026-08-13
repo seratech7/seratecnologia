@@ -29,7 +29,7 @@
     <div class="form-group">
       <label>Status</label>
       <select name="status" class="form-control">
-        <% ['pending','approved','shipped','delivered','cancelled'].forEach(function(s) { %>
+        <% ['pending','approved','paid','shipped','delivered','cancelled'].forEach(function(s) { %>
           <option value="<%= s %>" <%= sale.status === s ? 'selected' : '' %>><%= s.charAt(0).toUpperCase() + s.slice(1) %></option>
         <% }) %>
       </select>

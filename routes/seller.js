@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const db = require('../database/db');
 const path = require('path');
 const fs = require('fs');
@@ -46,10 +47,13 @@ router.post('/login', (req, res) => {
   }
   if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.', csrfToken: req.session.csrfToken });
   db.logLoginAttempt(ip, email, 'seller', true);
-  req.session.sellerId = seller.id;
-  req.session.sellerName = seller.name;
-  req.session.sellerPhone = seller.whatsapp || seller.phone || '';
-  res.redirect('/seller/dashboard');
+  req.session.regenerate(function() {
+    req.session.sellerId = seller.id;
+    req.session.sellerName = seller.name;
+    req.session.sellerPhone = seller.whatsapp || seller.phone || '';
+    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
+    res.redirect('/seller/dashboard');
+  });
 });
 
 router.get('/logout', (req, res) => {
@@ -248,7 +252,7 @@ router.post('/sales/status/:id', requireSeller, upload.array('proof_photos', 5),
   var { status, tracking_message, carrier } = req.body;
   var sale = db.get('SELECT * FROM sales WHERE id = ? AND seller_id = ?', [req.params.id, req.session.sellerId]);
   if (!sale) return res.redirect('/seller/sales');
-  var validStatuses = ['pending', 'paid', 'shipped', 'delivered', 'cancelled'];
+  var validStatuses = ['pending', 'paid', 'approved', 'shipped', 'delivered', 'cancelled'];
   var trackingMap = { 'paid': 'preparing', 'shipped': 'shipped', 'delivered': 'delivered', 'cancelled': 'cancelled' };
   var statusLabels = { 'pending': 'Pendente', 'paid': 'Pago', 'shipped': 'Enviado', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
   var trackingLabels = { 'pending': 'Pendente', 'confirmed': 'Confirmado', 'preparing': 'Em separação', 'shipped': 'Despachado', 'in_transit': 'Em trânsito', 'delivered': 'Entregue', 'cancelled': 'Cancelado' };
@@ -388,8 +392,12 @@ router.post('/change-password', requireSeller, (req, res) => {
   if (!bcrypt.compareSync(current_password, seller.password_hash)) {
     return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Senha atual incorreta' });
   }
-  if (new_password !== confirm_password || new_password.length < 6) {
-    return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Nova senha inválida ou não confere' });
+  if (new_password !== confirm_password) {
+    return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Nova senha não confere' });
+  }
+  var pwErrors = db.validatePassword(new_password);
+  if (pwErrors.length > 0) {
+    return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: pwErrors.join('<br>') });
   }
   var hash = bcrypt.hashSync(new_password, 10);
   db.run('UPDATE sellers SET password_hash = ? WHERE id = ?', [hash, req.session.sellerId]);

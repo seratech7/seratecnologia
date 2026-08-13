@@ -10,3 +10,15 @@ server_err.txt
 # Generated files
 promote.log
 sessions/
+
+# Sensitive / session artifacts — NEVER commit
+cookies*.txt
+headers*.txt
+*.log
+whatsapp-qr*.png
+.wtf*
+rufus.com
+*.bat
+server_err.txt
+server_out.txt
+uploads/db-imports/

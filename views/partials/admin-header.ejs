@@ -35,6 +35,7 @@
       <div class="nav-section-label">Conteúdo</div>
       <a href="/admin/products" class="<%= currentPath.startsWith('/admin/products') ? 'active' : '' %>">
         <i class="fas fa-box"></i> <span>Produtos</span>
+        <% if (typeof adminPendingProducts !== 'undefined' && adminPendingProducts > 0) { %><span class="badge-msg" style="background:#ff9800;"><%= adminPendingProducts %></span><% } %>
       </a>
       <a href="/admin/categories" class="<%= currentPath === '/admin/categories' ? 'active' : '' %>">
         <i class="fas fa-tags"></i> <span>Categorias</span>
@@ -52,9 +53,11 @@
       <div class="nav-section-label">Vendas</div>
       <a href="/admin/sales" class="<%= currentPath.startsWith('/admin/sales') ? 'active' : '' %>">
         <i class="fas fa-shopping-bag"></i> <span>Vendas</span>
+        <% if (typeof adminPendingSales !== 'undefined' && adminPendingSales > 0) { %><span class="badge-msg" style="background:#f44336;"><%= adminPendingSales %></span><% } %>
       </a>
       <a href="/admin/financeiro" class="<%= currentPath.startsWith('/admin/financeiro') ? 'active' : '' %>">
         <i class="fas fa-coins"></i> <span>Financeiro</span>
+        <% if (typeof adminPendingPayouts !== 'undefined' && adminPendingPayouts > 0) { %><span class="badge-msg" style="background:#e65100;"><%= adminPendingPayouts %></span><% } %>
       </a>
       <a href="/admin/cupons" class="<%= currentPath === '/admin/cupons' ? 'active' : '' %>">
         <i class="fas fa-ticket-alt"></i> <span>Cupons</span>
@@ -115,6 +118,9 @@
       <a href="/admin/ips-bloqueados" class="<%= currentPath === '/admin/ips-bloqueados' ? 'active' : '' %>">
         <i class="fas fa-ban"></i> <span>IPs Bloqueados</span>
       </a>
+      <a href="/admin/senha" class="<%= currentPath === '/admin/senha' ? 'active' : '' %>">
+        <i class="fas fa-key"></i> <span>Alterar Senha</span>
+      </a>
       <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
         <i class="fas fa-broom"></i> <span>Limpar Dados</span>
       </a>
@@ -123,6 +129,9 @@
       </a>
       <a href="/admin/seguranca" class="<%= currentPath === '/admin/seguranca' ? 'active' : '' %>">
         <i class="fas fa-shield-alt"></i> <span>Segurança</span>
+      </a>
+      <a href="/admin/database" class="<%= currentPath === '/admin/database' ? 'active' : '' %>">
+        <i class="fas fa-database"></i> <span>Banco de Dados</span>
       </a>
 
       <% if (!admin && seller) { %>
@@ -150,6 +159,35 @@
   </aside>
 
   <div class="admin-main">
+    <div style="display:flex;align-items:center;gap:8px;">
     <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Menu">
       <i class="fas fa-bars"></i>
     </button>
+      <div class="notif-bell" style="position:relative;margin-left:auto;">
+        <a href="/admin/notifications" style="color:#666;font-size:18px;position:relative;display:inline-block;padding:6px;">
+          <i class="fas fa-bell"></i>
+          <span id="adminNotifBadge" style="display:none;position:absolute;top:0;right:0;background:#e53935;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;text-align:center;line-height:16px;padding:0 4px;border:2px solid #fff;"></span>
+        </a>
+      </div>
+    </div>
+    <script>
+    (function() {
+      function fetchNotifCount() {
+        var x = new XMLHttpRequest();
+        x.onload = function() {
+          if (x.status === 200) {
+            try {
+              var d = JSON.parse(x.responseText);
+              var badge = document.getElementById('adminNotifBadge');
+              if (d.count > 0) { badge.style.display = 'inline'; badge.textContent = d.count > 99 ? '99+' : d.count; }
+              else { badge.style.display = 'none'; }
+            } catch(e) {}
+          }
+        };
+        x.open('GET', '/admin/notifications/count', true);
+        x.send();
+      }
+      fetchNotifCount();
+      setInterval(fetchNotifCount, 15000);
+    })();
+    </script>

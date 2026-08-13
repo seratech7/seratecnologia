@@ -1,0 +1,75 @@
+﻿============================================
+  RELATORIO DE SEGURANCA - REDE DOMESTICA
+============================================
+Data: 31/07/2026 09:16:41
+Rede: 192.168.1.0/24
+Seu IP: 192.168.1.8
+
+RESUMO GERAL:
+- Hosts ativos: 2
+- Portas abertas identificadas: 7
+- Riscos CRITICOS: 4
+- Riscos MEDIOS: 1
+
+============================================
+DETECTADOS POR DISPOSITIVO:
+============================================
+
+--- 192.168.1.1 (ROTEADOR/GATEWAY) ---
+
+Porta Servico Risco                               
+----- ------- -----                               
+   22 SSH     BAIXO - SSH (verificar configuracao)
+   23 Telnet  CRITICO - Telnet inseguro           
+   53 DNS     BAIXO                               
+   80 HTTP    MEDIO - HTTP sem criptografia       
+
+
+
+
+--- 192.168.1.8 (SEU COMPUTADOR) ---
+
+Porta Servico Risco                 
+----- ------- -----                 
+  135 RPC     ALTO - RPC exposto    
+  139 NetBIOS ALTO - NetBIOS exposto
+  445 SMB     CRITICO - SMB exposto 
+
+
+
+
+============================================
+VULNERABILIDADES IDENTIFICADAS:
+============================================
+[CRITICO] 192.168.1.1:23 - Telnet - CRITICO - Telnet inseguro
+[CRITICO] 192.168.1.8:135 - RPC - ALTO - RPC exposto
+[CRITICO] 192.168.1.8:139 - NetBIOS - ALTO - NetBIOS exposto
+[CRITICO] 192.168.1.8:445 - SMB - CRITICO - SMB exposto
+
+[MEDIO] 192.168.1.1:80 - HTTP - MEDIO - HTTP sem criptografia
+
+
+============================================
+RECOMENDACOES DE SEGURANCA:
+============================================
+
+1. ROTEADOR (192.168.1.1):
+   - Acesse a interface web (http://192.168.1.1) e:
+     * Altere a senha padrao do admin
+     * Desabilite WPS se estiver habilitado
+     * Use WPA3 ou WPA2-AES (nao WEP ou WPA-TKIP)
+     * Desabilite UPnP se nao precisar
+     * Atualize o firmware
+
+2. SEU COMPUTADOR (192.168.1.8):
+   - SMB (445) esta exposto - considere desabilitar se nao usar compartilhamento
+   - Verifique se todas as atualizacoes do Windows estao instaladas
+   - Considere usar um firewall mais restritivo
+
+3. REDE:
+   - Habilite o firewall em todos os dispositivos
+   - Use senhas fortes para todos os dispositivos
+   - Considere segmentar a rede (rede para convidados)
+   - Monitore dispositivos conectados regularmente
+
+============================================

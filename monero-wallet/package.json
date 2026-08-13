@@ -1,11 +1,13 @@
 {
-  "name": "marketplace",
+  "name": "monero-wallet",
   "version": "1.0.0",
-  "description": "Marketplace estilo Facebook com painel admin",
+  "description": "Carteira digital / corretora exclusiva Monero com conta-mestra, depósitos automáticos, saques e painel admin",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "scanner": "node lib/scanner.js",
+    "seed:admin": "node seed-admin.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,10 +17,9 @@
     "express-rate-limit": "^8.6.0",
     "express-session": "^1.17.3",
     "helmet": "^8.3.0",
-    "multer": "^1.4.5-lts.1",
-    "puppeteer": "^25.6.0",
     "qrcode": "^1.5.4",
     "session-file-store": "^1.5.0",
+    "speakeasy": "^2.0.0",
     "sql.js": "^1.9.0"
   }
 }

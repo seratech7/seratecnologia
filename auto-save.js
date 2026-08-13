@@ -1,5 +1,6 @@
 const { execSync } = require('child_process');
 const path = require('path');
+const { backupDatabase } = require('./backup-db');
 
 const repoDir = __dirname;
 const token = process.env.GITHUB_TOKEN;
@@ -14,6 +15,8 @@ function run(cmd) {
 }
 
 function autoSave() {
+  backupDatabase();
+
   if (token) {
     run(`git remote set-url origin "${remoteUrl}"`);
   }

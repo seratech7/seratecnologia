@@ -1,7 +1,5 @@
 function csrfProtection(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
-  // Skip CSRF for admin and seller routes (sessions may expire on Render free tier)
-  if (req.path.startsWith('/admin') || req.path.startsWith('/seller')) return next();
   var token = req.body?._csrf || req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
   if (!token || token !== req.session?.csrfToken) {
     console.error('[CSRF] Token inválido:', req.method, req.path, 'token:', token, 'session:', req.session?.csrfToken);
@@ -13,4 +11,53 @@ function csrfProtection(req, res, next) {
   next();
 }
 
-module.exports = { csrfProtection };
+// Auto-injects CSRF tokens into every rendered HTML response:
+//  1. A hidden `_csrf` input inside each POST form that lacks one.
+//  2. A <meta name="csrf-token"> after <head> so client-side fetch() can send the header.
+function injectCsrfTokens(req, res, next) {
+  var token = req.session?.csrfToken;
+  var origSend = res.send.bind(res);
+  res.send = function(body) {
+    if (body && typeof body === 'string' && token) {
+      var ct = res.get('Content-Type') || '';
+      if (ct.indexOf('text/html') === 0 || ct.indexOf('text/plain') === 0 || !ct) {
+        body = injectCsrfIntoHtml(body, token);
+      }
+    }
+    return origSend(body);
+  };
+  next();
+}
+
+function injectCsrfIntoHtml(html, token) {
+  if (!html || typeof html !== 'string' || !token) return html;
+  if (html.indexOf('name="_csrf"') !== -1 && html.indexOf('name="csrf-token"') !== -1) return html;
+
+  // Protect JS string literals: never inject inside <script>/<style> blocks.
+  var blocks = [];
+  var cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, function(m) {
+    blocks.push(m);
+    return '\u0000BLOCK' + (blocks.length - 1) + '\u0000';
+  });
+
+  if (cleaned.indexOf('name="_csrf"') === -1) {
+    cleaned = cleaned.replace(/<form\b[^>]*>/gi, function(m) {
+      if (/name=["']_csrf/i.test(m)) return m;
+      if (/method=["']get["']/i.test(m)) return m;
+      return m + '<input type="hidden" name="_csrf" value="' + token + '">';
+    });
+  }
+
+  if (cleaned.indexOf('name="csrf-token"') === -1) {
+    cleaned = cleaned.replace(/<head\b[^>]*>/i, function(m) {
+      return m + '<meta name="csrf-token" content="' + token + '">';
+    });
+  }
+
+  for (var i = 0; i < blocks.length; i++) {
+    cleaned = cleaned.replace('\u0000BLOCK' + i + '\u0000', blocks[i]);
+  }
+  return cleaned;
+}
+
+module.exports = { csrfProtection, injectCsrfTokens, injectCsrfIntoHtml };

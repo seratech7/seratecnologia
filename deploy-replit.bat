@@ -10,6 +10,6 @@ echo 7. No terminal Replit, digite: npm install
 echo 8. Clique em "Run" (ou digite: node start.js)
 echo.
 echo URL do site: https://seratecnologia.seuusuario.replit.app
-echo Admin: /admin/login (senha: admin123)
+echo Admin: /admin/login (defina ADMIN_PASSWORD forte no .env)
 echo.
 pause

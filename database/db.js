@@ -2,8 +2,9 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
-const DB_PATH = path.join(__dirname, '..', 'database.sqlite');
+const DB_PATH = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, '..', 'database.sqlite');
 
 let db = null;
 
@@ -28,6 +29,17 @@ function saveDb() {
   const data = db.export();
   const buffer = Buffer.from(data);
   fs.writeFileSync(DB_PATH, buffer);
+}
+
+// Recarrega o banco em memória a partir do arquivo em disco (usado após restore/import)
+async function reloadFromDisk() {
+  if (!fs.existsSync(DB_PATH)) return false;
+  const SQL = await initSqlJs();
+  const buffer = fs.readFileSync(DB_PATH);
+  db = new SQL.Database(buffer);
+  db.run('PRAGMA foreign_keys = ON');
+  await initDb();
+  return true;
 }
 
 async function initDb() {
@@ -133,8 +145,10 @@ async function initDb() {
   }
 
   const adminPass = process.env.ADMIN_PASSWORD;
-  if (!adminPass || adminPass === 'admin123') {
-    console.error('❌ ERRO: Defina ADMIN_PASSWORD no arquivo .env com uma senha forte!');
+  const weakPasswords = ['admin', 'admin123', 'admn123', 'password', '123456', '12345678', 'qwerty', 'letmein', 'senha', 'senha123', 'seratecnologia', 'marketplace'];
+  if (!adminPass || adminPass.length < 10 || weakPasswords.includes(adminPass.toLowerCase()) ||
+      !/[A-Z]/.test(adminPass) || !/[a-z]/.test(adminPass) || !/\d/.test(adminPass) || !/[^A-Za-z0-9]/.test(adminPass)) {
+    console.error('❌ ERRO: ADMIN_PASSWORD no .env é fraca. Use no mínimo 10 caracteres com maiúscula, minúscula, número e caractere especial.');
     process.exit(1);
   }
   const hash = bcrypt.hashSync(adminPass, 12);
@@ -818,7 +832,11 @@ function getCommissionPct(sellerId) {
 function gerarCodigoRastreio() {
   var prefix = 'ST';
   var datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  var seq = Math.floor(Math.random() * 99999).toString().padStart(5, '0');
+  var alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var seq = '';
+  for (var i = 0; i < 8; i++) {
+    seq += alphabet[crypto.randomInt(0, alphabet.length)];
+  }
   return prefix + datePart + '-' + seq;
 }
 
@@ -853,7 +871,7 @@ function createPayout(sellerId, amount, bankInfo, paymentMethod) {
   var net = amount - fee;
   run("INSERT INTO payouts (seller_id, amount, fee, net_amount, bank_info, payment_method) VALUES (?, ?, ?, ?, ?, ?)",
     [sellerId, amount, fee, net, bankInfo || '', paymentMethod || 'pix']);
-  db.addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', 0);
+  addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', 0);
 }
 
 function getTransactionsByPeriod(sellerId, startDate, endDate, limit, offset) {
@@ -1045,6 +1063,30 @@ function getLoginAttempts(limit) {
   return query("SELECT * FROM login_attempts ORDER BY created_at DESC LIMIT ?", [limit || 100]);
 }
 
+function getPasswordPolicy() {
+  var a = get("SELECT value FROM config WHERE key = 'password_min_length'");
+  var b = get("SELECT value FROM config WHERE key = 'password_require_special'");
+  var c = get("SELECT value FROM config WHERE key = 'password_require_number'");
+  var d = get("SELECT value FROM config WHERE key = 'password_require_upper'");
+  return {
+    minLength: a ? parseInt(a.value) || 0 : 0,
+    requireSpecial: b ? b.value === '1' : false,
+    requireNumber: c ? c.value === '1' : false,
+    requireUpper: d ? d.value === '1' : false
+  };
+}
+
+function validatePassword(password) {
+  var policy = getPasswordPolicy();
+  var min = Math.max(policy.minLength, 6);
+  var errors = [];
+  if (password.length < min) errors.push('A senha deve ter no mínimo ' + min + ' caracteres');
+  if (policy.requireSpecial && !/[!@#$%^&*(),.?":{}|<>_-]/.test(password)) errors.push('A senha deve conter pelo menos um caractere especial');
+  if (policy.requireNumber && !/\d/.test(password)) errors.push('A senha deve conter pelo menos um número');
+  if (policy.requireUpper && !/[A-Z]/.test(password)) errors.push('A senha deve conter pelo menos uma letra maiúscula');
+  return errors;
+}
+
 function getToggle(key) {
   var r = get("SELECT value FROM config WHERE key = ?", ['toggle_' + key]);
   return r ? r.value : '1';
@@ -1061,7 +1103,7 @@ function getFlashSales() {
   var flashCat = get("SELECT value FROM config WHERE key = 'flash_category_id'");
   var catFilter = '';
   if (flashCat && flashCat.value) catFilter = 'AND p.category_id = ' + parseInt(flashCat.value) + ' ';
-  return query("SELECT p.*, c.name as category_name, c.icon as category_icon, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now') AND p.status = 'active' " + catFilter + "ORDER BY p.flash_ends_at ASC");
+  return query("SELECT p.*, c.name as category_name, c.slug as category_slug, c.icon as category_icon, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now') AND p.status = 'active' " + catFilter + "ORDER BY p.flash_ends_at ASC");
 }
 function setFlashSale(productId, flashPrice, endsAt) {
   run("UPDATE products SET flash_price = ?, flash_ends_at = ? WHERE id = ?", [flashPrice, endsAt, productId]);
@@ -1344,4 +1386,4 @@ function updateSellerNotifPrefs(sellerId, prefs) {
   run("UPDATE sellers SET notify_email_sale = ?, notify_email_approve = ? WHERE id = ?", [prefs.notify_email_sale ? 1 : 0, prefs.notify_email_approve ? 1 : 0, sellerId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs };
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs };

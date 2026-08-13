@@ -8,7 +8,7 @@ router.get('/notificacoes', function(req, res) {
   var limit = 30;
   var offset = (page - 1) * limit;
   var all = db.getNotifications(ip, limit, offset);
-  var count = db.get("SELECT COUNT(*) as c FROM notifications WHERE ip = ?", [ip]);
+  var count = db.get("SELECT COUNT(*) as c FROM notifications WHERE (ip = ? OR ip = '')", [ip]);
   var total = count ? count.c : 0;
   var totalPages = Math.ceil(total / limit);
   var unread = db.getNotificationCount(ip);

@@ -207,7 +207,7 @@ module.exports = function() {
         recipients = [...new Set(recipients)];
         let s = 0;
         for (const e of recipients) {
-          try { sendEmail(e, process.env.SITE_NAME + ' - Novidade!', message); db.addMarketingCampaignResult(campaignId, 'email', e, 'sent', ''); s++; } catch (err) { db.addMarketingCampaignResult(campaignId, 'email', e, 'failed', err.message); }
+          try { var sn = db.get("SELECT value FROM config WHERE key = 'site_name'"); var siteName = sn ? sn.value : 'Marketplace'; sendEmail(e, siteName + ' - Novidade!', message); db.addMarketingCampaignResult(campaignId, 'email', e, 'sent', ''); s++; } catch (err) { db.addMarketingCampaignResult(campaignId, 'email', e, 'failed', err.message); }
         }
         db.updateMarketingCampaignStats(campaignId, s, recipients.length - s);
         results.push('Email: ' + s + ' enviados');
@@ -270,10 +270,12 @@ module.exports = function() {
   // ============================================================
   router.get('/marketing/autopromo', (req, res) => {
     const products = db.query("SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM sales s WHERE s.product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 30");
+    var sn = db.get("SELECT value FROM config WHERE key = 'site_name'");
+    var siteName = sn ? sn.value : 'Marketplace';
     res.render('admin/marketing/autopromo', {
       title: 'Auto-Promo', currentPath: '/admin/marketing/autopromo',
       products, baseUrl: getBaseUrl(),
-      siteName: process.env.SITE_NAME || 'Martplace',
+      siteName: siteName,
       error: null, success: null
     });
   });
@@ -350,10 +352,12 @@ module.exports = function() {
   router.get('/marketing/coupons', (req, res) => {
     const coupons = db.getAllCoupons();
     const lists = db.getMarketingLists();
+    var sn = db.get("SELECT value FROM config WHERE key = 'site_name'");
+    var siteName = sn ? sn.value : 'Marketplace';
     res.render('admin/marketing/coupon-dist', {
       title: 'Distribuir Cupons', currentPath: '/admin/marketing/coupons',
       coupons, lists, baseUrl: getBaseUrl(),
-      siteName: process.env.SITE_NAME || 'Martplace',
+      siteName: siteName,
       error: null, success: null
     });
   });
@@ -411,8 +415,10 @@ module.exports = function() {
   // ============================================================
   router.get('/marketing/social', (req, res) => {
     const baseUrl = process.env.SITE_URL || 'https://seratecnologia-1.onrender.com';
-    const name = process.env.SITE_NAME || 'Martplace';
-    const desc = process.env.SITE_DESC || '';
+    var sn = db.get("SELECT value FROM config WHERE key = 'site_name'");
+    var sd = db.get("SELECT value FROM config WHERE key = 'site_description'");
+    const name = sn ? sn.value : 'Marketplace';
+    const desc = sd ? sd.value : '';
     res.render('admin/marketing/social', {
       title: 'Links de Compartilhamento', currentPath: '/admin/marketing/social',
       baseUrl, name, desc,

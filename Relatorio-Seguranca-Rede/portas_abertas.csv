@@ -1,0 +1,8 @@
+"IP","Porta","Servico","Risco","StatusRisco"
+"192.168.1.1","22","SSH","BAIXO - SSH (verificar configuracao)","BAIXO"
+"192.168.1.1","23","Telnet","CRITICO - Telnet inseguro","CRITICO"
+"192.168.1.1","53","DNS","BAIXO","BAIXO"
+"192.168.1.1","80","HTTP","MEDIO - HTTP sem criptografia","MEDIO"
+"192.168.1.8","135","RPC","ALTO - RPC exposto","CRITICO"
+"192.168.1.8","139","NetBIOS","ALTO - NetBIOS exposto","CRITICO"
+"192.168.1.8","445","SMB","CRITICO - SMB exposto","CRITICO"

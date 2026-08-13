@@ -26,7 +26,7 @@ const notificationRoutes = require('./routes/notifications');
 const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
 const { toggleMiddleware } = require('./middleware/toggles');
-const { csrfProtection } = require('./middleware/csrf');
+const { csrfProtection, injectCsrfTokens } = require('./middleware/csrf');
 const { securityMiddleware } = require('./middleware/security');
 
 const app = express();
@@ -116,10 +116,35 @@ const upload = multer({
   }
 });
 
+// Multer for database uploads (.sqlite / .db) — saved outside public/ (not downloadable)
+const dbStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'uploads', 'db-imports');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => cb(null, 'db-' + Date.now() + '-' + crypto.randomBytes(8).toString('hex') + '.sqlite')
+});
+const dbUpload = multer({
+  storage: dbStorage,
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (ext === '.sqlite' || ext === '.db') return cb(null, true);
+    cb(new Error('O arquivo deve ser .sqlite'));
+  }
+});
+
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.json({ limit: '1mb' }));
 
-app.set('trust proxy', 1);
+// Trust the reverse proxy ONLY in production (Render) — never when directly reachable,
+// otherwise clients can spoof X-Forwarded-For to bypass rate limits / IP blocks.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+} else {
+  app.set('trust proxy', false);
+}
 
 var FileStore = require('session-file-store')(session);
 app.use(session({
@@ -132,7 +157,7 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'lax',
-    secure: false
+    secure: process.env.NODE_ENV === 'production'
   }
 }));
 
@@ -152,9 +177,11 @@ app.set('views', path.join(__dirname, 'views'));
 // Upload error handler
 app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
+    if (req.path.indexOf('/admin/database') === 0) return res.redirect('/admin/database?error=' + encodeURIComponent('Arquivo muito grande. Máximo 100MB.'));
     return res.status(400).send('Arquivo muito grande. Máximo 5MB.');
   }
-  if (err.message?.includes('Formato de imagem')) {
+  if (err.message?.includes('Formato de imagem') || err.message?.includes('.sqlite')) {
+    if (req.path.indexOf('/admin/database') === 0) return res.redirect('/admin/database?error=' + encodeURIComponent(err.message));
     return res.status(400).send(err.message);
   }
   next(err);
@@ -219,6 +246,14 @@ app.use((req, res, next) => {
     var pp = db.get("SELECT COUNT(*) as c FROM products WHERE seller_id = ? AND status = 'pending'", [sid]);
     res.locals.pendingProductsCount = pp ? pp.c : 0;
   }
+  if (req.session.adminId) {
+    var ap = db.get("SELECT COUNT(*) as c FROM products WHERE status='pending'");
+    res.locals.adminPendingProducts = ap ? ap.c : 0;
+    var asp = db.get("SELECT COUNT(*) as c FROM sales WHERE status='pending'");
+    res.locals.adminPendingSales = asp ? asp.c : 0;
+    var app2 = db.get("SELECT COUNT(*) as c FROM payouts WHERE status='pending'");
+    res.locals.adminPendingPayouts = app2 ? app2.c : 0;
+  }
   // Generate CSRF token
   if (!req.session.csrfToken) {
     req.session.csrfToken = crypto.randomBytes(24).toString('hex');
@@ -238,8 +273,10 @@ app.use((req, res, next) => {
 app.use(toggleMiddleware);
 app.use(securityMiddleware);
 
-// CSRF protection for all non-GET requests
+// CSRF protection for all non-GET requests (admin/seller included)
 app.use(csrfProtection);
+// Auto-inject _csrf hidden inputs into POST forms + meta tag for fetch()
+app.use(injectCsrfTokens);
 
 // Inject custom CSS/JS from config
 app.use((req, res, next) => {
@@ -317,7 +354,7 @@ app.get('/admin/debug', (req, res) => {
 
 app.use('/api', apiLimiter);
 app.use('/admin', authRoutes);
-app.use('/admin', adminRoutes(upload));
+app.use('/admin', adminRoutes(upload, dbUpload));
 app.use('/admin', require('./routes/marketing')());
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);

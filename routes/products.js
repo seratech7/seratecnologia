@@ -8,7 +8,7 @@ router.get('/', (req, res) => {
     const categories = db.query('SELECT * FROM categories ORDER BY name') || [];
     const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location") || [];
 
-    let sql = "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
+    let sql = "SELECT p.*, c.name as category_name, c.slug as category_slug, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
     let params = ['active'];
 
     if (search) {
@@ -53,7 +53,6 @@ router.get('/', (req, res) => {
 
     const products = db.query(sql, params) || [];
     const heroBanners = db.getBannersByPosition('hero') || [];
-    const miniBanners = db.getBannersByPosition('mini') || [];
     const flashProducts = db.getFlashSales() || [];
 
     res.render('index', {
@@ -62,7 +61,6 @@ router.get('/', (req, res) => {
       categories,
       locations,
       banners: heroBanners,
-      miniBanners,
       flashProducts,
       search: search || '',
       selectedCategory: category || '',
@@ -93,7 +91,7 @@ router.get('/', (req, res) => {
 
 router.get('/produto/:id', (req, res) => {
   const product = db.get(
-    "SELECT p.*, c.name as category_name, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?",
+    "SELECT p.*, c.name as category_name, c.slug as category_slug, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?",
     [req.params.id]
   );
 
@@ -147,7 +145,7 @@ router.post('/produto/:id/avaliar', (req, res) => {
     return res.status(400).json({ error: 'Avaliação deve ser entre 1 e 5 estrelas' });
   }
 
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+  const ip = req.ip || 'unknown';
 
   const existing = db.get(
     'SELECT id FROM reviews WHERE product_id = ? AND reviewer_ip = ?',

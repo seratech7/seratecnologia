@@ -3,9 +3,10 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const db = require('../database/db');
+const { backupDatabase, getBackups, restoreBackup, restoreFromFile } = require('../backup-db');
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 
-module.exports = function(upload) {
+module.exports = function(upload, dbUpload) {
 const router = express.Router();
 router.use(requireAdmin);
 
@@ -21,6 +22,11 @@ router.get('/dashboard', (req, res) => {
   const todayViews = db.get("SELECT COUNT(*) as c FROM page_views WHERE date(created_at) = date('now')");
   const recent = db.query('SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.created_at DESC LIMIT 5');
   const featuredProducts = db.query('SELECT p.*, c.name as category_name, s.name as seller_name FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.featured = 1 ORDER BY p.updated_at DESC');
+  var recentSales = db.query("SELECT s.*, sl.name as seller_name FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id ORDER BY s.created_at DESC LIMIT 5");
+  var pendingPayouts = db.get("SELECT COUNT(*) as c, COALESCE(SUM(amount),0) as total FROM payouts WHERE status = 'pending'");
+  var lowStockCount = db.get("SELECT COUNT(*) as c FROM products WHERE status = 'active' AND quantity <= 5");
+  var chartSales = db.query("SELECT date(created_at) as day, COUNT(*) as sales FROM sales WHERE status NOT IN ('cancelled','pending') AND created_at >= datetime('now', '-30 days') GROUP BY day ORDER BY day ASC");
+  var topSellers = db.query("SELECT s.id, s.name, s.avatar, COUNT(sl.id) as sales_count, COALESCE(SUM(sl.product_price),0) as revenue FROM sellers s LEFT JOIN sales sl ON sl.seller_id = s.id AND sl.status NOT IN ('cancelled','pending') WHERE s.status = 'active' GROUP BY s.id ORDER BY revenue DESC LIMIT 5");
 
   res.render('admin/dashboard', {
     title: 'Dashboard - Painel Admin',
@@ -28,10 +34,16 @@ router.get('/dashboard', (req, res) => {
       total: total.count, active: active.count, pending: pending.count,
       sellers: totalSellers.count, featured: featured.count,
       totalSales: totalSales.c, revenue: totalSales.rev,
-      pendingSales: pendingSales.c, totalViews: totalViews.c, todayViews: todayViews.c
+      pendingSales: pendingSales.c, totalViews: totalViews.c, todayViews: todayViews.c,
+      pendingPayouts: pendingPayouts ? pendingPayouts.c : 0,
+      pendingPayoutsTotal: pendingPayouts ? pendingPayouts.total : 0,
+      lowStockCount: lowStockCount ? lowStockCount.c : 0
     },
     recentProducts: recent,
-    featuredProducts
+    featuredProducts,
+    recentSales,
+    chartSales,
+    topSellers
   });
 });
 
@@ -144,7 +156,7 @@ router.post('/sales/cancel/:id', (req, res) => {
 
 router.post('/sales/status/:id', (req, res) => {
   const { status } = req.body;
-  const allowed = ['pending','approved','shipped','delivered','cancelled'];
+  const allowed = ['pending','approved','paid','shipped','delivered','cancelled'];
   if (allowed.includes(status)) {
     var sale = db.get("SELECT product_id FROM sales WHERE id = ?", [req.params.id]);
     db.run("UPDATE sales SET status = ? WHERE id = ? AND status != 'cancelled' AND status != 'delivered'", [status, req.params.id]);
@@ -345,6 +357,9 @@ router.post('/products/edit/:id', upload.array('images', 3), (req, res) => {
 });
 
 router.post('/products/delete/:id', (req, res) => {
+  var p = db.get('SELECT image FROM products WHERE id = ?', [req.params.id]);
+  if (p && p.image) { try { fs.unlinkSync(path.join(__dirname, '..', 'public', p.image)); } catch(e) {} }
+  db.run('DELETE FROM product_images WHERE product_id = ?', [req.params.id]);
   db.run('DELETE FROM products WHERE id = ?', [req.params.id]);
   res.redirect('/admin/products');
 });
@@ -363,9 +378,10 @@ router.post('/sellers/new', (req, res) => {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
     return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios' });
   }
-  if (String(password).length < 6) {
+  var pwErrors = db.validatePassword(password);
+  if (pwErrors.length > 0) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Senha deve ter no mínimo 6 caracteres' });
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: pwErrors.join('<br>') });
   }
   const hash = bcrypt.hashSync(password, 10);
   try {
@@ -459,7 +475,7 @@ router.post('/categories/new', (req, res) => {
     const categories = db.query('SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count FROM categories c ORDER BY c.name');
     return res.render('admin/categories', { title: 'Categorias - Painel Admin', categories, error: 'Nome é obrigatório' });
   }
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   try {
     db.run('INSERT INTO categories (name, slug, icon) VALUES (?, ?, ?)', [name, slug, icon || '📦']);
   } catch (e) {
@@ -475,7 +491,7 @@ router.post('/categories/edit/:id', (req, res) => {
     const categories = db.query('SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count FROM categories c ORDER BY c.name');
     return res.render('admin/categories', { title: 'Categorias - Painel Admin', categories, error: 'Nome é obrigatório' });
   }
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slug = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   db.run('UPDATE categories SET name = ?, slug = ?, icon = ? WHERE id = ?', [name, slug, icon || '📦', req.params.id]);
   res.redirect('/admin/categories');
 });
@@ -496,6 +512,11 @@ router.post('/admins/new', (req, res) => {
   if (!username || !password) {
     const admins = db.query('SELECT id, username, display_name, created_at FROM admins ORDER BY created_at DESC');
     return res.render('admin/admins', { title: 'Administradores', admins, error: 'Usuário e senha são obrigatórios' });
+  }
+  var pwErrors = db.validatePassword(password);
+  if (pwErrors.length > 0) {
+    const admins = db.query('SELECT id, username, display_name, created_at FROM admins ORDER BY created_at DESC');
+    return res.render('admin/admins', { title: 'Administradores', admins, error: pwErrors.join('<br>') });
   }
   const hash = bcrypt.hashSync(password, 10);
   try {
@@ -655,6 +676,11 @@ router.get('/notifications', (req, res) => {
     title: 'Notificações - Painel Admin',
     notifications, filter, page, totalPages, error: null
   });
+});
+
+router.get('/notifications/count', (req, res) => {
+  var c = db.getNotificationCount('admin');
+  res.json({ count: c });
 });
 
 router.post('/notifications/new', (req, res) => {
@@ -834,6 +860,33 @@ router.post('/config', (req, res) => {
   });
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_config', 'Configurações do site atualizadas');
   res.redirect('/admin/config');
+});
+
+// ========== ADMIN PASSWORD ==========
+router.get('/senha', (req, res) => {
+  res.render('admin/change-password', { title: 'Alterar Senha', error: null, success: null });
+});
+
+router.post('/senha', (req, res) => {
+  var { current_password, new_password, confirm_password } = req.body;
+  if (!current_password || !new_password || !confirm_password) {
+    return res.render('admin/change-password', { title: 'Alterar Senha', error: 'Preencha todos os campos', success: null });
+  }
+  if (new_password !== confirm_password) {
+    return res.render('admin/change-password', { title: 'Alterar Senha', error: 'Nova senha e confirmação não conferem', success: null });
+  }
+  var pwErrors = db.validatePassword(new_password);
+  if (pwErrors.length > 0) {
+    return res.render('admin/change-password', { title: 'Alterar Senha', error: pwErrors.join('<br>'), success: null });
+  }
+  var admin = db.get("SELECT * FROM admins WHERE id = ?", [req.session.adminId]);
+  if (!admin || !bcrypt.compareSync(current_password, admin.password_hash)) {
+    return res.render('admin/change-password', { title: 'Alterar Senha', error: 'Senha atual incorreta', success: null });
+  }
+  var hash = bcrypt.hashSync(new_password, 10);
+  db.run("UPDATE admins SET password_hash = ? WHERE id = ?", [hash, req.session.adminId]);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'change_password', 'Alterou a própria senha');
+  res.render('admin/change-password', { title: 'Alterar Senha', error: null, success: 'Senha alterada com sucesso!' });
 });
 
 // ========== CMS PAGES ==========
@@ -1283,6 +1336,101 @@ router.get('/super', requireSuperAdmin, (req, res) => {
   var configs = db.query("SELECT key, value FROM config ORDER BY key");
   var admins = db.query("SELECT id, username, display_name, role FROM admins");
   res.render('admin/super', { title: 'Super Panel', configs, admins, msg: req.query.msg || '' });
+});
+
+// ========== DATABASE MANAGEMENT ==========
+var DB_FILE = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, '..', 'database.sqlite');
+
+router.get('/database', requireSuperAdmin, (req, res) => {
+  var dbPath = DB_FILE;
+  var dbStats = null;
+  try {
+    var st = fs.statSync(dbPath);
+    dbStats = { size: st.size, mtime: st.mtime };
+  } catch(e) {}
+  var counts = {
+    products: db.get('SELECT COUNT(*) as c FROM products'),
+    sellers: db.get('SELECT COUNT(*) as c FROM sellers'),
+    sales: db.get('SELECT COUNT(*) as c FROM sales'),
+    payouts: db.get('SELECT COUNT(*) as c FROM payouts'),
+    reviews: db.get('SELECT COUNT(*) as c FROM reviews')
+  };
+  res.render('admin/database', {
+    title: 'Banco de Dados',
+    backups: getBackups(),
+    dbStats,
+    counts: {
+      products: counts.products ? counts.products.c : 0,
+      sellers: counts.sellers ? counts.sellers.c : 0,
+      sales: counts.sales ? counts.sales.c : 0,
+      payouts: counts.payouts ? counts.payouts.c : 0,
+      reviews: counts.reviews ? counts.reviews.c : 0
+    },
+    error: req.query.error || null,
+    success: req.query.success || null
+  });
+});
+
+router.post('/database/backup', requireSuperAdmin, (req, res) => {
+  var name = backupDatabase();
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'db_backup', 'Backup manual criado: ' + (name || 'falha'));
+  res.redirect('/admin/database?success=' + encodeURIComponent(name ? 'Backup criado: ' + name : 'Falha ao criar backup'));
+});
+
+router.get('/database/download', requireSuperAdmin, (req, res) => {
+  var dbPath = DB_FILE;
+  if (!fs.existsSync(dbPath)) return res.status(404).send('Banco não encontrado');
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', 'attachment; filename="database-' + new Date().toISOString().slice(0,10) + '.sqlite"');
+  res.send(fs.readFileSync(dbPath));
+});
+
+router.get('/database/download/:filename', requireSuperAdmin, (req, res) => {
+  var name = path.basename(req.params.filename);
+  if (!name.endsWith('.sqlite')) return res.status(400).send('Arquivo inválido');
+  var file = path.join(process.env.BACKUP_DIR ? path.resolve(process.env.BACKUP_DIR) : path.join(__dirname, '..', 'database', 'backups'), name);
+  if (!fs.existsSync(file)) return res.status(404).send('Backup não encontrado');
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + name + '"');
+  res.send(fs.readFileSync(file));
+});
+
+router.post('/database/restore/:filename', requireSuperAdmin, (req, res) => {
+  var confirm = (req.body.confirm || '').toString().trim();
+  if (confirm !== 'CONFIRMAR') {
+    return res.redirect('/admin/database?error=' + encodeURIComponent('Digite CONFIRMAR para restaurar'));
+  }
+  var result = restoreBackup(req.params.filename);
+  if (!result.ok) return res.redirect('/admin/database?error=' + encodeURIComponent(result.error));
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'db_restore', 'Restaurou backup: ' + result.name);
+  db.reloadFromDisk().then(function() {
+    res.redirect('/admin/database?success=' + encodeURIComponent('Backup restaurado: ' + result.name));
+  }).catch(function() {
+    res.redirect('/admin/database?success=' + encodeURIComponent('Backup restaurado (reinicie o servidor para aplicar): ' + result.name));
+  });
+});
+
+router.post('/database/upload', requireSuperAdmin, dbUpload.array('files', 1), (req, res) => {
+  var confirm = (req.body.confirm || '').toString().trim();
+  if (confirm !== 'CONFIRMAR') {
+    return res.redirect('/admin/database?error=' + encodeURIComponent('Digite CONFIRMAR para importar'));
+  }
+  if (!req.files || req.files.length === 0 || !req.files[0].filename) {
+    return res.redirect('/admin/database?error=' + encodeURIComponent('Envie um arquivo .sqlite'));
+  }
+  var ext = path.extname(req.files[0].originalname || '').toLowerCase();
+  if (ext !== '.sqlite' && ext !== '.db') {
+    return res.redirect('/admin/database?error=' + encodeURIComponent('O arquivo deve ser .sqlite'));
+  }
+  var result = restoreFromFile(req.files[0].path);
+  try { fs.unlinkSync(req.files[0].path); } catch(e) {}
+  if (!result.ok) return res.redirect('/admin/database?error=' + encodeURIComponent(result.error));
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'db_import', 'Importou banco: ' + (req.files[0].originalname || 'arquivo'));
+  db.reloadFromDisk().then(function() {
+    res.redirect('/admin/database?success=' + encodeURIComponent('Banco importado com sucesso'));
+  }).catch(function() {
+    res.redirect('/admin/database?success=' + encodeURIComponent('Banco importado (reinicie o servidor para aplicar)'));
+  });
 });
 
 router.post('/super/config', requireSuperAdmin, (req, res) => {
