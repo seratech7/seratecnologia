@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const multer = require('multer');
 const helmet = require('helmet');
@@ -13,6 +14,8 @@ const { backupDatabase } = require('./backup-db');
 const { autoSave } = require('./auto-save');
 const fs = require('fs');
 const authRoutes = require('./routes/auth');
+const authHive = require('./lib/auth-hive');
+const { attachAuthInfo } = require('./middleware/auth-hive');
 
 // Secret path prefixes (change these in .env to hide admin/seller panels)
 const SECRET_ADMIN = (process.env.ADMIN_PATH || '/admin').replace(/\/+$/, '');
@@ -147,6 +150,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 var FileStore = require('session-file-store')(session);
+app.use(cookieParser());
 app.use(session({
   store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 604800, reapInterval: 3600 }),
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
@@ -157,10 +161,11 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'lax',
-    // 'auto': Secure quando a requisição chega por HTTPS (Render), sem quebrar HTTP local
     secure: 'auto'
   }
 }));
+
+app.use(attachAuthInfo);
 
 app.use(generalLimiter);
 

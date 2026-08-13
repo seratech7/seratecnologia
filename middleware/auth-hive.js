@@ -2,11 +2,51 @@ const authHive = require('../lib/auth-hive');
 const db = require('../database/db');
 
 function requireAdmin(req, res, next) {
-  return authHive.requireAuth('admin')(req, res, next);
+  return authHive.requireAuth('admin')(req, res, (err) => {
+    if (err) return next(err);
+    const session = authHive.validateSession(req, res);
+    if (session && session.userType === 'admin') {
+      req.session.adminId = session.uid.replace('admin:', '');
+      const admin = db.get("SELECT role, display_name FROM admins WHERE id = ?", [req.session.adminId]);
+      if (admin) {
+        req.adminRole = admin.role;
+        req.session.adminName = admin.display_name;
+      }
+      return next();
+    }
+    res.redirect('/admin/login');
+  });
+}
+
+function requireSuperAdmin(req, res, next) {
+  return authHive.requireAuth('admin')(req, res, (err) => {
+    if (err) return next(err);
+    const session = authHive.validateSession(req, res);
+    if (session && session.userType === 'admin') {
+      req.session.adminId = session.uid.replace('admin:', '');
+      const admin = db.get("SELECT role, display_name FROM admins WHERE id = ?", [req.session.adminId]);
+      if (admin && (admin.role === 'super_admin' || admin.role === 'admin')) {
+        req.adminRole = admin.role;
+        req.session.adminName = admin.display_name;
+        return next();
+      }
+    }
+    res.redirect('/admin/dashboard');
+  });
 }
 
 function requireSeller(req, res, next) {
-  return authHive.requireAuth('seller')(req, res, next);
+  return authHive.requireAuth('seller')(req, res, (err) => {
+    if (err) return next(err);
+    const session = authHive.validateSession(req, res);
+    if (session && session.userType === 'seller') {
+      req.session.sellerId = session.uid.replace('seller:', '');
+      const seller = db.get("SELECT name FROM sellers WHERE id = ?", [req.session.sellerId]);
+      if (seller) req.session.sellerName = seller.name;
+      return next();
+    }
+    res.redirect('/seller/login');
+  });
 }
 
 function requireAnyAuth(req, res, next) {
@@ -22,6 +62,22 @@ function redirectIfAuthenticated(req, res, next) {
   next();
 }
 
+function redirectIfAdmin(req, res, next) {
+  const session = authHive.validateSession(req, res);
+  if (session && session.userType === 'admin') {
+    return res.redirect('/admin/dashboard');
+  }
+  next();
+}
+
+function redirectIfSeller(req, res, next) {
+  const session = authHive.validateSession(req, res);
+  if (session && session.userType === 'seller') {
+    return res.redirect('/seller/dashboard');
+  }
+  next();
+}
+
 function attachAuthInfo(req, res, next) {
   const session = authHive.validateSession(req, res);
   if (session) {
@@ -29,6 +85,16 @@ function attachAuthInfo(req, res, next) {
     res.locals.auth = authHive.getSessionInfo(req);
     res.locals.isAdmin = session.userType === 'admin';
     res.locals.isSeller = session.userType === 'seller';
+    
+    if (session.userType === 'admin') {
+      req.session.adminId = session.uid.replace('admin:', '');
+      const admin = db.get("SELECT display_name FROM admins WHERE id = ?", [req.session.adminId]);
+      if (admin) req.session.adminName = admin.display_name;
+    } else if (session.userType === 'seller') {
+      req.session.sellerId = session.uid.replace('seller:', '');
+      const seller = db.get("SELECT name FROM sellers WHERE id = ?", [req.session.sellerId]);
+      if (seller) req.session.sellerName = seller.name;
+    }
   } else {
     res.locals.auth = null;
     res.locals.isAdmin = false;
@@ -57,9 +123,12 @@ function getUserDisplayName(uid, userType) {
 
 module.exports = {
   requireAdmin,
+  requireSuperAdmin,
   requireSeller,
   requireAnyAuth,
   redirectIfAuthenticated,
+  redirectIfAdmin,
+  redirectIfSeller,
   attachAuthInfo,
   requireMfaComplete,
   getUserDisplayName

@@ -65,7 +65,7 @@ DISCORD_WEBHOOK_URL=https://...
   <div class="card" style="margin-top:20px;background:#fff8e1;border-color:#ffe082;">
     <h3><i class="fas fa-lightbulb"></i> Dica de indexação instantânea</h3>
     <p style="font-size:13px;color:#666;margin:0;">
-      Para o IndexNow funcionar, o arquivo <code style="background:#fff;padding:2px 6px;border-radius:4px;"><%= baseUrl %>/<%= indexNowConfigured ? (require('path').basename(process.env.INDEXNOW_KEY||'indexnow') + '.txt') : 'SUA-CHAVE.txt' %></code> deve estar acessível publicamente com o conteúdo da sua chave. A rota já foi adicionada no servidor.
+      Para o IndexNow funcionar, o arquivo <code style="background:#fff;padding:2px 6px;border-radius:4px;"><%= baseUrl %>/<%= indexNowKeyFile %></code> deve estar acessível publicamente com o conteúdo da sua chave. A rota já foi adicionada no servidor.
     </p>
   </div>
 </div>

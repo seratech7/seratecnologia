@@ -441,6 +441,7 @@ module.exports = function() {
       baseUrl: automation.SITE_URL,
       siteName: automation.SITE_NAME,
       indexNowConfigured: !!process.env.INDEXNOW_KEY,
+      indexNowKeyFile: process.env.INDEXNOW_KEY ? (process.env.INDEXNOW_KEY + '.txt') : 'SUA-CHAVE.txt',
       googleConfigured: !!process.env.GOOGLE_INDEXING_KEY,
       discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
       autoDisabled: process.env.AUTO_DISABLED === 'true',
