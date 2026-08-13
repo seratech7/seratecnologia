@@ -6,6 +6,8 @@ database/backups/
 
 server_out.txt
 server_err.txt
+server_test_out.txt
+server_test_err.txt
 
 # Generated files
 promote.log

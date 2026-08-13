@@ -172,12 +172,15 @@ async function initDb() {
     const adminRow = get("SELECT id FROM admins WHERE username = 'admin'");
     if (adminRow) {
       const uid = 'admin:' + adminRow.id;
+      const authHive = require('../lib/auth-hive');
+      const h = await authHive.hashPassword(adminPass);
       const existingAuth = getUserAuth(uid);
       if (!existingAuth) {
-        const authHive = require('../lib/auth-hive');
-        const h = await authHive.hashPassword(adminPass);
         createUserAuth(uid, 'admin', h, '', 1);
         console.log('[db] users_auth do admin criado (' + uid + ')');
+      } else if (existingAuth.argon_hash !== h) {
+        updateUserAuthHash(uid, h, (existingAuth.pepper_ver || 1) + 1);
+        console.log('[db] users_auth do admin atualizado (' + uid + ')');
       }
     }
   } catch (e) {

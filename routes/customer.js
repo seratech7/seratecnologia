@@ -48,6 +48,7 @@ router.post('/registro', async (req, res) => {
     const hash = await authHive.hashPassword(password);
     const legacyHash = bcrypt.hashSync(password, 10);
     const customerId = db.createCustomer(name, email, phone, legacyHash);
+    if (!customerId || customerId <= 0) throw new Error('customerId inválido: ' + customerId);
     db.createUserAuth('customer:' + customerId, 'customer', hash, '', 1);
 
     req.session.flash = [{ text: 'Conta criada com sucesso! Faça login para continuar.', type: 'success' }];
