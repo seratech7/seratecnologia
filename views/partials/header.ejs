@@ -57,7 +57,16 @@
           <i class="fas fa-store-alt"></i>
           <span>Vendedor</span>
         </a>
+      <% } else if (customer) { %>
+        <a href="/conta" class="btn-admin-header">
+          <i class="fas fa-user"></i>
+          <span>Minha Conta</span>
+        </a>
       <% } else { %>
+        <a href="/login" class="btn-admin-header">
+          <i class="fas fa-user"></i>
+          <span>Entrar</span>
+        </a>
         <a href="/seller/login" class="btn-admin-header">
           <i class="fas fa-store-alt"></i>
           <span>Vender</span>
@@ -96,7 +105,11 @@
         <a href="/admin/dashboard"><i class="fas fa-cog"></i> Painel Admin</a>
       <% } else if (seller) { %>
         <a href="/seller/dashboard"><i class="fas fa-store-alt"></i> Painel Vendedor</a>
+      <% } else if (customer) { %>
+        <a href="/conta"><i class="fas fa-user"></i> Minha Conta</a>
+        <a href="/conta/sair"><i class="fas fa-sign-out-alt"></i> Sair</a>
       <% } else { %>
+        <a href="/login"><i class="fas fa-user"></i> Entrar / Cadastrar</a>
         <a href="/seller/login"><i class="fas fa-store-alt"></i> Quero Vender</a>
       <% } %>
     </div>

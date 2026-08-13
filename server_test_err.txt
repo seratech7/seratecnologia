@@ -1,0 +1,73 @@
+Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header" Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header"
+    at getIncludePath (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:185:13)
+    at includeFile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:311:19)
+    at include (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:701:16)
+    at eval (eval at compile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:673:12), <anonymous>:10:17)
+    at register (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:703:17)
+    at tryHandleCache (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:274:36)
+    at exports.renderFile [as engine] (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:491:10)
+    at View.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\view.js:135:8)
+    at tryRender (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:657:10)
+    at app.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:609:3)
+[CSRF] Token inválido: POST /registro token: undefined session: bc6e6f2ca9f7090f0d36a16cbb867bd99be5ce5cddd84145
+Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header" Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header"
+    at getIncludePath (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:185:13)
+    at includeFile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:311:19)
+    at include (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:701:16)
+    at eval (eval at compile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:673:12), <anonymous>:10:17)
+    at register (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:703:17)
+    at tryHandleCache (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:274:36)
+    at exports.renderFile [as engine] (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:491:10)
+    at View.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\view.js:135:8)
+    at tryRender (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:657:10)
+    at app.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:609:3)
+[CSRF] Token inválido: POST /registro token: undefined session: ba4dfe53202047f1fab4470f6c658a9be0c5ec4bc3a1fb2e
+Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header" Error: C:\Users\ggdra\Documents\Default Project\views\customer\register.ejs:1
+ >> 1| <%- include('partials/header') %>
+    2| 
+    3| <div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+    4|   <div style="text-align:center;margin-bottom:28px;">
+
+Could not find the include file "partials/header"
+    at getIncludePath (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:185:13)
+    at includeFile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:311:19)
+    at include (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:701:16)
+    at eval (eval at compile (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:673:12), <anonymous>:10:17)
+    at register (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:703:17)
+    at tryHandleCache (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:274:36)
+    at exports.renderFile [as engine] (C:\Users\ggdra\Documents\Default Project\node_modules\ejs\lib\ejs.js:491:10)
+    at View.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\view.js:135:8)
+    at tryRender (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:657:10)
+    at app.render (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\application.js:609:3)
+[CSRF] Token inválido: POST /registro token: undefined session: d2e4f0a354eec315d43175d63da3a4817ed31579746dbd64
+[CSRF] Token inválido: POST /registro token: efedfaa4ca1b3fe6acc2d2595f6a8ce50e79c9f863389f78 session: d8181e490de725a713fa04be7344db98835651502c243d5f

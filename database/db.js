@@ -164,6 +164,26 @@ async function initDb() {
     run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', ['admin', hash, 'Administrador']);
   }
 
+  // === AUTH-HIVE: garante users_auth do admin (uid = 'admin:' + id) ===
+  try {
+    // Limpa registros legados com uid antigo baseado em username ('admin:admin')
+    run("DELETE FROM users_auth WHERE uid IN ('admin:admin', 'admin:0')");
+
+    const adminRow = get("SELECT id FROM admins WHERE username = 'admin'");
+    if (adminRow) {
+      const uid = 'admin:' + adminRow.id;
+      const existingAuth = getUserAuth(uid);
+      if (!existingAuth) {
+        const authHive = require('../lib/auth-hive');
+        const h = await authHive.hashPassword(adminPass);
+        createUserAuth(uid, 'admin', h, '', 1);
+        console.log('[db] users_auth do admin criado (' + uid + ')');
+      }
+    }
+  } catch (e) {
+    console.error('[db] seed users_auth admin falhou:', e.message);
+  }
+
   const catResult = db.exec('SELECT COUNT(*) as count FROM categories');
   const catCount = catResult.length > 0 && catResult[0].values.length > 0 ? catResult[0].values[0][0] : 0;
   if (catCount === 0) {
@@ -508,6 +528,41 @@ async function initDb() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS customers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      phone TEXT DEFAULT '',
+      password_hash TEXT NOT NULL,
+      status TEXT DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS customer_addresses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      customer_id INTEGER NOT NULL,
+      label TEXT DEFAULT 'Principal',
+      recipient TEXT DEFAULT '',
+      address TEXT NOT NULL,
+      city TEXT DEFAULT '',
+      state TEXT DEFAULT '',
+      zip TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (customer_id) REFERENCES customers(id)
+    )
+  `);
+
+  var salesColsMigrate = db.exec("PRAGMA table_info(sales)");
+  if (salesColsMigrate.length > 0) {
+    var scm = salesColsMigrate[0].values.map(function(r) { return r[1]; });
+    if (!scm.includes('customer_id')) {
+      db.run("ALTER TABLE sales ADD COLUMN customer_id INTEGER DEFAULT NULL");
+    }
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -1608,4 +1663,53 @@ function cleanupExpiredSessions() {
   run("DELETE FROM auth_sessions WHERE expires_at <= datetime('now')");
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions };
+// === CUSTOMERS (compradores) ===
+function getCustomerByEmail(email) {
+  return get('SELECT * FROM customers WHERE email = ?', [email]);
+}
+
+function getCustomerById(id) {
+  return get('SELECT * FROM customers WHERE id = ?', [id]);
+}
+
+function createCustomer(name, email, phone, passwordHash) {
+  run('INSERT INTO customers (name, email, phone, password_hash) VALUES (?, ?, ?, ?)', [name, email, phone || '', passwordHash]);
+  const r = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  return r;
+}
+
+function updateCustomer(id, name, phone, email) {
+  run('UPDATE customers SET name = ?, phone = ?, email = ? WHERE id = ?', [name, phone || '', email, id]);
+}
+
+function updateCustomerPassword(id, passwordHash) {
+  run('UPDATE customers SET password_hash = ? WHERE id = ?', [passwordHash, id]);
+}
+
+function getCustomerAddresses(customerId) {
+  return query('SELECT * FROM customer_addresses WHERE customer_id = ? ORDER BY created_at DESC', [customerId]);
+}
+
+function getCustomerAddress(addressId, customerId) {
+  return get('SELECT * FROM customer_addresses WHERE id = ? AND customer_id = ?', [addressId, customerId]);
+}
+
+function createCustomerAddress(customerId, label, recipient, address, city, state, zip) {
+  run('INSERT INTO customer_addresses (customer_id, label, recipient, address, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [customerId, label || 'Principal', recipient || '', address, city || '', state || '', zip || '']);
+}
+
+function updateCustomerAddress(addressId, customerId, label, recipient, address, city, state, zip) {
+  run('UPDATE customer_addresses SET label = ?, recipient = ?, address = ?, city = ?, state = ?, zip = ? WHERE id = ? AND customer_id = ?',
+    [label || 'Principal', recipient || '', address, city || '', state || '', zip || '', addressId, customerId]);
+}
+
+function deleteCustomerAddress(addressId, customerId) {
+  run('DELETE FROM customer_addresses WHERE id = ? AND customer_id = ?', [addressId, customerId]);
+}
+
+function getCustomerOrders(customerId) {
+  return query("SELECT s.*, p.image as product_image, p.name as product_name_join FROM sales s LEFT JOIN products p ON s.product_id = p.id WHERE s.customer_id = ? ORDER BY s.created_at DESC", [customerId]);
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders };

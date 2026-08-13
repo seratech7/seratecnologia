@@ -28,6 +28,7 @@ const adRoutes = require('./routes/ads');
 const notificationRoutes = require('./routes/notifications');
 const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
+const customerRoutes = require('./routes/customer');
 const { toggleMiddleware } = require('./middleware/toggles');
 const { csrfProtection, injectCsrfTokens } = require('./middleware/csrf');
 const { securityMiddleware } = require('./middleware/security');
@@ -239,6 +240,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   res.locals.admin = req.session.adminId ? true : false;
   res.locals.seller = req.session.sellerId ? true : false;
+  res.locals.customer = req.session.customerId ? true : false;
   res.locals.currentPath = req.path;
   res.locals.session = req.session;
   res.locals.query = req.query;
@@ -368,6 +370,7 @@ app.use('/', productRoutes);
 app.use('/', notificationRoutes);
 app.use('/', purchaseRoutes);
 app.use('/', mercadopagoRoutes);
+app.use('/', customerRoutes);
 app.use('/api', adRoutes);
 app.use('/', require('./routes/attraction'));
 

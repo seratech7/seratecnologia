@@ -49,6 +49,20 @@ function requireSeller(req, res, next) {
   });
 }
 
+function requireCustomer(req, res, next) {
+  return authHive.requireAuth('customer')(req, res, (err) => {
+    if (err) return next(err);
+    const session = authHive.validateSession(req, res);
+    if (session && session.userType === 'customer') {
+      req.session.customerId = session.uid.replace('customer:', '');
+      const customer = db.get("SELECT name FROM customers WHERE id = ?", [req.session.customerId]);
+      if (customer) req.session.customerName = customer.name;
+      return next();
+    }
+    res.redirect('/login');
+  });
+}
+
 function requireAnyAuth(req, res, next) {
   return authHive.requireAuth()(req, res, next);
 }
@@ -56,7 +70,7 @@ function requireAnyAuth(req, res, next) {
 function redirectIfAuthenticated(req, res, next) {
   const session = authHive.validateSession(req, res);
   if (session) {
-    const redirectPath = session.userType === 'admin' ? '/admin/dashboard' : '/seller/dashboard';
+    const redirectPath = session.userType === 'admin' ? '/admin/dashboard' : (session.userType === 'seller' ? '/seller/dashboard' : '/conta');
     return res.redirect(redirectPath);
   }
   next();
@@ -78,6 +92,14 @@ function redirectIfSeller(req, res, next) {
   next();
 }
 
+function redirectIfCustomer(req, res, next) {
+  const session = authHive.validateSession(req, res);
+  if (session && session.userType === 'customer') {
+    return res.redirect('/conta');
+  }
+  next();
+}
+
 function attachAuthInfo(req, res, next) {
   const session = authHive.validateSession(req, res);
   if (session) {
@@ -85,6 +107,7 @@ function attachAuthInfo(req, res, next) {
     res.locals.auth = authHive.getSessionInfo(req);
     res.locals.isAdmin = session.userType === 'admin';
     res.locals.isSeller = session.userType === 'seller';
+    res.locals.isCustomer = session.userType === 'customer';
     
     if (session.userType === 'admin') {
       req.session.adminId = session.uid.replace('admin:', '');
@@ -94,11 +117,16 @@ function attachAuthInfo(req, res, next) {
       req.session.sellerId = session.uid.replace('seller:', '');
       const seller = db.get("SELECT name FROM sellers WHERE id = ?", [req.session.sellerId]);
       if (seller) req.session.sellerName = seller.name;
+    } else if (session.userType === 'customer') {
+      req.session.customerId = session.uid.replace('customer:', '');
+      const customer = db.get("SELECT name FROM customers WHERE id = ?", [req.session.customerId]);
+      if (customer) req.session.customerName = customer.name;
     }
   } else {
     res.locals.auth = null;
     res.locals.isAdmin = false;
     res.locals.isSeller = false;
+    res.locals.isCustomer = false;
   }
   next();
 }
@@ -117,6 +145,9 @@ function getUserDisplayName(uid, userType) {
   } else if (userType === 'seller') {
     const seller = db.get("SELECT name FROM sellers WHERE id = ?", [uid.replace('seller:', '')]);
     return seller?.name || 'Vendedor';
+  } else if (userType === 'customer') {
+    const customer = db.get("SELECT name FROM customers WHERE id = ?", [uid.replace('customer:', '')]);
+    return customer?.name || 'Cliente';
   }
   return 'Usuário';
 }
@@ -125,10 +156,12 @@ module.exports = {
   requireAdmin,
   requireSuperAdmin,
   requireSeller,
+  requireCustomer,
   requireAnyAuth,
   redirectIfAuthenticated,
   redirectIfAdmin,
   redirectIfSeller,
+  redirectIfCustomer,
   attachAuthInfo,
   requireMfaComplete,
   getUserDisplayName

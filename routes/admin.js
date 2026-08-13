@@ -5,6 +5,7 @@ const fs = require('fs');
 const db = require('../database/db');
 const { backupDatabase, getBackups, restoreBackup, restoreFromFile } = require('../backup-db');
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
+const { encryptField, decryptField, decryptSale } = require('../utils/crypto');
 
 module.exports = function(upload, dbUpload) {
 const router = express.Router();
@@ -121,7 +122,7 @@ router.get('/sales', (req, res) => {
   const dataSql = `SELECT s.*, sl.name as seller_name, (SELECT SUM(amount) FROM wallet_transactions WHERE reference_type='sale' AND reference_id=s.id) as commission FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id ${where} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`;
 
   const totalCount = db.get(countSql, params);
-  const sales = db.query(dataSql, [...params, limit, offset]);
+  const sales = db.query(dataSql, [...params, limit, offset]).map(decryptSale);
   const totalPages = Math.ceil(totalCount.count / limit);
 
   const summary = {
@@ -174,13 +175,14 @@ router.post('/sales/status/:id', (req, res) => {
 router.get('/sales/edit/:id', requireSuperAdmin, (req, res) => {
   var sale = db.get("SELECT s.*, sl.name as seller_name FROM sales s LEFT JOIN sellers sl ON s.seller_id = sl.id WHERE s.id = ?", [req.params.id]);
   if (!sale) return res.redirect('/admin/sales');
+  sale = decryptSale(sale);
   res.render('admin/sale-form', { title: 'Editar Venda #' + sale.id, sale, msg: req.query.msg || '' });
 });
 
 router.post('/sales/edit/:id', requireSuperAdmin, (req, res) => {
   var s = req.body;
   db.run("UPDATE sales SET product_code=?, product_name=?, product_price=?, buyer_name=?, buyer_document=?, buyer_phone=?, buyer_email=?, buyer_address=?, status=?, payment_method=?, tracking_code=?, carrier=?, tracking_status=? WHERE id=?", [
-    s.product_code||'', s.product_name||'', parseFloat(s.product_price)||0, s.buyer_name||'', s.buyer_document||'', s.buyer_phone||'', s.buyer_email||'', s.buyer_address||'', s.status||'pending', s.payment_method||'', s.tracking_code||'', s.carrier||'', s.tracking_status||'', req.params.id
+    s.product_code||'', s.product_name||'', parseFloat(s.product_price)||0, s.buyer_name||'', encryptField(s.buyer_document||''), s.buyer_phone||'', s.buyer_email||'', encryptField(s.buyer_address||''), s.status||'pending', s.payment_method||'', s.tracking_code||'', s.carrier||'', s.tracking_status||'', req.params.id
   ]);
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'sale_edit', 'Editou venda #' + req.params.id);
   res.redirect('/admin/sales/edit/' + req.params.id + '?msg=salvo');
@@ -394,6 +396,16 @@ router.post('/sellers/new', (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   try {
     db.run("INSERT INTO sellers (name, email, phone, whatsapp, password_hash, status) VALUES (?, ?, ?, ?, ?, 'active')", [name, email, phone || '', whatsapp || '', hash]);
+    const sid = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const authHive = require('../lib/auth-hive');
+    authHive.hashPassword(password).then(function(newHash) {
+      try {
+        const uid = 'seller:' + sid;
+        const existing = db.getUserAuth(uid);
+        if (existing) db.updateUserAuthHash(uid, newHash, (existing.pepper_ver || 1) + 1);
+        else db.createUserAuth(uid, 'seller', newHash, '', 1);
+      } catch (e) { console.error('Erro users_auth seller:', e.message); }
+    });
   } catch (e) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
     return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Email já cadastrado' });
@@ -421,9 +433,10 @@ router.post('/sellers/delete/:id', (req, res) => {
 router.get('/sellers/:id', (req, res) => {
   const seller = db.get("SELECT *, (SELECT COUNT(*) FROM products WHERE seller_id = ?) as product_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND status = 'active') as active_count, (SELECT COUNT(*) FROM products WHERE seller_id = ? AND featured = 1) as featured_count FROM sellers WHERE id = ?", [req.params.id, req.params.id, req.params.id, req.params.id]);
   if (!seller) return res.redirect('/admin/sellers');
+  seller.bank_info = decryptField(seller.bank_info);
 
   const products = db.query('SELECT p.*, c.name as category_name, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.seller_id = ? ORDER BY p.created_at DESC', [req.params.id]);
-  const sales = db.query("SELECT s.* FROM sales s WHERE s.seller_id = ? ORDER BY s.created_at DESC LIMIT 20", [req.params.id]);
+  const sales = db.query("SELECT s.* FROM sales s WHERE s.seller_id = ? ORDER BY s.created_at DESC LIMIT 20", [req.params.id]).map(decryptSale);
   const totalRevenue = db.get("SELECT COALESCE(SUM(product_price),0) as total FROM sales WHERE seller_id = ? AND status NOT IN ('cancelled','pending')", [req.params.id]);
   const walletBalance = db.get("SELECT COALESCE(SUM(amount),0) as balance FROM wallet_transactions WHERE seller_id = ?", [req.params.id]);
 
@@ -436,6 +449,7 @@ router.get('/sellers/:id', (req, res) => {
 router.get('/sellers/edit/:id', (req, res) => {
   const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
   if (!seller) return res.redirect('/admin/sellers');
+  seller.bank_info = decryptField(seller.bank_info);
   res.render('admin/seller-form', { title: 'Editar Vendedor - ' + seller.name, seller, error: null });
 });
 
@@ -457,10 +471,19 @@ router.post('/sellers/edit/:id', (req, res) => {
     if (password && String(password).length >= 6) {
       const hash = bcrypt.hashSync(password, 10);
       db.run("UPDATE sellers SET name=?, email=?, phone=?, whatsapp=?, password_hash=?, bio=?, website=?, pix_key=?, commission_pct=?, bank_info=?, sales_count=?, status=? WHERE id=?",
-        [name, email, phone || '', whatsapp || '', hash, bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, bank_info || '', parseInt(sales_count) || 0, status || 'active', req.params.id]);
+        [name, email, phone || '', whatsapp || '', hash, bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, encryptField(bank_info || ''), parseInt(sales_count) || 0, status || 'active', req.params.id]);
+      const authHive = require('../lib/auth-hive');
+      authHive.hashPassword(password).then(function(newHash) {
+        try {
+          const uid = 'seller:' + req.params.id;
+          const existing = db.getUserAuth(uid);
+          if (existing) db.updateUserAuthHash(uid, newHash, (existing.pepper_ver || 1) + 1);
+          else db.createUserAuth(uid, 'seller', newHash, '', 1);
+        } catch (e) { console.error('Erro users_auth seller:', e.message); }
+      });
     } else {
       db.run("UPDATE sellers SET name=?, email=?, phone=?, whatsapp=?, bio=?, website=?, pix_key=?, commission_pct=?, bank_info=?, sales_count=?, status=? WHERE id=?",
-        [name, email, phone || '', whatsapp || '', bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, bank_info || '', parseInt(sales_count) || 0, status || 'active', req.params.id]);
+        [name, email, phone || '', whatsapp || '', bio || '', website || '', pix_key || '', commission_pct !== '' ? parseFloat(commission_pct) : null, encryptField(bank_info || ''), parseInt(sales_count) || 0, status || 'active', req.params.id]);
     }
   } catch (e) {
     seller.name = name; seller.email = email; seller.phone = phone; seller.whatsapp = whatsapp;
@@ -529,6 +552,14 @@ router.post('/admins/new', (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   try {
     db.run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', [username, hash, display_name || username]);
+    const aid = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const authHive = require('../lib/auth-hive');
+    authHive.hashPassword(password).then(function(newHash) {
+      try {
+        const uid = 'admin:' + aid;
+        db.createUserAuth(uid, 'admin', newHash, '', 1);
+      } catch (e) { console.error('Erro users_auth admin:', e.message); }
+    });
   } catch (e) {
     const admins = db.query('SELECT id, username, display_name, created_at FROM admins ORDER BY created_at DESC');
     return res.render('admin/admins', { title: 'Administradores', admins, error: 'Usuário já existe' });
@@ -730,7 +761,7 @@ router.get('/financeiro', (req, res) => {
   }
 
   var totalPages = Math.ceil((totalCount ? totalCount.c : 0) / limit);
-  var allSellers = db.query("SELECT s.id, s.name, s.email, s.commission_pct, s.bank_info, (SELECT COALESCE(balance,0) FROM wallet_transactions WHERE seller_id = s.id ORDER BY id DESC LIMIT 1) as balance, (SELECT COUNT(*) FROM sales WHERE seller_id = s.id) as sales_count FROM sellers s ORDER BY s.name");
+  var allSellers = db.query("SELECT s.id, s.name, s.email, s.commission_pct, s.bank_info, (SELECT COALESCE(balance,0) FROM wallet_transactions WHERE seller_id = s.id ORDER BY id DESC LIMIT 1) as balance, (SELECT COUNT(*) FROM sales WHERE seller_id = s.id) as sales_count FROM sellers s ORDER BY s.name").map(function(s) { if (s.bank_info) s.bank_info = decryptField(s.bank_info); return s; });
 
   var commPct = db.getCommissionPct();
   var summary = db.getFinanceSummary(null, startDate || '2000-01-01', endDate || '2100-01-01');
@@ -875,7 +906,7 @@ router.get('/senha', (req, res) => {
   res.render('admin/change-password', { title: 'Alterar Senha', error: null, success: null });
 });
 
-router.post('/senha', (req, res) => {
+router.post('/senha', async (req, res) => {
   var { current_password, new_password, confirm_password } = req.body;
   if (!current_password || !new_password || !confirm_password) {
     return res.render('admin/change-password', { title: 'Alterar Senha', error: 'Preencha todos os campos', success: null });
@@ -888,11 +919,28 @@ router.post('/senha', (req, res) => {
     return res.render('admin/change-password', { title: 'Alterar Senha', error: pwErrors.join('<br>'), success: null });
   }
   var admin = db.get("SELECT * FROM admins WHERE id = ?", [req.session.adminId]);
-  if (!admin || !bcrypt.compareSync(current_password, admin.password_hash)) {
+  var adminAuth = db.getUserAuth('admin:' + req.session.adminId);
+  var currentOk = false;
+  if (adminAuth) {
+    try {
+      const authHive = require('../lib/auth-hive');
+      const v = await authHive.verifyPassword(current_password, adminAuth.argon_hash);
+      currentOk = !!(v && v.verified);
+    } catch (e) { currentOk = false; }
+  }
+  if (!currentOk && (!admin || !bcrypt.compareSync(current_password, admin.password_hash))) {
     return res.render('admin/change-password', { title: 'Alterar Senha', error: 'Senha atual incorreta', success: null });
   }
   var hash = bcrypt.hashSync(new_password, 10);
   db.run("UPDATE admins SET password_hash = ? WHERE id = ?", [hash, req.session.adminId]);
+  try {
+    const authHive = require('../lib/auth-hive');
+    const newHash = await authHive.hashPassword(new_password);
+    const uid = 'admin:' + req.session.adminId;
+    if (adminAuth) db.updateUserAuthHash(uid, newHash, (adminAuth.pepper_ver || 1) + 1);
+    else db.createUserAuth(uid, 'admin', newHash, '', 1);
+    db.logAuthEvent(uid, 'password_changed', req.ip || '', req.get('User-Agent') || '', 'success', '');
+  } catch (e) { console.error('Erro atualizando hash auth-hive admin:', e.message); }
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'change_password', 'Alterou a própria senha');
   res.render('admin/change-password', { title: 'Alterar Senha', error: null, success: 'Senha alterada com sucesso!' });
 });

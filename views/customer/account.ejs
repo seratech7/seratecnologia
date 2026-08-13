@@ -1,0 +1,117 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="max-width:860px;margin:0 auto;padding:40px 16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <div>
+      <h1 style="margin:0;font-size:24px;">Olá, <%= customer.name %></h1>
+      <p style="color:#666;margin:4px 0 0;font-size:14px;"><%= customer.email %></p>
+    </div>
+    <a href="/conta/sair" style="color:#c62828;font-size:14px;font-weight:600;text-decoration:none;">
+      <i class="fas fa-sign-out-alt"></i> Sair
+    </a>
+  </div>
+
+  <% if (success) { %>
+  <div style="background:#e8f5e9;color:#2e7d32;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+    <i class="fas fa-check-circle"></i> <%= success %>
+  </div>
+  <% } %>
+  <% if (error) { %>
+  <div style="background:#fff3e0;color:#e65100;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+    <i class="fas fa-exclamation-circle"></i> <%= error %>
+  </div>
+  <% } %>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;">
+      <h3 style="margin:0 0 12px;font-size:16px;"><i class="fas fa-user"></i> Meus Dados</h3>
+      <form method="POST" action="/conta/dados">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">Nome</label>
+          <input type="text" name="name" value="<%= customer.name %>" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:14px;" required>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">WhatsApp / Telefone</label>
+          <input type="text" name="phone" value="<%= customer.phone || '' %>" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;padding:11px;border-radius:8px;font-size:14px;">Salvar dados</button>
+      </form>
+      <hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+      <h4 style="margin:0 0 10px;font-size:14px;"><i class="fas fa-lock"></i> Alterar senha</h4>
+      <form method="POST" action="/conta/senha">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div style="margin-bottom:10px;">
+          <input type="password" name="current_password" placeholder="Senha atual" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:14px;" required>
+        </div>
+        <div style="margin-bottom:10px;">
+          <input type="password" name="new_password" placeholder="Nova senha (mín. 8)" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:14px;" required minlength="8">
+        </div>
+        <div style="margin-bottom:10px;">
+          <input type="password" name="confirm_password" placeholder="Confirmar nova senha" style="width:100%;padding:10px 12px;border:2px solid #ddd;border-radius:8px;font-size:14px;" required minlength="8">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;padding:11px;border-radius:8px;font-size:14px;background:#455a64;">Alterar senha</button>
+      </form>
+    </div>
+
+    <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;font-size:16px;"><i class="fas fa-map-marker-alt"></i> Endereços</h3>
+        <a href="/conta/enderecos/novo" class="btn-primary" style="padding:6px 12px;border-radius:8px;font-size:13px;text-decoration:none;">
+          <i class="fas fa-plus"></i> Novo
+        </a>
+      </div>
+      <% if (addresses.length === 0) { %>
+      <p style="color:#999;font-size:14px;text-align:center;padding:12px;">Nenhum endereço cadastrado</p>
+      <% } %>
+      <% addresses.forEach(function(a) { %>
+      <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px;font-size:14px;">
+        <div style="font-weight:600;font-size:13px;"><%= a.label %></div>
+        <div style="color:#444;margin-top:2px;"><%= a.address %><% if (a.city) { %>, <%= a.city %><% } %><% if (a.state) { %> - <%= a.state %><% } %></div>
+        <div style="font-size:12px;color:#999;"><%= a.zip || '' %></div>
+        <div style="margin-top:8px;display:flex;gap:8px;font-size:13px;">
+          <a href="/conta/enderecos/<%= a.id %>/editar" style="color:var(--primary);font-weight:600;text-decoration:none;">Editar</a>
+          <form method="POST" action="/conta/enderecos/<%= a.id %>/delete" style="display:inline;" onsubmit="return confirm('Remover este endereço?');">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:13px;font-weight:600;padding:0;">Remover</button>
+          </form>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:20px;">
+    <h3 style="margin:0 0 12px;font-size:16px;"><i class="fas fa-box"></i> Meus Pedidos (<%= orders.length %>)</h3>
+    <% if (orders.length === 0) { %>
+    <p style="color:#999;font-size:14px;text-align:center;padding:16px;">Você ainda não fez nenhum pedido. <a href="/comprar" style="color:var(--primary);font-weight:600;">Fazer uma compra</a></p>
+    <% } %>
+    <% orders.forEach(function(o) { %>
+    <% var sl = {'pending':'Pendente','confirmed':'Confirmado','preparing':'Em separação','shipped':'Despachado','in_transit':'Em trânsito','delivered':'Entregue','cancelled':'Cancelado'}; %>
+    <div style="border:1px solid #eee;border-radius:8px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:220px;">
+        <div style="width:48px;height:48px;border-radius:8px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <% if (o.product_image) { %><img src="/uploads/<%= o.product_image %>" style="width:100%;height:100%;object-fit:cover;" alt=""><% } else { %><i class="fas fa-box" style="color:#bbb;"></i><% } %>
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;"><%= o.product_name_join || o.product_name %></div>
+          <div style="font-size:12px;color:#999;">Pedido: <%= o.tracking_code %></div>
+          <div style="font-size:12px;color:#999;"><%= new Date(o.created_at).toLocaleDateString('pt-BR') %></div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:16px;font-weight:700;color:var(--primary);">
+          <%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(o.product_price) %>
+        </div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-weight:600;font-size:11px;margin-top:4px;
+          <%= o.tracking_status === 'delivered' ? 'background:#e8f5e9;color:#2e7d32;' : o.tracking_status === 'cancelled' ? 'background:#fce4ec;color:#c62828;' : 'background:#e3f2fd;color:#1565c0;' %>">
+          <%= sl[o.tracking_status] || o.tracking_status %>
+        </span>
+        <div style="margin-top:4px;"><a href="/rastreio?codigo=<%= o.tracking_code %>" style="font-size:12px;color:var(--primary);font-weight:600;text-decoration:none;">Rastrear</a></div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

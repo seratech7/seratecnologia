@@ -33,6 +33,12 @@
           <label for="password"><i class="fas fa-lock"></i> Senha</label>
           <input type="password" id="password" name="password" placeholder="Sua senha" required>
         </div>
+        <% if (typeof showMfa !== 'undefined' && showMfa) { %>
+          <div class="form-group">
+            <label for="totp"><i class="fas fa-shield-alt"></i> Código de verificação (TOTP)</label>
+            <input type="text" id="totp" name="totp" placeholder="6 dígitos do autenticador" inputmode="numeric" autocomplete="one-time-code">
+          </div>
+        <% } %>
         <button type="submit" class="btn-login">
           <i class="fas fa-sign-in-alt"></i> Entrar
         </button>

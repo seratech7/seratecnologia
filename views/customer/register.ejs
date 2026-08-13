@@ -1,0 +1,50 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <i class="fas fa-user-plus" style="font-size:44px;color:var(--primary);opacity:0.6;"></i>
+    <h1 style="margin:8px 0 4px;font-size:24px;">Criar conta</h1>
+    <p style="color:#666;font-size:14px;">Grátis — acompanhe pedidos, salve endereços e agilize suas compras</p>
+  </div>
+
+  <% if (error) { %>
+  <div style="background:#fff3e0;color:#e65100;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+    <i class="fas fa-exclamation-circle"></i> <%= error %>
+  </div>
+  <% } %>
+
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:28px;">
+    <form method="POST" action="/registro">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Nome completo</label>
+        <input type="text" name="name" required placeholder="Seu nome" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="name">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Email</label>
+        <input type="email" name="email" required placeholder="seu@email.com" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="email">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">WhatsApp / Telefone (opcional)</label>
+        <input type="text" name="phone" placeholder="(11) 99999-9999" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="tel">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Senha</label>
+        <input type="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="new-password">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Confirmar senha</label>
+        <input type="password" name="confirm_password" required minlength="8" placeholder="Repita a senha" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;padding:13px;border-radius:8px;font-size:15px;font-weight:700;">
+        <i class="fas fa-user-check"></i> Criar conta
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:18px;font-size:14px;color:#666;">
+      Já tem conta? <a href="/login" style="color:var(--primary);font-weight:600;">Entrar</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -4,8 +4,10 @@ const crypto = require('crypto');
 const db = require('../database/db');
 const path = require('path');
 const fs = require('fs');
+const authHive = require('../lib/auth-hive');
 const { requireSeller, redirectIfSeller } = require('../middleware/auth');
 const { sendTrackingUpdate } = require('../utils/email');
+const { decryptField, decryptSale } = require('../utils/crypto');
 
 module.exports = function(upload) {
 const router = express.Router();
@@ -36,27 +38,68 @@ router.get('/login', redirectIfSeller, (req, res) => {
   res.render('seller/login', { title: 'Login Vendedor', error: null, csrfToken: req.session.csrfToken });
 });
 
-router.post('/login', (req, res) => {
-  const { email, password } = req.body;
+router.post('/login', async (req, res) => {
+  const { email, password, totp } = req.body;
   var ip = req.ip || req.connection.remoteAddress || '';
-  if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
+  if (!email || !password) return res.render('seller/login', { title: 'Login Vendedor', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken, showMfa: false });
   const seller = db.get('SELECT * FROM sellers WHERE email = ?', [email]);
-  if (!seller || !bcrypt.compareSync(password, seller.password_hash)) {
+  if (!seller) {
+    await authHive.verifyPassword(password, authHive.generateFakeHash());
     db.logLoginAttempt(ip, email, 'seller', false);
-    return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken });
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken, showMfa: false });
   }
-  if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.', csrfToken: req.session.csrfToken });
+  if (seller.status !== 'active') return res.render('seller/login', { title: 'Login Vendedor', error: 'Sua conta foi desativada. Contate o administrador.', csrfToken: req.session.csrfToken, showMfa: false });
+
+  const uid = 'seller:' + seller.id;
+
+  if (req.session.pendingMfaUid === uid && totp) {
+    const userAuth = db.getUserAuth(uid);
+    if (!userAuth || !userAuth.mfa_secret_enc) {
+      req.session.pendingMfaUid = null;
+      return res.render('seller/login', { title: 'Login Vendedor', error: 'Erro na verificação MFA', csrfToken: req.session.csrfToken, showMfa: true });
+    }
+    const secret = authHive.decryptMfaSecret(userAuth.mfa_secret_enc);
+    if (!authHive.verifyTotp(totp, secret)) {
+      db.logAuthEvent(uid, 'mfa_failed', ip, req.get('User-Agent') || '', 'failure', 'invalid_totp');
+      return res.render('seller/login', { title: 'Login Vendedor', error: 'Código MFA inválido', csrfToken: req.session.csrfToken, showMfa: true });
+    }
+    req.session.mfaVerified = true;
+    const result = await authHive.completeLogin(uid, 'seller', req, res);
+    if (result.success) {
+      req.session.pendingMfaUid = null;
+      req.session.mfaVerified = null;
+      return res.redirect('/seller/dashboard');
+    }
+  }
+
+  // Migração automática: se seller não tem users_auth (legado bcrypt), cria com auth-hive
+  let userAuth = db.getUserAuth(uid);
+  if (!userAuth) {
+    if (!bcrypt.compareSync(password, seller.password_hash)) {
+      db.logLoginAttempt(ip, email, 'seller', false);
+      return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken, showMfa: false });
+    }
+    const newHash = await authHive.hashPassword(password);
+    db.createUserAuth(uid, 'seller', newHash, '', 1);
+    userAuth = db.getUserAuth(uid);
+  }
+
+  const result = await authHive.loginUser(uid, 'seller', password, req, res);
+  if (!result.success) {
+    db.logLoginAttempt(ip, email, 'seller', false);
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken, showMfa: false });
+  }
   db.logLoginAttempt(ip, email, 'seller', true);
-  req.session.regenerate(function() {
-    req.session.sellerId = seller.id;
-    req.session.sellerName = seller.name;
-    req.session.sellerPhone = seller.whatsapp || seller.phone || '';
-    req.session.csrfToken = crypto.randomBytes(24).toString('hex');
-    res.redirect('/seller/dashboard');
-  });
+
+  if (result.mfaRequired) {
+    return res.render('seller/login', { title: 'Login Vendedor', error: null, csrfToken: req.session.csrfToken, showMfa: true });
+  }
+
+  res.redirect('/seller/dashboard');
 });
 
 router.get('/logout', (req, res) => {
+  authHive.logoutUser(req, res);
   req.session.destroy();
   res.redirect('/seller/login');
 });
@@ -239,7 +282,7 @@ router.get('/sales', requireSeller, (req, res) => {
     var countParams = params.slice();
     var total = db.get('SELECT COUNT(*) as c FROM sales ' + where, countParams);
     var dataParams = params.concat([limit, offset]);
-    const sales = db.query('SELECT * FROM sales ' + where + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', dataParams);
+    const sales = db.query('SELECT * FROM sales ' + where + ' ORDER BY created_at DESC LIMIT ? OFFSET ?', dataParams).map(decryptSale);
     const totalPages = Math.ceil((total ? total.c : 0) / limit);
     res.render('seller/sales', { title: 'Minhas Vendas', sales, page, totalPages, search, period });
   } catch(e) {
@@ -299,6 +342,7 @@ router.get('/wallet', requireSeller, (req, res) => {
   const chartData = db.getFinanceChart(req.session.sellerId, 30);
   const payouts = db.getPayouts(req.session.sellerId, 20, 0);
   const sellerInfo = db.get('SELECT bank_info, pix_key_recebimento FROM sellers WHERE id = ?', [req.session.sellerId]);
+  if (sellerInfo) sellerInfo.bank_info = decryptField(sellerInfo.bank_info);
   res.render('seller/wallet', {
     title: 'Minha Carteira', balance, txns, totalVendas: totalCount.c,
     commPct, page, totalPages, period, startDate, endDate,
@@ -373,6 +417,7 @@ router.get('/exportar-vendas', requireSeller, (req, res) => {
 router.get('/configuracoes', requireSeller, (req, res) => {
   var seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
   if (!seller) return res.redirect('/seller/logout');
+  seller.bank_info = decryptField(seller.bank_info);
   res.render('seller/settings', { title: 'Configurações', seller, success: req.query.sucesso || '', error: null });
 });
 
@@ -385,11 +430,21 @@ router.post('/configuracoes', requireSeller, (req, res) => {
   res.redirect('/seller/configuracoes?sucesso=Salvo');
 });
 
-router.post('/change-password', requireSeller, (req, res) => {
+router.post('/change-password', requireSeller, async (req, res) => {
   var seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.session.sellerId]);
   if (!seller) return res.redirect('/seller/logout');
   var { current_password, new_password, confirm_password } = req.body;
-  if (!bcrypt.compareSync(current_password, seller.password_hash)) {
+  const uid = 'seller:' + seller.id;
+  const userAuth = db.getUserAuth(uid);
+
+  let currentOk = false;
+  if (userAuth) {
+    try {
+      const v = await authHive.verifyPassword(current_password, userAuth.argon_hash);
+      currentOk = !!(v && v.verified);
+    } catch (e) { currentOk = false; }
+  }
+  if (!currentOk && !bcrypt.compareSync(current_password, seller.password_hash)) {
     return res.render('seller/settings', { title: 'Configurações', seller, success: '', error: 'Senha atual incorreta' });
   }
   if (new_password !== confirm_password) {
@@ -401,6 +456,15 @@ router.post('/change-password', requireSeller, (req, res) => {
   }
   var hash = bcrypt.hashSync(new_password, 10);
   db.run('UPDATE sellers SET password_hash = ? WHERE id = ?', [hash, req.session.sellerId]);
+  try {
+    const newHash = await authHive.hashPassword(new_password);
+    if (userAuth) {
+      db.updateUserAuthHash(uid, newHash, (userAuth.pepper_ver || 1) + 1);
+    } else {
+      db.createUserAuth(uid, 'seller', newHash, '', 1);
+    }
+    db.logAuthEvent(uid, 'password_changed', req.ip || '', req.get('User-Agent') || '', 'success', '');
+  } catch (e) { console.error('Erro atualizando hash auth-hive:', e.message); }
   res.redirect('/seller/configuracoes?sucesso=Senha alterada com sucesso!');
 });
 

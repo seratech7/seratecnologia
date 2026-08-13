@@ -19,7 +19,8 @@ router.post('/login', async (req, res) => {
     return res.render('admin/login', { title: 'Login - Painel Admin', error: 'Preencha todos os campos', csrfToken: req.session.csrfToken });
   }
 
-  const uid = 'admin:' + username;
+  const admin = db.get('SELECT id FROM admins WHERE username = ?', [username]);
+  const uid = admin ? 'admin:' + admin.id : 'admin:' + username;
   
   if (req.session.pendingMfaUid === uid && totp) {
     const userAuth = db.getUserAuth(uid);

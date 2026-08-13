@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
 const { gerarPixPayload, gerarQRCodeBase64 } = require('../utils/pix');
+const { encryptField } = require('../utils/crypto');
 
 router.get('/comprar', function(req, res) {
   var produto = null;
@@ -70,8 +71,8 @@ router.post('/api/finalizar-compra', function(req, res) {
     }
 
     db.run(
-      'INSERT INTO sales (product_id, seller_id, product_code, product_name, product_price, buyer_name, buyer_document, buyer_phone, buyer_email, buyer_address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [produto.id, produto.seller_id, produto.code, produto.name, finalPrice, nome, documento, telefone, email, endereco]
+      'INSERT INTO sales (product_id, seller_id, product_code, product_name, product_price, buyer_name, buyer_document, buyer_phone, buyer_email, buyer_address, customer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [produto.id, produto.seller_id, produto.code, produto.name, finalPrice, nome, encryptField(documento), telefone, email, encryptField(endereco), req.session.customerId || null]
     );
 
     var lastSale = db.get('SELECT MAX(id) as id FROM sales');

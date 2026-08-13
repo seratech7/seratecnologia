@@ -1,0 +1,51 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="max-width:440px;margin:0 auto;padding:40px 16px;">
+  <div style="text-align:center;margin-bottom:28px;">
+    <i class="fas fa-user" style="font-size:44px;color:var(--primary);opacity:0.6;"></i>
+    <h1 style="margin:8px 0 4px;font-size:24px;">Entrar na sua conta</h1>
+    <p style="color:#666;font-size:14px;">Acompanhe seus pedidos e endereços</p>
+  </div>
+
+  <% if (success) { %>
+  <div style="background:#e8f5e9;color:#2e7d32;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+    <i class="fas fa-check-circle"></i> <%= success %>
+  </div>
+  <% } %>
+
+  <% if (error) { %>
+  <div style="background:#fff3e0;color:#e65100;padding:14px 16px;border-radius:8px;margin-bottom:16px;font-size:14px;">
+    <i class="fas fa-exclamation-circle"></i> <%= error %>
+  </div>
+  <% } %>
+
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);padding:28px;">
+    <form method="POST" action="/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <% if (typeof redirect !== 'undefined' && redirect) { %><input type="hidden" name="redirect" value="<%= redirect %>"><% } %>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Email</label>
+        <input type="email" name="email" required placeholder="seu@email.com" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="email">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">Senha</label>
+        <input type="password" name="password" required placeholder="Sua senha" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="current-password">
+      </div>
+      <% if (showMfa) { %>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;"><i class="fas fa-shield-alt"></i> Código de verificação (TOTP)</label>
+        <input type="text" name="totp" inputmode="numeric" placeholder="6 dígitos do autenticador" style="width:100%;padding:12px 14px;border:2px solid #ddd;border-radius:8px;font-size:15px;" autocomplete="one-time-code">
+      </div>
+      <% } %>
+      <button type="submit" class="btn-primary" style="width:100%;padding:13px;border-radius:8px;font-size:15px;font-weight:700;">
+        <i class="fas fa-sign-in-alt"></i> Entrar
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:18px;font-size:14px;color:#666;">
+      Não tem conta? <a href="/registro" style="color:var(--primary);font-weight:600;">Cadastre-se grátis</a>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
