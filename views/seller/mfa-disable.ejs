@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #f8f9fa; }
+    .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-shield-x"></i> Desativar MFA</h4>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-warning">
+              <i class="bi bi-exclamation-triangle"></i> Desativar MFA reduz a segurança da sua conta. Recomendamos manter ativado.
+            </div>
+            
+            <% if (error) { %>
+              <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+            
+            <form method="POST">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              
+              <div class="mb-3">
+                <label class="form-label">Senha atual</label>
+                <input type="password" name="password" class="form-control" required autocomplete="current-password">
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Código MFA (do app autenticador)</label>
+                <input type="text" name="totp" class="form-control text-center" placeholder="000000" maxlength="6" pattern="\d{6}" style="letter-spacing: 0.5rem;">
+                <div class="form-text">OU use um código de recuperação abaixo</div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Código de recuperação</label>
+                <input type="text" name="recovery_code" class="form-control text-uppercase" placeholder="ABCD1234" maxlength="8">
+              </div>
+              
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-danger">Desativar MFA</button>
+                <a href="/seller/dashboard" class="btn btn-secondary">Cancelar</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

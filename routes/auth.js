@@ -331,4 +331,147 @@ router.post('/devices/label', (req, res) => {
   res.json({ success: true });
 });
 
+router.get('/seller/mfa-setup', (req, res) => {
+  const session = authHive.validateSession(req, res);
+  if (!session || session.userType !== 'seller') {
+    return res.redirect('/seller/login');
+  }
+  
+  const userAuth = db.getUserAuth(session.uid);
+  if (userAuth?.totp_enabled) {
+    return res.redirect('/seller/dashboard?mfa=already_enabled');
+  }
+  
+  const secret = authHive.generateTotpSecret();
+  const encryptedSecret = authHive.encryptMfaSecret(secret);
+  const recoveryCodes = authHive.generateRecoveryCodes(10);
+  const recoveryHashes = authHive.hashRecoveryCodes(recoveryCodes);
+  
+  req.session.mfaSetupSecret = encryptedSecret;
+  req.session.mfaSetupRecovery = recoveryHashes;
+  req.session.mfaSetupCodes = recoveryCodes;
+  
+  const label = 'seller@SeraTecnologia';
+  const otpauth = authHive.generateTotpUri(secret, label);
+  
+  qrcode.toDataURL(otpauth, (err, qrCodeUrl) => {
+    if (err) {
+      console.error('QR Code error:', err);
+      return res.status(500).send('Erro ao gerar QR Code');
+    }
+    res.render('seller/mfa-setup', {
+      title: 'Configurar MFA - Painel Vendedor',
+      qrCodeUrl,
+      secret,
+      recoveryCodes,
+      csrfToken: req.session.csrfToken
+    });
+  });
+});
+
+router.post('/seller/mfa-setup', (req, res) => {
+  const session = authHive.validateSession(req, res);
+  if (!session || session.userType !== 'seller') {
+    return res.redirect('/seller/login');
+  }
+  
+  const { totp } = req.body;
+  const encryptedSecret = req.session.mfaSetupSecret;
+  const recoveryHashes = req.session.mfaSetupRecovery;
+  const recoveryCodes = req.session.mfaSetupCodes;
+  
+  if (!encryptedSecret || !recoveryHashes) {
+    return res.redirect('/seller/mfa-setup?error=expired');
+  }
+  
+  const secret = authHive.decryptMfaSecret(encryptedSecret);
+  if (!authHive.verifyTotp(totp, secret)) {
+    return res.render('seller/mfa-setup', {
+      title: 'Configurar MFA - Painel Vendedor',
+      qrCodeUrl: '',
+      secret: '',
+      recoveryCodes: [],
+      error: 'Código MFA inválido',
+      csrfToken: req.session.csrfToken
+    });
+  }
+  
+  db.updateUserAuthMFA(session.uid, encryptedSecret, true, recoveryHashes);
+  db.logAuthEvent(session.uid, 'mfa_enabled', req.ip || '', req.get('User-Agent') || '', 'success', '');
+  
+  req.session.mfaSetupSecret = null;
+  req.session.mfaSetupRecovery = null;
+  req.session.mfaSetupCodes = null;
+  
+  res.redirect('/seller/dashboard?mfa=enabled');
+});
+
+router.get('/seller/mfa-disable', (req, res) => {
+  const session = authHive.validateSession(req, res);
+  if (!session || session.userType !== 'seller') {
+    return res.redirect('/seller/login');
+  }
+  
+  res.render('seller/mfa-disable', {
+    title: 'Desativar MFA - Painel Vendedor',
+    csrfToken: req.session.csrfToken
+  });
+});
+
+router.post('/seller/mfa-disable', (req, res) => {
+  const session = authHive.validateSession(req, res);
+  if (!session || session.userType !== 'seller') {
+    return res.redirect('/seller/login');
+  }
+  
+  const { password, totp, recovery_code } = req.body;
+  const userAuth = db.getUserAuth(session.uid);
+  
+  if (!userAuth || !userAuth.totp_enabled) {
+    return res.redirect('/seller/dashboard?mfa=not_enabled');
+  }
+  
+  const secret = authHive.decryptMfaSecret(userAuth.mfa_secret_enc);
+  let mfaValid = false;
+  
+  if (totp && authHive.verifyTotp(totp, secret)) {
+    mfaValid = true;
+  } else if (recovery_code && authHive.verifyRecoveryCode(recovery_code, userAuth.recovery_hashes)) {
+    mfaValid = true;
+    const newRecoveryHashes = authHive.removeRecoveryCode(recovery_code, userAuth.recovery_hashes);
+    db.updateUserAuthMFA(session.uid, userAuth.mfa_secret_enc, true, newRecoveryHashes);
+  }
+  
+  if (!mfaValid) {
+    return res.render('seller/mfa-disable', {
+      title: 'Desativar MFA - Painel Vendedor',
+      error: 'Código MFA ou código de recuperação inválido',
+      csrfToken: req.session.csrfToken
+    });
+  }
+  
+  db.updateUserAuthMFA(session.uid, '', false, '');
+  db.logAuthEvent(session.uid, 'mfa_disabled', req.ip || '', req.get('User-Agent') || '', 'success', '');
+  
+  res.redirect('/seller/dashboard?mfa=disabled');
+});
+
+router.get('/seller/sessions', (req, res) => {
+  const session = authHive.validateSession(req, res);
+  if (!session || session.userType !== 'seller') {
+    return res.redirect('/seller/login');
+  }
+  
+  const sessions = db.getUserSessions(session.uid);
+  const devices = db.getAuthDevices(session.uid);
+  
+  res.render('seller/sessions', {
+    title: 'Sessões Ativas - Painel Vendedor',
+    sessions,
+    devices,
+    currentSidHash: session.sidHash,
+    csrfToken: req.session.csrfToken
+  });
+});
+
 module.exports = router;
