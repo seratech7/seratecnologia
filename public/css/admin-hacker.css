@@ -719,9 +719,277 @@ body.admin-hacker .login-footer { border-top-color: var(--hack-border); }
 body.admin-hacker .login-footer a { color: var(--hack-dim); font-family: var(--hack-font); }
 body.admin-hacker .login-footer a:hover { color: var(--hack-cyan); }
 
-/* =========================================
+/* ============================================================
+   COMMAND CENTER — REFORÇO DO TEMA (neutraliza estilos claros)
+   Sobrescreve qualquer cor clara/legada dentro do painel admin.
+   ============================================================ */
+
+/* Fundos brancos/claros -> painel escuro */
+.admin-page .form-card,
+.admin-page .table-container,
+.admin-page .card,
+.admin-page .fin-card,
+.admin-page .seg-section,
+.admin-page .super-section,
+.admin-page .stat-card {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2)) !important;
+  border: 1px solid var(--hack-border) !important;
+  color: var(--hack-text) !important;
+  box-shadow: var(--hack-shadow) !important;
+}
+
+/* Cards/headers que vieram com branco via style="" */
+.admin-page div[style*="background:#fff"],
+.admin-page div[style*="background:#f8f9fa"],
+.admin-page div[style*="background:#f5f5f5"],
+.admin-page div[style*="background:#fafafa"],
+.admin-page div[style*="background:white"],
+.admin-page div[style*="background: #fff"] {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2)) !important;
+  color: var(--hack-text) !important;
+  border: 1px solid var(--hack-border) !important;
+}
+
+/* Painéis fin-page / analytics / seguranca / super (fundos claros) */
+.admin-page .fin-page,
+.admin-page .dashboard-grid {
+  background: transparent !important;
+}
+
+/* Texto escuro herdado -> claro */
+.admin-page .card-header h2,
+.admin-page .card-header,
+.admin-page .fin-card h3,
+.admin-page .super-section h2,
+.admin-page .seg-section h2,
+.admin-page .card-body,
+.admin-page .fin-stat-label,
+.admin-page .seg-field label,
+.admin-page .seg-field .hint {
+  color: var(--hack-text) !important;
+}
+
+.admin-page .card-header {
+  border-bottom: 1px solid var(--hack-border) !important;
+  background: rgba(10, 15, 28, 0.6) !important;
+}
+
+/* Tabelas internas claras (analytics, fin, super, seguranca, logs) */
+.admin-page .admin-table th {
+  background: #0a0f1c !important;
+  color: var(--hack-cyan) !important;
+  border-bottom: 1px solid var(--hack-border) !important;
+}
+
+.admin-page .admin-table td {
+  color: var(--hack-text) !important;
+  border-bottom: 1px solid rgba(28, 42, 63, 0.7) !important;
+}
+
+.admin-page .admin-table tr:hover td {
+  background: rgba(0, 255, 156, 0.04) !important;
+}
+
+/* Status badges claros inline (sobrescreve estilo inline) */
+.admin-page [style*="#fff3cd"] { background: rgba(255, 204, 0, 0.12) !important; }
+.admin-page [style*="#856404"] { color: var(--hack-amber) !important; }
+.admin-page [style*="#e8f5e9"] { background: rgba(0, 255, 156, 0.10) !important; }
+.admin-page [style*="#2e7d32"] { color: var(--hack-green) !important; }
+.admin-page [style*="#e3f2fd"] { background: rgba(0, 229, 255, 0.10) !important; }
+.admin-page [style*="#1565c0"] { color: var(--hack-cyan) !important; }
+.admin-page [style*="#e0f7fa"] { background: rgba(0, 229, 255, 0.10) !important; }
+.admin-page [style*="#00838f"] { color: var(--hack-cyan) !important; }
+.admin-page [style*="#fdecea"] { background: rgba(255, 56, 96, 0.10) !important; }
+.admin-page [style*="#e74c3c"] { color: var(--hack-red) !important; }
+.admin-page [style*="#c62828"] { color: var(--hack-red) !important; }
+.admin-page [style*="#fff3e0"] { background: rgba(255, 152, 0, 0.12) !important; }
+.admin-page [style*="#e65100"] { color: var(--hack-amber) !important; }
+.admin-page [style*="#fce4ec"] { background: rgba(255, 56, 96, 0.10) !important; }
+.admin-page [style*="#6a1b9a"] { color: var(--hack-purple) !important; }
+.admin-page [style*="#ff5722"] { color: #ff8a65 !important; }
+
+/* Botões claros inline -> tema */
+.admin-page button[style*="background:#fff"],
+.admin-page button[style*="background:white"] {
+  background: rgba(255, 56, 96, 0.12) !important;
+  color: var(--hack-red) !important;
+  border: 1px solid rgba(255, 56, 96, 0.4) !important;
+}
+
+.admin-page button[style*="#e8f5e9"] { background: rgba(0, 255, 156, 0.12) !important; color: var(--hack-green) !important; }
+.admin-page button[style*="#fdecea"] { background: rgba(255, 56, 96, 0.12) !important; color: var(--hack-red) !important; }
+.admin-page button[style*="#fff3cd"] { background: rgba(255, 204, 0, 0.12) !important; color: var(--hack-amber) !important; }
+.admin-page button[style*="#fff3e0"] { background: rgba(255, 152, 0, 0.12) !important; color: var(--hack-amber) !important; }
+
+/* Boxes de info claros (db, config, debug, ofertas) */
+.admin-page div[style*="#fff8e1"] { background: rgba(255, 204, 0, 0.06) !important; border-color: rgba(255, 204, 0, 0.3) !important; }
+.admin-page div[style*="#e3f2fd"] { background: rgba(0, 229, 255, 0.08) !important; border-color: rgba(0, 229, 255, 0.3) !important; color: var(--hack-cyan) !important; }
+.admin-page div[style*="#fff3e0"] { background: rgba(255, 152, 0, 0.08) !important; border-color: rgba(255, 152, 0, 0.3) !important; color: var(--hack-amber) !important; }
+.admin-page div[style*="#fce4ec"] { background: rgba(255, 56, 96, 0.08) !important; border-color: rgba(255, 56, 96, 0.3) !important; color: var(--hack-red) !important; }
+.admin-page div[style*="#fdecea"] { background: rgba(255, 56, 96, 0.08) !important; border-color: rgba(255, 56, 96, 0.3) !important; color: var(--hack-red) !important; }
+
+/* Modais claros inline (products, sales, reviews, notifications) */
+.admin-page div[style*="background:#fff;border-radius:12px"] {
+  background: linear-gradient(160deg, var(--hack-panel), var(--hack-bg-2)) !important;
+  border: 1px solid var(--hack-border-hi) !important;
+  color: var(--hack-text) !important;
+  box-shadow: 0 0 40px rgba(0, 255, 156, 0.15) !important;
+}
+
+.admin-page div[style*="background:#fff;border-radius:12px"] h3,
+.admin-page div[style*="background:#fff;border-radius:12px"] h4 {
+  color: var(--hack-text-hi) !important;
+}
+
+/* Códigos e boxes claros (analytics code, db, sql) */
+.admin-page code[style*="#f5f5f5"],
+.admin-page div[style*="#f5f5f5"] {
+  background: var(--hack-bg-2) !important;
+  color: var(--hack-cyan) !important;
+}
+
+/* Linhas divisoras claras */
+.admin-page div[style*="border-bottom:1px solid #f0f0f0"] {
+  border-bottom-color: var(--hack-border) !important;
+}
+
+/* Textos claros inline -> dim */
+.admin-page div[style*="color:#999"],
+.admin-page div[style*="color: #999"],
+.admin-page span[style*="color:#999"],
+.admin-page p[style*="color:#999"],
+.admin-page td[style*="color:#999"] { color: var(--hack-dim) !important; }
+
+.admin-page div[style*="color:#666"],
+.admin-page div[style*="color: #666"],
+.admin-page span[style*="color:#666"],
+.admin-page td[style*="color:#666"] { color: var(--hack-dim) !important; }
+
+.admin-page div[style*="color:#333"],
+.admin-page div[style*="color:#555"],
+.admin-page div[style*="color:#888"],
+.admin-page div[style*="color:#bbb"] { color: var(--hack-text) !important; }
+
+/* Switches claros (toggles) */
+.admin-page label[style*="#f9f9f9"] {
+  background: var(--hack-panel) !important;
+  border: 1px solid var(--hack-border) !important;
+  color: var(--hack-text) !important;
+}
+
+/* ============================================================
+   COMMAND CENTER — ELEMENTOS DE HUD
+   ============================================================ */
+
+/* Canto de moldura HUD nos painéis principais */
+.admin-page .form-card,
+.admin-page .table-container,
+.admin-page .admin-section {
+  position: relative;
+}
+
+.admin-page .form-card::before,
+.admin-page .table-container::before,
+.admin-page .stat-card::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-top: 2px solid var(--hack-green);
+  border-left: 2px solid var(--hack-green);
+  top: 6px;
+  left: 6px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.admin-page .form-card::after,
+.admin-page .table-container::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-bottom: 2px solid var(--hack-cyan);
+  border-right: 2px solid var(--hack-cyan);
+  bottom: 6px;
+  right: 6px;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Barra de status do command center (topo) */
+.cmd-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 16px;
+  background: rgba(5, 7, 13, 0.85);
+  border: 1px solid var(--hack-border);
+  border-radius: 8px;
+  margin-bottom: 18px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--hack-dim);
+  flex-wrap: wrap;
+}
+
+.cmd-statusbar .cmd-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hack-green);
+  box-shadow: 0 0 10px var(--hack-green);
+  animation: cmd-blink 2s infinite;
+  flex-shrink: 0;
+}
+
+.cmd-statusbar .cmd-label {
+  color: var(--hack-green);
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(0, 255, 156, 0.5);
+}
+
+.cmd-statusbar .cmd-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmd-statusbar .cmd-sep {
+  color: var(--hack-border-hi);
+}
+
+@keyframes cmd-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Rótulo de seção estilo terminal: [ SYS::DASHBOARD ] */
+.sys-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--hack-cyan);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  background: rgba(0, 229, 255, 0.06);
+  padding: 2px 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-family: var(--hack-font);
+}
+
+/* Barra de título principal com cursor de terminal */
+.admin-page .page-header h1::after,
+.admin-page .admin-header-bar h1::after {
+  content: '_';
+  color: var(--hack-green);
+  animation: cmd-blink 1.2s infinite;
+  margin-left: 4px;
+}
+
+/* ============================================================
    RESPONSIVE
-   ========================================= */
+   ============================================================ */
 
 /* Sidebar colapsável (admin-page.sidebar-collapsed) */
 .admin-page.sidebar-collapsed .admin-sidebar { width: 64px; }

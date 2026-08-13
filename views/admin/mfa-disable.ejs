@@ -4,58 +4,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    body { background: #f8f9fa; }
-    .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
-  </style>
+  <link rel="stylesheet" href="/css/admin-hacker.css">
+  <link rel="stylesheet" href="/fonts/fontawesome.min.css">
 </head>
-<body>
-  <div class="container py-5">
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header bg-danger text-white">
-            <h4 class="mb-0"><i class="bi bi-shield-x"></i> Desativar MFA</h4>
-          </div>
-          <div class="card-body">
-            <div class="alert alert-warning">
-              <i class="bi bi-exclamation-triangle"></i> Desativar MFA reduz a segurança da sua conta. Recomendamos manter ativado.
-            </div>
-            
-            <% if (error) { %>
-              <div class="alert alert-danger"><%= error %></div>
-            <% } %>
-            
-            <form method="POST">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              
-              <div class="mb-3">
-                <label class="form-label">Senha atual</label>
-                <input type="password" name="password" class="form-control" required autocomplete="current-password">
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Código MFA (do app autenticador)</label>
-                <input type="text" name="totp" class="form-control text-center" placeholder="000000" maxlength="6" pattern="\d{6}" style="letter-spacing: 0.5rem;">
-                <div class="form-text">OU use um código de recuperação abaixo</div>
-              </div>
-              
-              <div class="mb-3">
-                <label class="form-label">Código de recuperação</label>
-                <input type="text" name="recovery_code" class="form-control text-uppercase" placeholder="ABCD1234" maxlength="8">
-              </div>
-              
-              <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-danger">Desativar MFA</button>
-                <a href="/admin/dashboard" class="btn btn-secondary">Cancelar</a>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+<body class="admin-page" style="padding:32px;">
+
+<div class="admin-layout" style="max-width:520px;margin:0 auto;">
+  <div class="form-card" style="padding:28px;">
+    <span class="sys-tag">[ SYS::MFA.DISABLE ]</span>
+    <h3 style="margin:0 0 4px;font-size:20px;color:var(--hack-text-hi);"><i class="fas fa-shield-halved" style="color:var(--hack-red);"></i> Desativar MFA</h3>
+    <p style="color:var(--hack-dim);font-size:13px;margin:0 0 16px;">Desativar o MFA reduz a segurança da sua conta. Recomendamos manter ativado.</p>
+
+    <div class="alert alert-warning" style="background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.4);color:var(--hack-amber);padding:10px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;">
+      <i class="fas fa-exclamation-triangle"></i> Desativar MFA reduz a segurança da sua conta.
     </div>
+
+    <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
+
+    <form method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>Senha atual</label>
+        <input type="password" name="password" class="admin-input" required autocomplete="current-password" style="width:100%;">
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label>Código MFA (do app autenticador)</label>
+        <input type="text" name="totp" class="admin-input" placeholder="000000" maxlength="6" pattern="\d{6}" style="width:100%;text-align:center;letter-spacing:0.5rem;">
+        <div style="font-size:12px;color:var(--hack-dim);margin-top:4px;">OU use um código de recuperação abaixo</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:18px;">
+        <label>Código de recuperação</label>
+        <input type="text" name="recovery_code" class="admin-input" placeholder="ABCD1234" maxlength="8" style="width:100%;">
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn-danger" style="padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;flex:1;"><i class="fas fa-shield-halved"></i> Desativar MFA</button>
+        <a href="/admin/dashboard" class="btn-secondary" style="padding:10px 18px;border-radius:8px;font-size:13px;text-align:center;"><i class="fas fa-arrow-left"></i> Cancelar</a>
+      </div>
+    </form>
   </div>
+</div>
+
 </body>
 </html>

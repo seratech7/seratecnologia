@@ -1,21 +1,21 @@
 <%- include('../partials/admin-header', { title: title, currentPath: '/admin/super' }) %>
 
 <style>
-.super-section { background:#fff; border-radius:10px; padding:20px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
-.super-section h2 { margin:0 0 16px; font-size:18px; display:flex; align-items:center; gap:8px; color:#333; }
+.super-section { border-radius:10px; padding:20px; margin-bottom:24px; }
+.super-section h2 { margin:0 0 16px; font-size:18px; display:flex; align-items:center; gap:8px; color:var(--hack-text-hi); }
 .super-table { width:100%; border-collapse:collapse; font-size:14px; }
-.super-table th { text-align:left; padding:8px 10px; border-bottom:2px solid #e0e0e0; color:#555; font-weight:600; font-size:12px; text-transform:uppercase; }
-.super-table td { padding:8px 10px; border-bottom:1px solid #eee; vertical-align:middle; }
-.super-table tr:hover td { background:#fafafa; }
-.super-table .key-cell { max-width:250px; word-break:break-all; font-family:monospace; font-size:13px; }
+.super-table th { text-align:left; padding:8px 10px; border-bottom:1px solid var(--hack-border); color:var(--hack-cyan); font-weight:600; font-size:12px; text-transform:uppercase; }
+.super-table td { padding:8px 10px; border-bottom:1px solid var(--hack-border); color:var(--hack-text); vertical-align:middle; }
+.super-table tr:hover td { background:rgba(0,255,156,0.04); }
+.super-table .key-cell { max-width:250px; word-break:break-all; font-family:monospace; font-size:13px; color:var(--hack-green); }
 .super-table .val-cell { max-width:350px; word-break:break-all; font-size:13px; }
-.sql-textarea { width:100%; min-height:120px; font-family:'Consolas','Courier New',monospace; font-size:13px; padding:10px; border:1px solid #ddd; border-radius:6px; resize:vertical; }
+.sql-textarea { width:100%; min-height:120px; font-family:'Consolas','Courier New',monospace; font-size:13px; padding:10px; border:1px solid var(--hack-border); border-radius:6px; resize:vertical; background:var(--hack-bg-2); color:var(--hack-text); }
 .sql-result { overflow-x:auto; margin-top:12px; }
 .sql-result table { font-size:12px; border-collapse:collapse; }
-.sql-result th { background:#f5f5f5; padding:6px 10px; text-align:left; border:1px solid #ddd; font-weight:600; }
-.sql-result td { padding:6px 10px; border:1px solid #ddd; }
-.sql-result .ok { color:#2e7d32; font-weight:600; }
-.sql-result .err { color:#c62828; background:#ffebee; padding:10px; border-radius:6px; font-family:monospace; font-size:13px; }
+.sql-result th { background:var(--hack-bg-2); padding:6px 10px; text-align:left; border:1px solid var(--hack-border); font-weight:600; color:var(--hack-cyan); }
+.sql-result td { padding:6px 10px; border:1px solid var(--hack-border); color:var(--hack-text); }
+.sql-result .ok { color:var(--hack-green); font-weight:600; }
+.sql-result .err { color:var(--hack-red); background:rgba(255,56,96,0.08); padding:10px; border-radius:6px; font-family:monospace; font-size:13px; }
 </style>
 
 <div class="admin-content">

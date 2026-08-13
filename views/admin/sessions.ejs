@@ -4,183 +4,161 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <style>
-    body { background: #f8f9fa; }
-    .card { border: none; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
-    .session-current { background-color: #e7f3ff; }
-    .device-current { background-color: #e7f3ff; }
-  </style>
+  <link rel="stylesheet" href="/css/admin-hacker.css">
+  <link rel="stylesheet" href="/fonts/fontawesome.min.css">
 </head>
-<body>
-  <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h2><i class="bi bi-devices"></i> Sessões e Dispositivos</h2>
-      <a href="/admin/dashboard" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Voltar</a>
+<body class="admin-page" style="padding:28px;">
+
+<div class="admin-layout">
+  <span class="sys-tag">[ SYS::SESSIONS ]</span>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h1><i class="fas fa-network-wired"></i> Sessões e Dispositivos</h1>
+      <p>Controle de acesso ativo no painel admin</p>
     </div>
-    
-    <div class="row">
-      <div class="col-lg-7">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Sessões Ativas</h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Dispositivo</th>
-                    <th>IP / Localização</th>
-                    <th>Última atividade</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (sessions.length === 0) { %>
-                    <tr>
-                      <td colspan="4" class="text-center text-muted py-4">Nenhuma sessão ativa</td>
-                    </tr>
-                  <% } else { %>
-                    <% sessions.forEach(function(session) { %>
-                      <tr class="<%= session.sid_hash === currentSidHash ? 'session-current' : '' %>">
-                        <td>
-                          <div class="d-flex align-items-center">
-                            <i class="bi bi-<%= session.device_id ? 'phone' : 'pc-display' %> me-2 text-muted"></i>
-                            <div>
-                              <div class="fw-medium"><%= session.device_id ? session.device_id.substring(0,16)+'...' : 'Desconhecido' %></div>
-                              <small class="text-muted"><%= session.user_agent || 'N/A' %></small>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <code><%= session.ip_zone || session.ip || 'N/A' %></code>
-                        </td>
-                        <td>
-                          <span class="text-nowrap"><%= session.last_seen ? new Date(session.last_seen).toLocaleString('pt-BR') : 'N/A' %></span>
-                          <% if (session.sid_hash === currentSidHash) { %>
-                            <span class="badge bg-primary ms-2">Atual</span>
-                          <% } %>
-                        </td>
-                        <td>
-                          <% if (session.sid_hash !== currentSidHash) { %>
-                            <form method="POST" action="/auth/sessions/revoke" class="d-inline" onsubmit="return confirm('Revogar esta sessão?')">
-                              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                              <input type="hidden" name="sid_hash" value="<%= session.sid_hash %>">
-                              <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i> Revogar</button>
-                            </form>
-                          <% } else { %>
-                            <span class="text-muted">—</span>
-                          <% } %>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="card-footer">
-            <form method="POST" action="/auth/sessions/revoke-all" class="d-inline" onsubmit="return confirm('Revogar TODAS as outras sessões?')">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <input type="hidden" name="except_current" value="1">
-              <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-left"></i> Revogar todas as outras</button>
-            </form>
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-lg-5">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-phone"></i> Dispositivos Confiáveis</h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Dispositivo</th>
-                    <th>Último IP</th>
-                    <th>Última vez</th>
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% if (devices.length === 0) { %>
-                    <tr>
-                      <td colspan="4" class="text-center text-muted py-4">Nenhum dispositivo registrado</td>
-                    </tr>
-                  <% } else { %>
-                    <% devices.forEach(function(device) { %>
-                      <tr class="<%= device.device_id === auth?.deviceId ? 'device-current' : '' %> <%= device.revoked ? 'table-secondary' : '' %>">
-                        <td>
-                          <div>
-                            <div class="fw-medium"><%= device.label || device.device_id.substring(0,16)+'...' %></div>
-                            <% if (device.revoked) { %>
-                              <span class="badge bg-secondary">Revogado</span>
-                            <% } %>
-                          </div>
-                        </td>
-                        <td><code><%= device.last_ip || 'N/A' %></code></td>
-                        <td><span class="text-nowrap"><%= device.last_seen ? new Date(device.last_seen).toLocaleString('pt-BR') : 'N/A' %></span></td>
-                        <td>
-                          <% if (!device.revoked) { %>
-                            <div class="btn-group btn-group-sm">
-                              <button type="button" class="btn btn-outline-primary" onclick="editLabel('<%= device.device_id %>', '<%= (device.label || '').replace(/'/g, "\\'") %>')" title="Renomear"><i class="bi bi-pencil"></i></button>
-                              <form method="POST" action="/auth/devices/revoke" class="d-inline" onsubmit="return confirm('Revogar este dispositivo e todas as suas sessões?')">
-                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                                <input type="hidden" name="device_id" value="<%= device.device_id %>">
-                                <button type="submit" class="btn btn-outline-danger" title="Revogar"><i class="bi bi-trash"></i></button>
-                              </form>
-                            </div>
-                          <% } %>
-                        </td>
-                      </tr>
-                    <% }) %>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <a href="/admin/dashboard" class="btn-secondary" style="padding:8px 16px;border-radius:8px;font-size:13px;"><i class="fas fa-arrow-left"></i> Voltar</a>
   </div>
-  
-  <div class="modal fade" id="labelModal" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-      <div class="modal-content">
-        <form method="POST" action="/auth/devices/label">
+
+  <div class="dashboard-grid" style="display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px;">
+    <!-- SESSÕES ATIVAS -->
+    <div class="form-card" style="padding:0;overflow:hidden;">
+      <div class="section-header" style="padding:16px 20px;border-bottom:1px solid var(--hack-border);margin:0;">
+        <h2><i class="fas fa-box-arrow-in-right"></i> Sessões Ativas (<%= sessions.length %>)</h2>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Dispositivo</th>
+              <th>IP / Localização</th>
+              <th>Última atividade</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (sessions.length === 0) { %>
+              <tr><td colspan="4" class="empty-row">Nenhuma sessão ativa</td></tr>
+            <% } else { %>
+              <% sessions.forEach(function(session) { %>
+                <tr style="<%= session.sid_hash === currentSidHash ? 'background:rgba(0,255,156,0.06);' : '' %>">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <i class="fas fa-<%= session.device_id ? 'mobile-alt' : 'desktop' %>" style="color:var(--hack-cyan);"></i>
+                      <div>
+                        <div style="font-weight:700;"><%= session.device_id ? session.device_id.substring(0,16)+'...' : 'Desconhecido' %></div>
+                        <small style="color:var(--hack-dim);font-size:11px;"><%= session.user_agent || 'N/A' %></small>
+                      </div>
+                    </div>
+                  </td>
+                  <td><code style="color:var(--hack-green);"><%= session.ip_zone || session.ip || 'N/A' %></code></td>
+                  <td>
+                    <span style="white-space:nowrap;"><%= session.last_seen ? new Date(session.last_seen).toLocaleString('pt-BR') : 'N/A' %></span>
+                    <% if (session.sid_hash === currentSidHash) { %><span class="status-badge active">Atual</span><% } %>
+                  </td>
+                  <td>
+                    <% if (session.sid_hash !== currentSidHash) { %>
+                      <form method="POST" action="/auth/sessions/revoke" class="inline-form" onsubmit="return confirm('Revogar esta sessão?')">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="hidden" name="sid_hash" value="<%= session.sid_hash %>">
+                        <button class="btn-icon btn-delete" title="Revogar"><i class="fas fa-times-circle"></i></button>
+                      </form>
+                    <% } else { %>
+                      <span style="color:var(--hack-dim);">—</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--hack-border);">
+        <form method="POST" action="/auth/sessions/revoke-all" onsubmit="return confirm('Revogar TODAS as outras sessões?')">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="device_id" id="labelDeviceId">
-          <div class="modal-header">
-            <h5 class="modal-title">Renomear Dispositivo</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Nome amigável</label>
-              <input type="text" name="label" id="labelInput" class="form-control" maxlength="50" placeholder="Ex: Meu iPhone, Notebook do trabalho">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar</button>
-          </div>
+          <input type="hidden" name="except_current" value="1">
+          <button type="submit" class="btn-danger" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;"><i class="fas fa-box-arrow-left"></i> Revogar todas as outras</button>
         </form>
       </div>
     </div>
+
+    <!-- DISPOSITIVOS CONFIÁVEIS -->
+    <div class="form-card" style="padding:0;overflow:hidden;">
+      <div class="section-header" style="padding:16px 20px;border-bottom:1px solid var(--hack-border);margin:0;">
+        <h2><i class="fas fa-mobile-alt"></i> Dispositivos Confiáveis (<%= devices.length %>)</h2>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Dispositivo</th>
+              <th>Último IP</th>
+              <th>Última vez</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (devices.length === 0) { %>
+              <tr><td colspan="4" class="empty-row">Nenhum dispositivo registrado</td></tr>
+            <% } else { %>
+              <% devices.forEach(function(device) { %>
+                <tr style="<%= device.revoked ? 'opacity:0.5;' : '' %>">
+                  <td>
+                    <div>
+                      <div style="font-weight:700;"><%= device.label || device.device_id.substring(0,16)+'...' %></div>
+                      <% if (device.revoked) { %><span class="status-badge inactive">Revogado</span><% } %>
+                    </div>
+                  </td>
+                  <td><code style="color:var(--hack-green);"><%= device.last_ip || 'N/A' %></code></td>
+                  <td><span style="white-space:nowrap;"><%= device.last_seen ? new Date(device.last_seen).toLocaleString('pt-BR') : 'N/A' %></span></td>
+                  <td>
+                    <% if (!device.revoked) { %>
+                      <div style="display:flex;gap:4px;">
+                        <button type="button" class="btn-icon" onclick="editLabel('<%= device.device_id %>', '<%= (device.label || '').replace(/'/g, "\\'") %>')" title="Renomear"><i class="fas fa-pencil-alt"></i></button>
+                        <form method="POST" action="/auth/devices/revoke" onsubmit="return confirm('Revogar este dispositivo e todas as suas sessões?')">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <input type="hidden" name="device_id" value="<%= device.device_id %>">
+                          <button type="submit" class="btn-icon btn-delete" title="Revogar"><i class="fas fa-trash"></i></button>
+                        </form>
+                      </div>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    function editLabel(deviceId, currentLabel) {
-      document.getElementById('labelDeviceId').value = deviceId;
-      document.getElementById('labelInput').value = currentLabel;
-      new bootstrap.Modal(document.getElementById('labelModal')).show();
-    }
-  </script>
+</div>
+
+<div id="labelModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div class="form-card" style="padding:24px;max-width:420px;width:90%;">
+    <h3 style="margin:0 0 16px;color:var(--hack-text-hi);"><i class="fas fa-pencil-alt"></i> Renomear Dispositivo</h3>
+    <form method="POST" action="/auth/devices/label">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="device_id" id="labelDeviceId">
+      <div class="form-group">
+        <label>Nome amigável</label>
+        <input type="text" name="label" id="labelInput" class="admin-input" maxlength="50" placeholder="Ex: Meu iPhone, Notebook do trabalho" style="width:100%;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" class="btn-secondary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="closeLabel()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function editLabel(deviceId, currentLabel) {
+    document.getElementById('labelDeviceId').value = deviceId;
+    document.getElementById('labelInput').value = currentLabel;
+    document.getElementById('labelModal').style.display = 'flex';
+  }
+  function closeLabel() {
+    document.getElementById('labelModal').style.display = 'none';
+  }
+</script>
 </body>
 </html>

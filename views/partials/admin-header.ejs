@@ -166,6 +166,31 @@
   </aside>
 
   <div class="admin-main">
+    <div class="cmd-statusbar">
+      <span class="cmd-led"></span>
+      <span class="cmd-item"><span class="cmd-label">SYS.ONLINE</span></span>
+      <span class="cmd-sep">|</span>
+      <span class="cmd-item"><i class="fas fa-user-shield"></i> <span id="cmdAdmin">admin</span></span>
+      <span class="cmd-sep">|</span>
+      <span class="cmd-item"><i class="fas fa-clock"></i> <span id="cmdClock">--:--:--</span></span>
+      <span class="cmd-sep">|</span>
+      <span class="cmd-item"><i class="fas fa-database"></i> <span id="cmdSess"><%= session && session.adminId ? 'SES#' + String(session.adminId).padStart(4,'0') : '—' %></span></span>
+      <span class="cmd-sep" style="flex:1;"></span>
+      <span class="cmd-item" style="color:var(--hack-cyan);"><%= (currentPath || '/admin/dashboard').replace('/admin/','').toUpperCase() %></span>
+    </div>
+    <script>
+    (function() {
+      var c = document.getElementById('cmdClock');
+      if (c) {
+        function tick() {
+          var d = new Date();
+          c.textContent = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+        }
+        tick();
+        setInterval(tick, 1000);
+      }
+    })();
+    </script>
     <div style="display:flex;align-items:center;gap:8px;">
     <button class="sidebar-toggle" title="Menu" aria-label="Menu">
       <i class="fas fa-bars"></i>
