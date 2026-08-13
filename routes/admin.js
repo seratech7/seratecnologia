@@ -430,7 +430,8 @@ router.post('/sellers/new', (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   try {
     db.run("INSERT INTO sellers (name, email, phone, whatsapp, password_hash, status) VALUES (?, ?, ?, ?, ?, 'active')", [name, email, phone || '', whatsapp || '', hash]);
-    const sid = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const sidRow = db.get("SELECT MAX(id) as id FROM sellers");
+    const sid = sidRow ? sidRow.id : null;
     const authHive = require('../lib/auth-hive');
     authHive.hashPassword(password).then(function(newHash) {
       try {
@@ -586,7 +587,8 @@ router.post('/admins/new', (req, res) => {
   const hash = bcrypt.hashSync(password, 10);
   try {
     db.run('INSERT INTO admins (username, password_hash, display_name) VALUES (?, ?, ?)', [username, hash, display_name || username]);
-    const aid = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+    const aidRow = db.get("SELECT MAX(id) as id FROM admins");
+    const aid = aidRow ? aidRow.id : null;
     const authHive = require('../lib/auth-hive');
     authHive.hashPassword(password).then(function(newHash) {
       try {
