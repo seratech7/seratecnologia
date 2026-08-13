@@ -253,19 +253,68 @@
     </div>
 
     <div class="fin-card">
-      <h3><i class="fas fa-history" style="color:#666;"></i> Últimos aprovados/rejeitados</h3>
-      <% var historico = payouts.filter(function(p) { return p.status !== 'pending'; }); %>
-      <% if (historico.length === 0) { %><div class="empty-state"><i class="fas fa-inbox"></i><p>Nenhum saque processado</p></div><% } %>
-      <% historico.slice(0,8).forEach(function(p) { %>
+      <h3><i class="fas fa-history" style="color:#666;"></i> Aprovados / processados</h3>
+      <% var aprovados = payouts.filter(function(p) { return p.status === 'approved'; }); %>
+      <% var historico = payouts.filter(function(p) { return p.status !== 'pending' && p.status !== 'approved'; }); %>
+      <% if (aprovados.length === 0 && historico.length === 0) { %><div class="empty-state"><i class="fas fa-inbox"></i><p>Nenhum saque processado</p></div><% } %>
+      <% aprovados.slice(0,5).forEach(function(p) { %>
+      <div class="payout-item">
+        <div style="font-size:12px;">
+          <strong><%= p.seller_name %></strong> &mdash; <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %>
+          <span style="color:#999;display:block;font-size:11px;"><%= p.created_at %></span>
+        </div>
+        <span class="badge-approved">Aprovado</span>
+        <form method="POST" action="/admin/financeiro/payout/pagar/<%= p.id %>" onsubmit="return confirm('Confirmar pagamento do saque de <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %> para <%= p.seller_name %>?')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn-small" style="background:#1565c0;color:#fff;padding:6px 12px;border:none;font-size:11px;"><i class="fas fa-hand-holding-usd"></i> Marcar pago</button>
+        </form>
+      </div>
+      <% }); %>
+      <% historico.slice(0,5).forEach(function(p) { %>
       <div class="payout-item" style="padding:6px 0;">
         <div style="font-size:12px;">
           <strong><%= p.seller_name %></strong> &mdash; <%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %>
           <span style="color:#999;display:block;font-size:11px;"><%= p.created_at %></span>
         </div>
-        <span class="<%= p.status === 'approved' ? 'badge-approved' : 'badge-rejected' %>"><%= p.status === 'approved' ? 'Aprovado' : 'Rejeitado' %></span>
+        <span class="<%= p.status === 'paid' ? 'badge-approved' : 'badge-rejected' %>"><%= p.status === 'paid' ? 'Pago' : 'Rejeitado' %></span>
       </div>
       <% }); %>
     </div>
+  </div>
+
+  <!-- Saque manual -->
+  <div class="fin-card" style="margin-bottom:24px;">
+    <h3><i class="fas fa-hand-holding-usd" style="color:#1565c0;"></i> Criar Saque Manual (em nome do vendedor)</h3>
+    <p style="font-size:12px;color:#999;margin:-8px 0 12px;">Debita o saldo da carteira do vendedor e cria um saque aprovado aguardando pagamento.</p>
+    <form method="POST" action="/admin/financeiro/payout/manual" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:2px;">Vendedor</label>
+        <select name="seller_id" required style="width:220px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+          <option value="">Selecione...</option>
+          <% allSellers.forEach(function(s) { %>
+          <option value="<%= s.id %>"><%= s.name %></option>
+          <% }); %>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:2px;">Valor (R$)</label>
+        <input type="number" name="amount" step="0.01" min="0.01" required placeholder="0,00" style="width:120px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:2px;">Dados bancários / chave</label>
+        <input type="text" name="bank_info" placeholder="Chave PIX ou dados bancários" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:2px;">Método</label>
+        <select name="payment_method" style="width:110px;padding:8px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;">
+          <option value="pix">PIX</option>
+          <option value="bank">Transferência</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-small" style="background:#1565c0;color:#fff;padding:9px 20px;border:none;"><i class="fas fa-plus-circle"></i> Criar Saque</button>
+    </form>
   </div>
 
   <!-- Tabela completa saques -->
@@ -283,7 +332,7 @@
           <td style="font-weight:600;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.amount) %></td>
           <td style="color:#999;"><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.fee||0) %></td>
           <td><%= new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(p.net_amount||p.amount) %></td>
-          <td><span class="badge-<%= p.status %>"><%= p.status === 'pending' ? 'Pendente' : p.status === 'approved' ? 'Aprovado' : 'Rejeitado' %></span></td>
+          <td><span class="badge-<%= p.status %>"><%= p.status === 'pending' ? 'Pendente' : p.status === 'approved' ? 'Aprovado' : p.status === 'paid' ? 'Pago' : 'Rejeitado' %></span></td>
         </tr>
         <% }); %>
       </tbody>

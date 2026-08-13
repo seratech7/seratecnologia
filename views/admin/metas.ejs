@@ -76,6 +76,7 @@
               </td>
               <td class="actions-cell">
                 <a href="/admin/placar?goal_id=<%= g.id %>" class="btn-icon" title="Ver Placar"><i class="fas fa-ranking-star"></i></a>
+                <button type="button" class="btn-icon" title="Editar" onclick="openEdit('<%= g.id %>', '<%= g.title.replace(/'/g, "\\'") %>', '<%= g.type %>', '<%= g.target_value %>', '<%= (g.prize_description || '').replace(/'/g, "\\'") %>', '<%= g.start_date %>', '<%= g.end_date %>')"><i class="fas fa-pencil-alt"></i></button>
                 <form method="POST" action="/admin/metas/deletar/<%= g.id %>" style="display:inline;" onsubmit="return confirm('Excluir meta?')">
                   <button class="btn-icon btn-delete"><i class="fas fa-trash"></i></button>
                 </form>
@@ -87,4 +88,58 @@
     </div>
   </div>
 </div>
+
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div class="form-card" style="padding:24px;max-width:560px;width:90%;">
+    <h3 style="margin:0 0 16px;"><i class="fas fa-pencil-alt"></i> Editar Meta</h3>
+    <form method="POST" id="editForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-row form-row-3">
+        <div class="form-group">
+          <label>Título</label>
+          <input type="text" name="title" id="e_title" class="admin-input" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select name="type" id="e_type" class="admin-select">
+            <option value="sales_count">Qtd de Vendas</option>
+            <option value="revenue">Faturamento (R$)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor da Meta</label>
+          <input type="number" name="target_value" id="e_target" class="admin-input" step="0.01" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>Data Início</label>
+          <input type="date" name="start_date" id="e_start" class="admin-input" required>
+        </div>
+        <div class="form-group">
+          <label>Data Fim</label>
+          <input type="date" name="end_date" id="e_end" class="admin-input" required>
+        </div>
+        <div class="form-group">
+          <label>Prêmio</label>
+          <input type="text" name="prize_description" id="e_prize" class="admin-input" placeholder="Ex: R$ 50 no Pix">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" class="btn-secondary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="document.getElementById('editModal').style.display='none';">Cancelar</button>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openEdit(id, title, type, target, prize, start, end) {
+  document.getElementById('editForm').action = '/admin/metas/editar/' + id;
+  document.getElementById('e_title').value = title;
+  document.getElementById('e_type').value = type;
+  document.getElementById('e_target').value = target;
+  document.getElementById('e_prize').value = prize || '';
+  document.getElementById('e_start').value = start;
+  document.getElementById('e_end').value = end;
+  document.getElementById('editModal').style.display = 'flex';
+}
+</script>
 <%- include('../partials/admin-footer') %>

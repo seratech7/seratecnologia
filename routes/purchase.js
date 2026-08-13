@@ -5,6 +5,9 @@ const { gerarPixPayload, gerarQRCodeBase64 } = require('../utils/pix');
 const { encryptField } = require('../utils/crypto');
 
 router.get('/comprar', function(req, res) {
+  if (db.getToggle('compras') !== '1') {
+    return res.render('comprar', { title: 'Compra Online', produto: null, codigo: '', cupom: '', desconto: 0, error: 'As compras estão temporariamente desativadas pelo administrador.' });
+  }
   var produto = null;
   var codigo = req.query.codigo || '';
   var cupom = req.query.cupom || '';
@@ -40,6 +43,9 @@ router.get('/api/produto/:codigo', function(req, res) {
 
 router.post('/api/finalizar-compra', function(req, res) {
   try {
+    if (db.getToggle('compras') !== '1') {
+      return res.status(403).json({ error: 'As compras estão temporariamente desativadas pelo administrador.' });
+    }
     var { codigo, nome, documento, telefone, email, endereco, cupom } = req.body;
     if (!codigo || !nome || !documento || !telefone || !email || !endereco) {
       return res.status(400).json({ error: 'Preencha todos os campos' });
@@ -149,6 +155,9 @@ router.get('/api/rastreio/:codigo', function(req, res) {
 
 router.post('/api/gerar-pix', async function(req, res) {
   try {
+    if (db.getToggle('pix') !== '1') {
+      return res.status(403).json({ error: 'Pagamento via PIX temporariamente desativado pelo administrador.' });
+    }
     var { codigo, nome, cidade } = req.body;
     if (!codigo) return res.status(400).json({ error: 'Código do produto é obrigatório' });
 

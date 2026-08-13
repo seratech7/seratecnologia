@@ -371,6 +371,12 @@ async function initDb() {
     )
   `);
 
+  var payoutCols = db.exec("PRAGMA table_info(payouts)");
+  if (payoutCols.length > 0) {
+    var pc = payoutCols[0].values.map(function(r) { return r[1]; });
+    if (!pc.includes('paid_at')) db.run("ALTER TABLE payouts ADD COLUMN paid_at DATETIME");
+  }
+
   var sellerCols = db.exec("PRAGMA table_info(sellers)");
   if (sellerCols.length > 0) {
     var sc = sellerCols[0].values.map(function(r) { return r[1]; });
@@ -1004,6 +1010,18 @@ function getWalletTransactions(sellerId, limit, offset) {
     [sellerId, limit || 50, offset || 0]);
 }
 
+function refundSale(saleId) {
+  var refunded = 0;
+  var sale = get('SELECT product_price, seller_id FROM sales WHERE id = ?', [saleId]);
+  if (!sale) return 0;
+  var rows = query("SELECT seller_id, amount, type FROM wallet_transactions WHERE reference_type = 'sale' AND reference_id = ? AND type IN ('sale','commission')", [saleId]);
+  rows.forEach(function(t) {
+    addTransaction(t.seller_id, t.type === 'sale' ? 'sale_refund' : 'commission_refund', 'Estorno de venda #' + saleId, -Math.abs(t.amount), 'sale_refund', saleId);
+    refunded += Math.abs(t.amount);
+  });
+  return refunded;
+}
+
 function getAllTransactions(limit, offset) {
   return query("SELECT w.*, s.name as seller_name, s.email as seller_email FROM wallet_transactions w LEFT JOIN sellers s ON w.seller_id = s.id ORDER BY w.created_at DESC LIMIT ? OFFSET ?",
     [limit || 50, offset || 0]);
@@ -1062,7 +1080,9 @@ function createPayout(sellerId, amount, bankInfo, paymentMethod) {
   var net = amount - fee;
   run("INSERT INTO payouts (seller_id, amount, fee, net_amount, bank_info, payment_method) VALUES (?, ?, ?, ?, ?, ?)",
     [sellerId, amount, fee, net, bankInfo || '', paymentMethod || 'pix']);
-  addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', 0);
+  var payoutId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', payoutId);
+  return payoutId;
 }
 
 function getTransactionsByPeriod(sellerId, startDate, endDate, limit, offset) {
@@ -1162,6 +1182,23 @@ function saveCoupon(code, type, value, minOrder, maxUses, expiresAt, sellerId) {
 
 function deleteCoupon(id) {
   run("DELETE FROM coupons WHERE id = ?", [id]);
+}
+
+function updateCoupon(id, code, type, value, minOrder, maxUses, expiresAt) {
+  run("UPDATE coupons SET code = ?, type = ?, value = ?, min_order = ?, max_uses = ?, expires_at = ? WHERE id = ?",
+    [code, type, value, minOrder || 0, maxUses || 0, expiresAt || null, id]);
+}
+
+function toggleCoupon(id, active) {
+  run("UPDATE coupons SET active = ? WHERE id = ?", [active ? 1 : 0, id]);
+}
+
+function resetCouponUses(id) {
+  run("UPDATE coupons SET used_count = 0 WHERE id = ?", [id]);
+}
+
+function getCouponById(id) {
+  return get("SELECT * FROM coupons WHERE id = ?", [id]);
 }
 
 function incrementCoupon(id) {
@@ -1727,4 +1764,4 @@ function getCustomerOrders(customerId) {
   return query("SELECT s.*, p.image as product_image, p.name as product_name_join FROM sales s LEFT JOIN products p ON s.product_id = p.id WHERE s.customer_id = ? ORDER BY s.created_at DESC", [customerId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders };
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders };

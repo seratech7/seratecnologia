@@ -6,6 +6,7 @@ const db = require('../database/db');
 router.get('/seller/mercadopago/auth', function(req, res) {
   var sellerId = req.session.sellerId;
   if (!sellerId) return res.redirect('/seller/login');
+  if (db.getToggle('mercado_pago') !== '1') return res.send('Mercado Pago está desativado pelo administrador.');
 
   var appId = db.get("SELECT value FROM config WHERE key = 'mp_app_id'");
   var redirectUri = (process.env.BASE_URL || 'https://seratecnologia-1.onrender.com') + '/seller/mercadopago/callback';
@@ -54,14 +55,7 @@ router.post('/seller/mercadopago/disconnect', function(req, res) {
 // === PAGAMENTO (placeholder) ===
 
 router.post('/api/criar-pagamento-mp', function(req, res) {
-  // TODO: criar pagamento via API do Mercado Pago com split
-  // var { codigo, nome, email, documento } = req.body;
-  // 1. Buscar produto + vendedor
-  // 2. Buscar access_token do vendedor (mp_connections)
-  // 3. Buscar commission_pct da config
-  // 4. Criar preferência MP com split
-  // 5. Retornar link de pagamento
-
+  if (db.getToggle('mercado_pago') !== '1') return res.json({ error: 'Mercado Pago está desativado pelo administrador. Use PIX por enquanto.' });
   res.json({ error: 'Mercado Pago ainda não configurado. Use PIX por enquanto.' });
 });
 

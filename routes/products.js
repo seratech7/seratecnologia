@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
     sql += ' ORDER BY ' + orderBy;
 
     const products = db.query(sql, params) || [];
-    const heroBanners = db.getBannersByPosition('hero') || [];
+    const heroBanners = db.getToggle('banners') === '1' ? (db.getBannersByPosition('hero') || []) : [];
     const flashProducts = db.getFlashSales() || [];
 
     res.render('index', {
@@ -174,6 +174,7 @@ router.get('/pagina/:slug', (req, res) => {
 
 // API: public banners (for potential frontend use)
 router.get('/api/banners', (req, res) => {
+  if (db.getToggle('banners') !== '1') return res.json([]);
   res.json(db.getActiveBanners());
 });
 

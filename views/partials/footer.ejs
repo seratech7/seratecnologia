@@ -2,7 +2,23 @@
 
 <footer class="main-footer">
   <div class="footer-container">
-    <p>&copy; 2026 SeraTecnologia. Tecnologia, HDs, SSDs e semi-novos.</p>
+    <% if (typeof siteConfig !== 'undefined' && (siteConfig.social_instagram || siteConfig.social_facebook || siteConfig.social_tiktok || siteConfig.social_youtube || siteConfig.social_discord)) { %>
+    <div class="footer-social" style="margin-bottom:10px;display:flex;gap:12px;justify-content:center;align-items:center;">
+      <% if (siteConfig.social_instagram) { %><a href="<%= siteConfig.social_instagram %>" target="_blank" rel="noopener" aria-label="Instagram" style="color:inherit;font-size:20px;"><i class="fab fa-instagram"></i></a><% } %>
+      <% if (siteConfig.social_facebook) { %><a href="<%= siteConfig.social_facebook %>" target="_blank" rel="noopener" aria-label="Facebook" style="color:inherit;font-size:20px;"><i class="fab fa-facebook"></i></a><% } %>
+      <% if (siteConfig.social_tiktok) { %><a href="<%= siteConfig.social_tiktok %>" target="_blank" rel="noopener" aria-label="TikTok" style="color:inherit;font-size:20px;"><i class="fab fa-tiktok"></i></a><% } %>
+      <% if (siteConfig.social_youtube) { %><a href="<%= siteConfig.social_youtube %>" target="_blank" rel="noopener" aria-label="YouTube" style="color:inherit;font-size:20px;"><i class="fab fa-youtube"></i></a><% } %>
+      <% if (siteConfig.social_discord) { %><a href="<%= siteConfig.social_discord %>" target="_blank" rel="noopener" aria-label="Discord" style="color:inherit;font-size:20px;"><i class="fab fa-discord"></i></a><% } %>
+    </div>
+    <% } %>
+    <p><%= typeof siteConfig !== 'undefined' && siteConfig.footer_text ? siteConfig.footer_text : '&copy; 2026 SeraTecnologia. Tecnologia, HDs, SSDs e semi-novos.' %></p>
+    <% if (typeof siteConfig !== 'undefined' && (siteConfig.site_whatsapp || siteConfig.site_email || siteConfig.site_phone || siteConfig.site_address)) { %>
+    <div style="font-size:13px;color:#999;margin-top:6px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <% if (siteConfig.site_whatsapp) { %><span><i class="fas fa-whatsapp"></i> <a href="https://wa.me/<%= siteConfig.site_whatsapp %>" style="color:inherit;text-decoration:none;"><%= siteConfig.site_phone || siteConfig.site_whatsapp %></a></span><% } %>
+      <% if (siteConfig.site_email) { %><span><i class="fas fa-envelope"></i> <a href="mailto:<%= siteConfig.site_email %>" style="color:inherit;text-decoration:none;"><%= siteConfig.site_email %></a></span><% } %>
+      <% if (siteConfig.site_address) { %><span><i class="fas fa-map-marker-alt"></i> <%= siteConfig.site_address %></span><% } %>
+    </div>
+    <% } %>
   </div>
 </footer>
 

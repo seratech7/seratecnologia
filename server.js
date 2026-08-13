@@ -67,10 +67,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting - login (30 attempts per 15 min)
+// Rate limiting - login (configurable via admin panel: login_limit_max)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: (req, res) => {
+    try {
+      var r = db.get("SELECT value FROM config WHERE key = 'login_limit_max'");
+      var max = r && r.value ? parseInt(r.value) : 30;
+      return isNaN(max) || max <= 0 ? 30 : max;
+    } catch (e) { return 30; }
+  },
   message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -85,10 +91,16 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Rate limiting - geral
+// Rate limiting - geral (configurable via admin panel: rate_limit_max)
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 300,
+  max: (req, res) => {
+    try {
+      var r = db.get("SELECT value FROM config WHERE key = 'rate_limit_max'");
+      var max = r && r.value ? parseInt(r.value) : 300;
+      return isNaN(max) || max <= 0 ? 300 : max;
+    } catch (e) { return 300; }
+  },
   standardHeaders: true,
   legacyHeaders: false
 });
@@ -106,7 +118,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (allowedMimes.includes(file.mimetype)) {
       const ext = path.extname(file.originalname).toLowerCase();
@@ -192,6 +204,25 @@ app.use(session({
 
 app.use(attachAuthInfo);
 
+// Enforce configurable upload size limit (admin panel -> upload_max_size, default 5MB)
+app.use((req, res, next) => {
+  var isUpload = (req.method === 'POST' || req.method === 'PUT') &&
+    (req.headers['content-type'] || '').toLowerCase().indexOf('multipart/form-data') === 0 &&
+    req.path.indexOf('/admin/database') !== 0;
+  if (!isUpload) return next();
+  try {
+    var r = db.get("SELECT value FROM config WHERE key = 'upload_max_size'");
+    var mb = r && r.value ? parseFloat(r.value) : 5;
+    if (isNaN(mb) || mb <= 0) mb = 5;
+    var maxBytes = mb * 1024 * 1024;
+    var len = parseInt(req.headers['content-length'] || '0', 10);
+    if (len > maxBytes) {
+      return res.status(413).send('Arquivo muito grande. Máximo ' + mb + 'MB.');
+    }
+  } catch (e) {}
+  next();
+});
+
 app.use(generalLimiter);
 
 // Login rate limiters — apply at secret paths before rewrite
@@ -209,7 +240,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     if (req.path.indexOf('/admin/database') === 0) return res.redirect('/admin/database?error=' + encodeURIComponent('Arquivo muito grande. Máximo 100MB.'));
-    return res.status(400).send('Arquivo muito grande. Máximo 5MB.');
+    var r = null;
+    try { r = db.get("SELECT value FROM config WHERE key = 'upload_max_size'"); } catch (e) {}
+    var mb = r && r.value ? parseFloat(r.value) : 5;
+    if (isNaN(mb) || mb <= 0) mb = 5;
+    return res.status(400).send('Arquivo muito grande. Máximo ' + mb + 'MB.');
   }
   if (err.message?.includes('Formato de imagem') || err.message?.includes('.sqlite')) {
     if (req.path.indexOf('/admin/database') === 0) return res.redirect('/admin/database?error=' + encodeURIComponent(err.message));
@@ -318,9 +353,17 @@ app.use((req, res, next) => {
     var customJs = db.get("SELECT value FROM config WHERE key = 'custom_js'");
     res.locals.customCSS = customCss ? customCss.value : '';
     res.locals.customJS = customJs ? customJs.value : '';
+    var keys = ['site_name','site_description','site_email','site_whatsapp','site_phone','site_address','footer_text','site_logo_url','site_favicon_url','social_instagram','social_facebook','social_tiktok','social_youtube','social_discord'];
+    var sc = {};
+    keys.forEach(function(k) {
+      var r = db.get("SELECT value FROM config WHERE key = ?", [k]);
+      sc[k] = r ? r.value : '';
+    });
+    res.locals.siteConfig = sc;
   } catch(e) {
     res.locals.customCSS = '';
     res.locals.customJS = '';
+    res.locals.siteConfig = {};
   }
   next();
 });

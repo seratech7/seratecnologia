@@ -40,6 +40,19 @@ router.get('/dashboard', (req, res) => {
   }
   var convViews = db.get("SELECT COUNT(*) as c FROM page_views");
   var convSales = db.get("SELECT COUNT(*) as c FROM sales WHERE status NOT IN ('cancelled','pending')");
+  var statusBreakdown = {
+    pending: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='pending'")||{}).c||0,
+    approved: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='approved'")||{}).c||0,
+    paid: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='paid'")||{}).c||0,
+    shipped: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='shipped'")||{}).c||0,
+    delivered: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='delivered'")||{}).c||0,
+    cancelled: (db.get("SELECT COUNT(*) as c FROM sales WHERE status='cancelled'")||{}).c||0
+  };
+  var pendingReviews = (db.get("SELECT COUNT(*) as c FROM reviews")||{}).c||0;
+  var totalCommission = (db.get("SELECT COALESCE(SUM(amount),0) as v FROM wallet_transactions WHERE type='commission'")||{}).v||0;
+  var sellerWalletTotal = (db.get("SELECT COALESCE(SUM(balance),0) as v FROM (SELECT seller_id, MAX(id) as mid FROM wallet_transactions WHERE amount > 0 GROUP BY seller_id) w JOIN wallet_transactions t ON t.id = w.mid")||{}).v||0;
+  var avgOrder = db.get("SELECT AVG(product_price) as v FROM sales WHERE status NOT IN ('cancelled','pending')");
+  var newSellers = (db.get("SELECT COUNT(*) as c FROM sellers WHERE created_at >= datetime('now', '-30 days')")||{}).c||0;
 
   res.render('admin/dashboard', {
     title: 'Dashboard - Painel Admin',
@@ -52,6 +65,12 @@ router.get('/dashboard', (req, res) => {
       pendingPayoutsTotal: pendingPayouts ? pendingPayouts.total : 0,
       lowStockCount: lowStockCount ? lowStockCount.c : 0
     },
+    statusBreakdown,
+    pendingReviews,
+    totalCommission,
+    sellerWalletTotal,
+    avgOrder: avgOrder ? avgOrder.v : 0,
+    newSellers,
     revenueNow: curr30 ? curr30.rev : 0,
     revenueBefore: prev30 ? prev30.rev : 0,
     conversionRate: convViews && convViews.c > 0 ? Math.round(((convSales ? convSales.c : 0) / convViews.c) * 1000) / 10 : 0,
@@ -186,6 +205,8 @@ router.post('/sales/cancel/:id', (req, res) => {
   if (sale && sale.status !== 'cancelled' && sale.status !== 'delivered') {
     db.run("UPDATE sales SET status = 'cancelled' WHERE id = ?", [req.params.id]);
     if (sale.product_id) db.run("UPDATE products SET quantity = quantity + 1 WHERE id = ?", [sale.product_id]);
+    db.refundSale(req.params.id);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'sale_cancel', 'Cancelou venda #' + req.params.id + ' (carteira estornada)');
   }
   res.redirect(req.get('Referer') || '/admin/sales');
 });
@@ -194,7 +215,7 @@ router.post('/sales/status/:id', (req, res) => {
   const { status } = req.body;
   const allowed = ['pending','approved','paid','shipped','delivered','cancelled'];
   if (allowed.includes(status)) {
-    var sale = db.get("SELECT product_id FROM sales WHERE id = ?", [req.params.id]);
+    var sale = db.get("SELECT product_id, status as old_status FROM sales WHERE id = ?", [req.params.id]);
     db.run("UPDATE sales SET status = ? WHERE id = ? AND status != 'cancelled' AND status != 'delivered'", [status, req.params.id]);
     if (status === 'approved' && sale && sale.product_id) {
       db.run("UPDATE products SET quantity = MAX(0, quantity - 1) WHERE id = ?", [sale.product_id]);
@@ -202,6 +223,9 @@ router.post('/sales/status/:id', (req, res) => {
       if (prod && prod.quantity <= 0) {
         db.run("UPDATE products SET status = 'inactive' WHERE id = ? AND status = 'active'", [sale.product_id]);
       }
+    }
+    if (status === 'cancelled' && sale && sale.old_status !== 'cancelled' && sale.old_status !== 'delivered') {
+      db.refundSale(req.params.id);
     }
   }
   res.redirect(req.get('Referer') || '/admin/sales');
@@ -899,6 +923,27 @@ router.post('/financeiro/payout/rejeitar/:id', (req, res) => {
   res.redirect('/admin/financeiro');
 });
 
+router.post('/financeiro/payout/pagar/:id', (req, res) => {
+  db.run("UPDATE payouts SET status = 'paid', notes = 'Pago pelo admin', paid_at = datetime('now') WHERE id = ? AND status = 'approved'", [req.params.id]);
+  res.redirect('/admin/financeiro');
+});
+
+router.post('/financeiro/payout/manual', (req, res) => {
+  var sellerId = parseInt(req.body.seller_id, 10);
+  var amount = parseFloat(req.body.amount);
+  if (!sellerId || isNaN(amount) || amount <= 0) return res.redirect('/admin/financeiro?msg=Informe vendedor e valor válidos');
+  var seller = db.get('SELECT id FROM sellers WHERE id = ?', [sellerId]);
+  if (!seller) return res.redirect('/admin/financeiro?msg=Vendedor não encontrado');
+  var balance = db.getWalletBalance(sellerId);
+  if (amount > balance) return res.redirect('/admin/financeiro?msg=Saldo insuficiente do vendedor');
+  var bank = (req.body.bank_info || '').toString();
+  var method = req.body.payment_method || 'pix';
+  var payoutId = db.createPayout(sellerId, amount, bank, method);
+  db.run("UPDATE payouts SET status = 'approved', approved_by = ?, approved_at = datetime('now'), notes = 'Saque manual criado pelo admin' WHERE id = ?", [req.session.adminId || 0, payoutId]);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'payout_manual', 'Criou saque manual de R$ ' + amount.toFixed(2) + ' para vendedor #' + sellerId);
+  res.redirect('/admin/financeiro?msg=Saque manual criado (aguardando pagamento)');
+});
+
 router.post('/notifications/edit/:id', (req, res) => {
   const n = db.get('SELECT * FROM notifications WHERE id = ?', [req.params.id]);
   if (!n) return res.redirect('/admin/notifications');
@@ -944,7 +989,9 @@ router.post('/config', (req, res) => {
     'site_name', 'site_description', 'site_whatsapp', 'site_email',
     'commission_pct', 'mp_access_token', 'pix_key_platform',
     'default_product_status', 'maintenance_mode', 'max_products_per_seller',
-    'custom_css', 'custom_js', 'flash_category_id'
+    'custom_css', 'custom_js', 'flash_category_id',
+    'site_logo_url', 'site_favicon_url', 'social_instagram', 'social_facebook', 'social_tiktok', 'social_youtube', 'social_discord',
+    'site_address', 'site_phone', 'footer_text'
   ];
   allowedKeys.forEach(function(key) {
     if (req.body[key] !== undefined) {
@@ -952,6 +999,22 @@ router.post('/config', (req, res) => {
     }
   });
   db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_config', 'Configurações do site atualizadas');
+  res.redirect('/admin/config');
+});
+
+router.post('/config/upload-logo', upload.single('logo'), (req, res) => {
+  if (!req.file) return res.redirect('/admin/config');
+  var url = '/uploads/' + req.file.filename;
+  db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('site_logo_url', ?)", [url]);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_config', 'Logo do site atualizado');
+  res.redirect('/admin/config');
+});
+
+router.post('/config/upload-favicon', upload.single('favicon'), (req, res) => {
+  if (!req.file) return res.redirect('/admin/config');
+  var url = '/uploads/' + req.file.filename;
+  db.run("INSERT OR REPLACE INTO config (key, value) VALUES ('site_favicon_url', ?)", [url]);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'update_config', 'Favicon atualizado');
   res.redirect('/admin/config');
 });
 
@@ -1042,6 +1105,27 @@ router.post('/cupons/novo', (req, res) => {
 
 router.post('/cupons/deletar/:id', (req, res) => {
   db.deleteCoupon(req.params.id);
+  res.redirect('/admin/cupons');
+});
+
+router.post('/cupons/toggle/:id', (req, res) => {
+  var c = db.getCouponById(req.params.id);
+  if (c) db.toggleCoupon(req.params.id, !c.active);
+  res.redirect('/admin/cupons');
+});
+
+router.post('/cupons/reset/:id', (req, res) => {
+  db.resetCouponUses(req.params.id);
+  res.redirect('/admin/cupons');
+});
+
+router.post('/cupons/editar/:id', (req, res) => {
+  var { code, type, value, min_order, max_uses, expires_at } = req.body;
+  var c = db.getCouponById(req.params.id);
+  if (!c) return res.redirect('/admin/cupons');
+  if (!code || !value) return res.redirect('/admin/cupons');
+  db.updateCoupon(req.params.id, code.toUpperCase(), type, parseFloat(value), parseFloat(min_order) || 0, parseInt(max_uses) || 0, expires_at || null);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'edit_coupon', 'Cupom editado: ' + code);
   res.redirect('/admin/cupons');
 });
 

@@ -121,6 +121,78 @@
       </div>
     </div>
     <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #00838f, #00695c);">
+        <i class="fas fa-truck"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= statusBreakdown.shipped %></span>
+        <span class="stat-label">Enviadas</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #43a047, #2e7d32);">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= statusBreakdown.delivered %></span>
+        <span class="stat-label">Entregues</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #e53935, #b71c1c);">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= statusBreakdown.cancelled %></span>
+        <span class="stat-label">Canceladas</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #8e24aa, #6a1b9a);">
+        <i class="fas fa-star-half-alt"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= pendingReviews %></span>
+        <span class="stat-label">Avaliações Pendentes</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #5e35b1, #4527a0);">
+        <i class="fas fa-percent"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalCommission) %></span>
+        <span class="stat-label">Comissão Acumulada</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #00695c, #004d40);">
+        <i class="fas fa-wallet"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.sellerWalletTotal) %></span>
+        <span class="stat-label">Saldo Total dos Vendedores</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #c62828, #b71c1c);">
+        <i class="fas fa-receipt"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.avgOrder) %></span>
+        <span class="stat-label">Ticket Médio</span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #37474f, #263238);">
+        <i class="fas fa-user-plus"></i>
+      </div>
+      <div class="stat-info">
+        <span class="stat-number"><%= stats.newSellers %></span>
+        <span class="stat-label">Novos Vendedores (30d)</span>
+      </div>
+    </div>
+    <div class="stat-card">
       <div class="stat-icon" style="background: linear-gradient(135deg, #2196f3, #1565c0);">
         <i class="fas fa-eye"></i>
       </div>

@@ -37,6 +37,90 @@
           <input type="text" name="pix_key_platform" value="<%= config.pix_key_platform || '' %>" class="admin-input">
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" name="site_phone" value="<%= config.site_phone || '' %>" class="admin-input" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label>Endereço</label>
+          <input type="text" name="site_address" value="<%= config.site_address || '' %>" class="admin-input" placeholder="Rua, número, cidade">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Texto do Rodapé</label>
+        <input type="text" name="footer_text" value="<%= config.footer_text || '' %>" class="admin-input" placeholder="© 2026 SeraTecnologia. Todos os direitos reservados.">
+      </div>
+    </div>
+
+    <div class="form-card" style="margin-bottom:20px;">
+      <h3><i class="fas fa-image"></i> Logo e Favicon</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="form-group">
+          <label>Logo do Site</label>
+          <% if (config.site_logo_url) { %>
+            <div style="margin-bottom:8px;"><img src="<%= config.site_logo_url %>" alt="Logo" style="max-height:60px;background:#fff;padding:6px;border-radius:6px;border:1px solid #eee;"></div>
+          <% } %>
+          <form method="POST" action="/admin/config/upload-logo" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;">
+            <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="admin-input" style="flex:1;">
+            <button type="submit" class="btn-primary" style="padding:8px 16px;font-size:13px;"><i class="fas fa-upload"></i> Enviar</button>
+          </form>
+          <% if (config.site_logo_url) { %>
+            <form method="POST" action="/admin/config" style="margin-top:8px;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="site_logo_url" value="">
+              <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;"><i class="fas fa-times"></i> Remover logo</button>
+            </form>
+          <% } %>
+        </div>
+        <div class="form-group">
+          <label>Favicon</label>
+          <% if (config.site_favicon_url) { %>
+            <div style="margin-bottom:8px;"><img src="<%= config.site_favicon_url %>" alt="Favicon" style="max-height:32px;background:#fff;padding:4px;border-radius:4px;border:1px solid #eee;"></div>
+          <% } %>
+          <form method="POST" action="/admin/config/upload-favicon" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;">
+            <input type="file" name="favicon" accept="image/png,image/x-icon,image/webp" class="admin-input" style="flex:1;">
+            <button type="submit" class="btn-primary" style="padding:8px 16px;font-size:13px;"><i class="fas fa-upload"></i> Enviar</button>
+          </form>
+          <% if (config.site_favicon_url) { %>
+            <form method="POST" action="/admin/config" style="margin-top:8px;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <input type="hidden" name="site_favicon_url" value="">
+              <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;"><i class="fas fa-times"></i> Remover favicon</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card" style="margin-bottom:20px;">
+      <h3><i class="fas fa-share-alt"></i> Redes Sociais</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Instagram</label>
+          <input type="text" name="social_instagram" value="<%= config.social_instagram || '' %>" class="admin-input" placeholder="https://instagram.com/suapagina">
+        </div>
+        <div class="form-group">
+          <label>Facebook</label>
+          <input type="text" name="social_facebook" value="<%= config.social_facebook || '' %>" class="admin-input" placeholder="https://facebook.com/suapagina">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>TikTok</label>
+          <input type="text" name="social_tiktok" value="<%= config.social_tiktok || '' %>" class="admin-input" placeholder="https://tiktok.com/@suapagina">
+        </div>
+        <div class="form-group">
+          <label>YouTube</label>
+          <input type="text" name="social_youtube" value="<%= config.social_youtube || '' %>" class="admin-input" placeholder="https://youtube.com/@suapagina">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Discord</label>
+          <input type="text" name="social_discord" value="<%= config.social_discord || '' %>" class="admin-input" placeholder="https://discord.gg/...">
+        </div>
+      </div>
     </div>
 
     <div class="form-card" style="margin-bottom:20px;">

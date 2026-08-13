@@ -30,11 +30,57 @@
             <td><%= c.expires_at ? new Date(c.expires_at).toLocaleDateString('pt-BR') : '-' %></td>
             <td><%= c.seller_name || 'Geral' %></td>
             <td><span class="status-badge <%= c.active ? 'active' : 'inactive' %>"><%= c.active ? 'Ativo' : 'Inativo' %></span></td>
-            <td><form method="POST" action="/admin/cupons/deletar/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Excluir cupom?')"><button class="btn-icon" style="color:#c62828;"><i class="fas fa-trash"></i></button></form></td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <button class="btn-icon" title="Editar" onclick="openEdit(<%= c.id %>, '<%= c.code.replace(/'/g, "\\'") %>', '<%= c.type %>', '<%= c.value %>', '<%= c.min_order %>', '<%= c.max_uses %>', '<%= c.expires_at ? c.expires_at.slice(0,10) : '' %>')"><i class="fas fa-pencil-alt"></i></button>
+                <form method="POST" action="/admin/cupons/toggle/<%= c.id %>" style="display:inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn-icon" title="Ativar/Desativar"><i class="fas fa-<%= c.active ? 'toggle-on' : 'toggle-off' %>"></i></button>
+                </form>
+                <form method="POST" action="/admin/cupons/reset/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Zerar contagem de usos do cupom <%= c.code %>?')">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn-icon" title="Resetar usos"><i class="fas fa-undo"></i></button>
+                </form>
+                <form method="POST" action="/admin/cupons/deletar/<%= c.id %>" style="display:inline;" onsubmit="return confirm('Excluir cupom?')"><button class="btn-icon" style="color:#c62828;"><i class="fas fa-trash"></i></button></form>
+              </div>
+            </td>
           </tr>
         <% }) %>
       </tbody>
     </table>
   </div>
 </div>
+
+<div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+  <div class="form-card" style="padding:24px;max-width:520px;width:90%;">
+    <h3 style="margin:0 0 16px;"><i class="fas fa-pencil-alt"></i> Editar Cupom</h3>
+    <form method="POST" id="editForm">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group"><label>Código</label><input type="text" name="code" id="e_code" class="admin-input" required style="text-transform:uppercase;"></div>
+        <div class="form-group"><label>Tipo</label><select name="type" id="e_type" class="admin-input"><option value="percentage">Porcentagem (%)</option><option value="fixed">Valor Fixo (R$)</option></select></div>
+        <div class="form-group"><label>Valor</label><input type="number" name="value" id="e_value" class="admin-input" step="0.01" min="0" required></div>
+        <div class="form-group"><label>Pedido Mínimo (R$)</label><input type="number" name="min_order" id="e_min_order" class="admin-input" step="0.01" min="0"></div>
+        <div class="form-group"><label>Usos Máximos (0 = ilimitado)</label><input type="number" name="max_uses" id="e_max_uses" class="admin-input" min="0"></div>
+        <div class="form-group"><label>Expira em</label><input type="date" name="expires_at" id="e_expires_at" class="admin-input"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button type="button" class="btn-secondary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="document.getElementById('editModal').style.display='none';">Cancelar</button>
+        <button type="submit" class="btn-primary" style="padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+function openEdit(id, code, type, value, minOrder, maxUses, expiresAt) {
+  document.getElementById('editForm').action = '/admin/cupons/editar/' + id;
+  document.getElementById('e_code').value = code;
+  document.getElementById('e_type').value = type;
+  document.getElementById('e_value').value = value;
+  document.getElementById('e_min_order').value = minOrder;
+  document.getElementById('e_max_uses').value = maxUses;
+  document.getElementById('e_expires_at').value = expiresAt || '';
+  document.getElementById('editModal').style.display = 'flex';
+}
+</script>
 <%- include('../partials/admin-footer') %>

@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> | MarketPlace</title>
+  <title><%= title %> | <%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'MarketPlace' %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1565c0">
+  <% if (typeof siteConfig !== 'undefined' && siteConfig.site_favicon_url) { %><link rel="icon" href="<%= siteConfig.site_favicon_url %>"><% } else { %><link rel="icon" href="/favicon.ico"><% } %>
   <% if (typeof customCSS !== 'undefined' && customCSS) { %><style><%= customCSS %></style><% } %>
   <% if (typeof customJS !== 'undefined' && customJS) { %><script><%= customJS %></script><% } %>
 </head>
@@ -20,8 +21,12 @@
         <span></span><span></span><span></span>
       </button>
       <a href="/" class="logo">
-        <i class="fas fa-microchip"></i>
-        <span>SeraTecnologia</span>
+        <% if (typeof siteConfig !== 'undefined' && siteConfig.site_logo_url) { %>
+          <img src="<%= siteConfig.site_logo_url %>" alt="<%= siteConfig.site_name || 'Logo' %>" style="max-height:40px;max-width:180px;object-fit:contain;">
+        <% } else { %>
+          <i class="fas fa-microchip"></i>
+          <span><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'SeraTecnologia' %></span>
+        <% } %>
       </a>
     </div>
     <div class="header-center" id="searchContainer">
