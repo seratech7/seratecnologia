@@ -1,0 +1,669 @@
+/* =========================================
+   SERATECNOLOGIA - MARKETPLACE THEME "HACKTERMINAL"
+   Tema hacker para o marketplace público (home, produto, compra, rastreio)
+   Ativado com <body class="hacker-theme"> (toggle no header)
+   ========================================= */
+
+body.hacker-theme {
+  --hack-bg: #05070d;
+  --hack-bg-2: #0a0f1c;
+  --hack-panel: #0b1120;
+  --hack-panel-2: #0f1626;
+  --hack-border: #1c2a3f;
+  --hack-border-hi: #2c4a6b;
+  --hack-green: #00ff9c;
+  --hack-green-dim: #00b368;
+  --hack-cyan: #00e5ff;
+  --hack-red: #ff3860;
+  --hack-amber: #ffcc00;
+  --hack-purple: #b14cff;
+  --hack-text: #c8d6e5;
+  --hack-text-hi: #f0f6ff;
+  --hack-dim: #5a6c85;
+  --hack-font: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
+  --hack-shadow: 0 0 24px rgba(0, 255, 156, 0.06);
+  background: var(--hack-bg);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+/* Grid de fundo matrix-ish */
+body.hacker-theme::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(0, 255, 156, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 156, 0.03) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+
+/* Scanlines CRT */
+body.hacker-theme::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15) 0px,
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.35;
+}
+
+body.hacker-theme .main-content { position: relative; z-index: 1; }
+
+/* =========================================
+   HEADER
+   ========================================= */
+
+body.hacker-theme .main-header {
+  background: linear-gradient(135deg, #04060b 0%, #0a101d 100%);
+  border-bottom: 1px solid var(--hack-border);
+  box-shadow: 0 2px 24px rgba(0, 255, 156, 0.08);
+}
+
+body.hacker-theme .logo i {
+  color: var(--hack-green);
+  text-shadow: 0 0 14px rgba(0, 255, 156, 0.8);
+}
+
+body.hacker-theme .search-form {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .search-form:focus-within {
+  border-color: var(--hack-green);
+  box-shadow: 0 0 15px rgba(0, 255, 156, 0.15);
+}
+
+body.hacker-theme .search-form i { color: var(--hack-dim); }
+body.hacker-theme .search-form input::placeholder { color: var(--hack-dim); }
+
+body.hacker-theme .search-form button {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  font-weight: 700;
+}
+
+body.hacker-theme .search-form button:hover { background: #7dffc8; }
+
+body.hacker-theme .btn-admin-header {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+  font-size: 13px;
+}
+
+body.hacker-theme .btn-admin-header:hover {
+  background: rgba(0, 255, 156, 0.1);
+  border-color: var(--hack-green);
+  color: var(--hack-green);
+}
+
+body.hacker-theme .notif-bell i { color: var(--hack-dim); }
+body.hacker-theme .notif-bell.has-unread i { color: var(--hack-cyan); }
+
+/* Toggle de tema */
+body.hacker-theme .theme-toggle-btn {
+  background: rgba(0, 255, 156, 0.1);
+  border: 1px solid var(--hack-green);
+  color: var(--hack-green);
+  box-shadow: 0 0 12px rgba(0, 255, 156, 0.2);
+}
+
+body.hacker-theme .theme-toggle-btn:hover {
+  background: var(--hack-green);
+  color: #03120a;
+  box-shadow: 0 0 18px rgba(0, 255, 156, 0.5);
+}
+
+body.hacker-theme .mobile-menu {
+  background: var(--hack-bg-2);
+  border-right: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .mobile-menu-header {
+  border-bottom: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .mobile-logo i { color: var(--hack-green); text-shadow: 0 0 10px rgba(0, 255, 156, 0.6); }
+body.hacker-theme .mobile-nav-links a { color: var(--hack-text); font-family: var(--hack-font); }
+body.hacker-theme .mobile-nav-links a:hover { background: rgba(0, 255, 156, 0.06); color: var(--hack-green); }
+body.hacker-theme .mobile-search-form input {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+}
+body.hacker-theme .mobile-close { color: var(--hack-dim); }
+
+/* =========================================
+   FILTROS (sidebar desktop + sheet mobile)
+   ========================================= */
+
+body.hacker-theme .sidebar-filters {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+  box-shadow: var(--hack-shadow);
+}
+
+body.hacker-theme .filter-section { border-bottom-color: var(--hack-border) !important; }
+
+body.hacker-theme .filter-section h3,
+body.hacker-theme .filter-section h4 { color: var(--hack-text-hi); }
+
+body.hacker-theme .filter-label { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .filter-label:hover { background: rgba(0, 255, 156, 0.06); color: var(--hack-green); }
+
+body.hacker-theme .filter-label.active {
+  background: linear-gradient(90deg, rgba(0, 255, 156, 0.15), rgba(0, 255, 156, 0.03));
+  color: var(--hack-green);
+  box-shadow: inset 2px 0 0 var(--hack-green);
+}
+
+body.hacker-theme .clear-filters { color: var(--hack-dim); }
+body.hacker-theme .clear-filters:hover { color: var(--hack-red); }
+
+body.hacker-theme .price-field {
+  background: var(--hack-bg-2);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .price-field:focus { border-color: var(--hack-green); box-shadow: 0 0 0 3px rgba(0, 255, 156, 0.12); }
+body.hacker-theme .price-sep { color: var(--hack-dim); }
+
+body.hacker-theme .btn-price-apply {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  font-weight: 700;
+}
+
+body.hacker-theme .sort-select {
+  background: var(--hack-bg-2);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .filter-toggle {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .filter-toggle:hover { border-color: var(--hack-green); color: var(--hack-green); }
+
+body.hacker-theme .filter-sheet {
+  background: var(--hack-bg-2);
+  border-right: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .filter-sheet-header { border-bottom: 1px solid var(--hack-border); }
+body.hacker-theme .filter-sheet-title { color: var(--hack-green); font-family: var(--hack-font); }
+body.hacker-theme .filter-sheet-close { color: var(--hack-dim); }
+
+body.hacker-theme .filter-chip {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .filter-chip.active {
+  background: rgba(0, 255, 156, 0.12);
+  border-color: var(--hack-green);
+  color: var(--hack-green);
+}
+
+body.hacker-theme .btn-apply-filters {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  font-weight: 700;
+}
+
+body.hacker-theme .btn-clear-filters { color: var(--hack-dim); }
+body.hacker-theme .btn-clear-filters:hover { color: var(--hack-red); }
+
+/* =========================================
+   BANNER CAROUSEL
+   ========================================= */
+
+body.hacker-theme .banner-carousel { border-color: var(--hack-border); }
+
+body.hacker-theme .banner-arrow {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-green);
+}
+
+body.hacker-theme .banner-dot { background: var(--hack-border); }
+body.hacker-theme .banner-dot.active { background: var(--hack-green); box-shadow: 0 0 8px var(--hack-green); }
+
+/* =========================================
+   PRODUCT CARDS (grade da home)
+   ========================================= */
+
+body.hacker-theme .product-card {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+  box-shadow: var(--hack-shadow);
+}
+
+body.hacker-theme .product-card:hover {
+  border-color: var(--hack-border-hi);
+  box-shadow: 0 0 30px rgba(0, 255, 156, 0.12);
+}
+
+body.hacker-theme .product-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--hack-green), var(--hack-cyan));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+body.hacker-theme .product-card:hover::before { opacity: 0.7; }
+
+body.hacker-theme .product-image { background: var(--hack-bg-2); }
+
+body.hacker-theme .no-image { color: var(--hack-dim); background: var(--hack-bg-2); }
+
+body.hacker-theme .product-name { color: var(--hack-text-hi); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .product-price { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 12px rgba(0, 255, 156, 0.3); }
+
+body.hacker-theme .original-price { color: var(--hack-dim); }
+
+body.hacker-theme .flash-price { color: #ff8a65; }
+
+body.hacker-theme .product-meta { color: var(--hack-dim); font-family: var(--hack-font); font-size: 11px; }
+
+body.hacker-theme .product-stats { color: var(--hack-dim); font-family: var(--hack-font); font-size: 11px; }
+
+body.hacker-theme .featured-badge {
+  background: rgba(255, 204, 0, 0.12);
+  border: 1px solid rgba(255, 204, 0, 0.4);
+  color: var(--hack-amber);
+}
+
+body.hacker-theme .flash-badge {
+  background: rgba(255, 87, 34, 0.15);
+  border: 1px solid rgba(255, 87, 34, 0.5);
+  color: #ff8a65;
+}
+
+body.hacker-theme .condition-badge.new { background: rgba(0, 255, 156, 0.12); border: 1px solid rgba(0, 255, 156, 0.4); color: var(--hack-green); }
+body.hacker-theme .condition-badge.used { background: rgba(255, 56, 96, 0.12); border: 1px solid rgba(255, 56, 96, 0.4); color: var(--hack-red); }
+body.hacker-theme .condition-badge[style*="background:#ff9800"] { background: rgba(255, 152, 0, 0.12) !important; color: var(--hack-amber); border: 1px solid rgba(255, 152, 0, 0.4); }
+body.hacker-theme .condition-badge[style*="background:#7c4dff"] { background: rgba(177, 76, 255, 0.12) !important; color: var(--hack-purple); border: 1px solid rgba(177, 76, 255, 0.4); }
+body.hacker-theme .condition-badge[style*="background:#009688"] { background: rgba(0, 150, 136, 0.12) !important; color: var(--hack-cyan); border: 1px solid rgba(0, 150, 136, 0.4); }
+
+body.hacker-theme .product-buy-btn {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  border: 1px solid rgba(0, 255, 156, 0.6);
+  box-shadow: 0 0 14px rgba(0, 255, 156, 0.25);
+}
+
+body.hacker-theme .product-buy-btn:hover {
+  background: linear-gradient(135deg, var(--hack-green), #7dffc8);
+  box-shadow: 0 0 20px rgba(0, 255, 156, 0.45);
+}
+
+/* =========================================
+   FLASH SALE
+   ========================================= */
+
+body.hacker-theme .flash-section {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .flash-header { border-bottom: 1px solid var(--hack-border); }
+
+body.hacker-theme .flash-header h2 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+body.hacker-theme .flash-header h2 i { color: var(--hack-amber); text-shadow: 0 0 12px rgba(255, 204, 0, 0.5); }
+
+body.hacker-theme .flash-badge-header {
+  background: rgba(255, 87, 34, 0.15);
+  border: 1px solid rgba(255, 87, 34, 0.5);
+  color: #ff8a65;
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .flash-timer { color: var(--hack-cyan); font-family: var(--hack-font); text-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+
+body.hacker-theme .flash-ver-todas { color: var(--hack-green); font-family: var(--hack-font); }
+
+body.hacker-theme .flash-card {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .flash-card:hover { border-color: var(--hack-green); box-shadow: 0 0 24px rgba(0, 255, 156, 0.12); }
+
+body.hacker-theme .flash-card-image { background: var(--hack-bg-2); }
+
+body.hacker-theme .flash-card-badge {
+  background: rgba(255, 87, 34, 0.15);
+  border: 1px solid rgba(255, 87, 34, 0.5);
+  color: #ff8a65;
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .flash-card-info h3 { color: var(--hack-text-hi); font-family: var(--hack-font); font-size: 14px; }
+
+body.hacker-theme .flash-card-price { color: var(--hack-green); font-family: var(--hack-font); }
+body.hacker-theme .flash-card-original { color: var(--hack-dim); font-family: var(--hack-font); }
+
+body.hacker-theme .flash-card-timer { color: var(--hack-cyan); font-family: var(--hack-font); }
+
+/* =========================================
+   PRODUCT DETAIL
+   ========================================= */
+
+body.hacker-theme .breadcrumb { color: var(--hack-dim); font-family: var(--hack-font); font-size: 12px; }
+body.hacker-theme .breadcrumb a:hover { color: var(--hack-green); }
+
+body.hacker-theme .product-detail-content,
+body.hacker-theme .product-gallery,
+body.hacker-theme .main-image {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+  box-shadow: var(--hack-shadow);
+}
+
+body.hacker-theme .product-detail-info h1 {
+  color: var(--hack-text-hi);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .product-price-large { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 16px rgba(0, 255, 156, 0.35); }
+
+body.hacker-theme .btn-comprar-agora {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  border: 1px solid rgba(0, 255, 156, 0.6);
+  box-shadow: 0 0 18px rgba(0, 255, 156, 0.3);
+}
+
+body.hacker-theme .btn-comprar-agora:hover {
+  background: linear-gradient(135deg, var(--hack-green), #7dffc8);
+  box-shadow: 0 0 26px rgba(0, 255, 156, 0.5);
+}
+
+body.hacker-theme .product-attributes {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .attribute { border-color: var(--hack-border); }
+body.hacker-theme .attribute i { color: var(--hack-cyan); }
+body.hacker-theme .attr-label { color: var(--hack-dim); font-family: var(--hack-font); font-size: 11px; }
+body.hacker-theme .attr-value { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .product-description h3,
+body.hacker-theme .seller-card h3,
+body.hacker-theme .product-ratings h3,
+body.hacker-theme .contact-seller h3 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+
+body.hacker-theme .product-description p { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .seller-card {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .seller-card-content:hover { background: rgba(0, 255, 156, 0.04); }
+
+body.hacker-theme .seller-card-info strong { color: var(--hack-text-hi); font-family: var(--hack-font); }
+body.hacker-theme .seller-card-info span { color: var(--hack-dim); font-family: var(--hack-font); font-size: 12px; }
+body.hacker-theme .seller-card-arrow { color: var(--hack-dim); }
+body.hacker-theme .avatar-placeholder-mini { background: var(--hack-bg-2); color: var(--hack-dim); }
+
+body.hacker-theme .product-ratings {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .rating-stars-large .star-empty { color: var(--hack-border); }
+body.hacker-theme .rating-stars-large .star-filled { color: var(--hack-amber); }
+body.hacker-theme .rating-stars-large .star-half { color: var(--hack-amber); }
+body.hacker-theme .rating-number { color: var(--hack-amber); font-family: var(--hack-font); }
+body.hacker-theme .rating-count { color: var(--hack-dim); font-family: var(--hack-font); }
+
+body.hacker-theme .rating-form {
+  background: var(--hack-panel-2);
+  border: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .rating-form h4 { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .rating-form select {
+  background: var(--hack-bg-2);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .rating-form textarea {
+  background: var(--hack-bg-2);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .btn-contact {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--hack-cyan);
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .btn-whatsapp-seller {
+  background: rgba(37, 211, 102, 0.12);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  color: #25d366;
+  font-family: var(--hack-font);
+}
+
+body.hacker-theme .review-item { border-color: var(--hack-border); }
+body.hacker-theme .review-comment { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
+body.hacker-theme .review-date { color: var(--hack-dim); font-family: var(--hack-font); font-size: 11px; }
+body.hacker-theme .review-stars .star-filled { color: var(--hack-amber); }
+body.hacker-theme .review-stars .star-empty { color: var(--hack-border); }
+
+body.hacker-theme .contact-seller { border-color: var(--hack-border); }
+body.hacker-theme .contact-seller p { color: var(--hack-dim); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .related-products h3 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+
+body.hacker-theme .badge-featured {
+  background: rgba(255, 204, 0, 0.12);
+  border: 1px solid rgba(255, 204, 0, 0.4);
+  color: var(--hack-amber);
+}
+body.hacker-theme .badge-new { background: rgba(0, 255, 156, 0.12); border: 1px solid rgba(0, 255, 156, 0.4); color: var(--hack-green); }
+body.hacker-theme .badge-semi { background: rgba(177, 76, 255, 0.12); border: 1px solid rgba(177, 76, 255, 0.4); color: var(--hack-purple); }
+body.hacker-theme .badge-used { background: rgba(255, 56, 96, 0.12); border: 1px solid rgba(255, 56, 96, 0.4); color: var(--hack-red); }
+
+/* =========================================
+   HEADERS DE SEÇÃO / EMPTY STATE / PAGINAÇÃO
+   ========================================= */
+
+body.hacker-theme .products-header h2 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+body.hacker-theme .products-count { color: var(--hack-dim); font-family: var(--hack-font); font-size: 12px; }
+
+body.hacker-theme .empty-state {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2));
+  border: 1px solid var(--hack-border);
+  box-shadow: var(--hack-shadow);
+}
+
+body.hacker-theme .empty-state i { color: var(--hack-dim); }
+body.hacker-theme .empty-state h3 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+body.hacker-theme .empty-state p { color: var(--hack-dim); font-family: var(--hack-font); font-size: 13px; }
+
+body.hacker-theme .btn-empty-reset {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
+  color: #03120a;
+  font-family: var(--hack-font);
+  font-weight: 700;
+}
+
+/* =========================================
+   PÁGINAS DE COMPRA / RASTREIO / NOTIFICAÇÕES / CONTA
+   (elementos inline claros → painel escuro)
+   ========================================= */
+
+body.hacker-theme div[style*="background:#fff"] {
+  background: linear-gradient(145deg, var(--hack-panel), var(--hack-panel-2)) !important;
+  border: 1px solid var(--hack-border) !important;
+  color: var(--hack-text) !important;
+  box-shadow: var(--hack-shadow) !important;
+}
+
+body.hacker-theme div[style*="background:#fff;border-radius:12px"] {
+  background: linear-gradient(160deg, var(--hack-panel), var(--hack-bg-2)) !important;
+  border: 1px solid var(--hack-border-hi) !important;
+  box-shadow: 0 0 30px rgba(0, 255, 156, 0.1) !important;
+}
+
+body.hacker-theme div[style*="background:#f9f9f9"] { background: var(--hack-panel-2) !important; }
+
+body.hacker-theme div[style*="background:#e8f5e9"] { background: rgba(0, 255, 156, 0.1) !important; }
+body.hacker-theme div[style*="background:#fdecea"] { background: rgba(255, 56, 96, 0.1) !important; }
+body.hacker-theme div[style*="background:#fff3cd"] { background: rgba(255, 204, 0, 0.12) !important; }
+
+body.hacker-theme div[style*="color:#1565c0"],
+body.hacker-theme span[style*="color:#1565c0"],
+body.hacker-theme h2[style*="color:#1565c0"],
+body.hacker-theme div[style*="color:#2e7d32"] { color: var(--hack-green) !important; text-shadow: 0 0 10px rgba(0, 255, 156, 0.3); }
+
+body.hacker-theme div[style*="color:#c62828"],
+body.hacker-theme span[style*="color:#c62828"] { color: var(--hack-red) !important; }
+
+body.hacker-theme div[style*="color:#e65100"],
+body.hacker-theme span[style*="color:#e65100"] { color: var(--hack-amber) !important; }
+
+body.hacker-theme div[style*="color:#666"],
+body.hacker-theme span[style*="color:#666"],
+body.hacker-theme div[style*="color:#888"],
+body.hacker-theme span[style*="color:#888"],
+body.hacker-theme div[style*="color:#999"],
+body.hacker-theme span[style*="color:#999"],
+body.hacker-theme p[style*="color:#999"] { color: var(--hack-dim) !important; }
+
+body.hacker-theme input[type="text"],
+body.hacker-theme input[type="tel"],
+body.hacker-theme input[type="email"],
+body.hacker-theme input[type="password"],
+body.hacker-theme textarea,
+body.hacker-theme select {
+  background: var(--hack-bg-2) !important;
+  border-color: var(--hack-border) !important;
+  color: var(--hack-text) !important;
+  font-family: var(--hack-font) !important;
+}
+
+body.hacker-theme input:focus, body.hacker-theme textarea:focus, body.hacker-theme select:focus {
+  border-color: var(--hack-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 156, 0.12) !important;
+}
+
+body.hacker-theme input::placeholder, body.hacker-theme textarea::placeholder { color: var(--hack-dim) !important; }
+
+body.hacker-theme button[style*="background:#00c853"] {
+  background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green)) !important;
+  color: #03120a !important;
+  font-family: var(--hack-font) !important;
+  box-shadow: 0 0 18px rgba(0, 255, 156, 0.3) !important;
+}
+
+body.hacker-theme button[style*="background:#1565c0"] {
+  background: var(--hack-panel) !important;
+  border-color: var(--hack-cyan) !important;
+  color: var(--hack-cyan) !important;
+  font-family: var(--hack-font) !important;
+}
+
+body.hacker-theme button[style*="background:#9c27b0"] {
+  background: rgba(177, 76, 255, 0.15) !important;
+  border-color: rgba(177, 76, 255, 0.5) !important;
+  color: var(--hack-purple) !important;
+  font-family: var(--hack-font) !important;
+}
+
+body.hacker-theme .quickbuy-modal {
+  background: linear-gradient(160deg, var(--hack-panel), var(--hack-bg-2));
+  border: 1px solid var(--hack-border-hi);
+  box-shadow: 0 0 40px rgba(0, 255, 156, 0.15);
+}
+
+body.hacker-theme .quickbuy-modal h3,
+body.hacker-theme .quickbuy-modal h4 { color: var(--hack-text-hi); font-family: var(--hack-font); }
+body.hacker-theme .quickbuy-modal p { color: var(--hack-text); font-family: var(--hack-font); }
+
+body.hacker-theme .quickbuy-close { background: var(--hack-bg-2); color: var(--hack-dim); }
+body.hacker-theme .quickbuy-close:hover { background: rgba(255, 56, 96, 0.15); color: var(--hack-red); }
+
+body.hacker-theme .quickbuy-body div[style*="background:#f9f9f9"] { background: var(--hack-panel-2) !important; }
+body.hacker-theme .quickbuy-body div[style*="background:#e8f5e9"] { background: rgba(0, 255, 156, 0.12) !important; }
+body.hacker-theme .quickbuy-body div[style*="background:#fdecea"] { background: rgba(255, 56, 96, 0.12) !important; }
+
+body.hacker-theme .quickbuy-body div[style*="color:#1565c0"],
+body.hacker-theme .quickbuy-body span[style*="color:#1565c0"] { color: var(--hack-green) !important; }
+
+/* =========================================
+   MODAL 404 / MANUTENÇÃO / PÁGINAS ESTÁTICAS
+   ========================================= */
+
+body.hacker-theme .main-content h1, body.hacker-theme .main-content h2,
+body.hacker-theme .main-content h3 { color: var(--hack-text-hi); }
+body.hacker-theme .main-content p { color: var(--hack-text); }
+
+body.hacker-theme a { color: var(--hack-text); }
+body.hacker-theme a:hover { color: var(--hack-green); }
+
+/* =========================================
+   FOOTER
+   ========================================= */
+
+body.hacker-theme .main-footer {
+  background: linear-gradient(180deg, #04060b 0%, #0a101d 100%);
+  border-top: 1px solid var(--hack-border);
+}
+
+body.hacker-theme .footer-container p { color: var(--hack-dim); font-family: var(--hack-font); font-size: 13px; }
+body.hacker-theme .footer-container a { color: var(--hack-dim); }
+body.hacker-theme .footer-container a:hover { color: var(--hack-green); }
+body.hacker-theme .footer-social a { color: var(--hack-dim) !important; }
+body.hacker-theme .footer-social a:hover { color: var(--hack-green) !important; }
+
+/* =========================================
+   SCROLLBARS
+   ========================================= */
+
+body.hacker-theme *::-webkit-scrollbar { width: 8px; height: 8px; }
+body.hacker-theme *::-webkit-scrollbar-track { background: transparent; }
+body.hacker-theme *::-webkit-scrollbar-thumb { background: rgba(0, 255, 156, 0.25); border-radius: 4px; }
+body.hacker-theme *::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 156, 0.45); }

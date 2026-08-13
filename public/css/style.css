@@ -180,6 +180,37 @@ img { max-width: 100%; height: auto; display: block; }
   border-color: var(--primary);
 }
 
+/* Theme toggle button (light/hacker) */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  font-size: 15px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 14px rgba(0, 102, 255, 0.3);
+}
+
+.theme-toggle-btn.active {
+  background: rgba(0,255,156,0.1);
+  color: var(--hack-green, #00ff9c);
+  border-color: var(--hack-green, #00ff9c);
+}
+
 /* =========================================
    MAIN CONTENT
    ========================================= */

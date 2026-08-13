@@ -5,14 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> | <%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'MarketPlace' %></title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/market-hacker.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1565c0">
+  <script>
+    if (localStorage.getItem('hacker-theme') === '1') {
+      document.documentElement.classList.add('hacker-theme');
+    }
+  </script>
   <% if (typeof siteConfig !== 'undefined' && siteConfig.site_favicon_url) { %><link rel="icon" href="<%= siteConfig.site_favicon_url %>"><% } else { %><link rel="icon" href="/favicon.ico"><% } %>
   <% if (typeof customCSS !== 'undefined' && customCSS) { %><style><%= customCSS %></style><% } %>
   <% if (typeof customJS !== 'undefined' && customJS) { %><script><%= customJS %></script><% } %>
 </head>
 <body>
+<script>
+  if (localStorage.getItem('hacker-theme') === '1') {
+    document.body.classList.add('hacker-theme');
+  }
+</script>
 
 <header class="main-header">
   <div class="header-container">
@@ -37,6 +48,9 @@
       </form>
     </div>
     <div class="header-right">
+      <button class="theme-toggle-btn" id="themeToggle" onclick="toggleHackerTheme()" title="Alternar tema" aria-label="Alternar tema claro/hacker">
+        <i class="fas fa-terminal"></i>
+      </button>
       <a href="/comprar" class="btn-admin-header" style="margin-right:4px;">
         <i class="fas fa-shopping-cart"></i>
         <span>Comprar</span>
@@ -94,6 +108,7 @@
     </form>
     <div class="mobile-nav-links">
       <a href="/"><i class="fas fa-home"></i> Início</a>
+      <a href="#" onclick="toggleHackerTheme();return false;"><i class="fas fa-terminal"></i> Tema Hacker</a>
       <a href="/comprar"><i class="fas fa-shopping-cart"></i> Compra Online</a>
       <a href="/rastreio"><i class="fas fa-truck"></i> Rastrear Pedido</a>
       <a href="#" class="mobile-sub-toggle" id="catToggle"><i class="fas fa-th-large"></i> Categorias <i class="fas fa-chevron-down"></i></a>
@@ -168,6 +183,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+function toggleHackerTheme() {
+  var active = document.body.classList.toggle('hacker-theme');
+  localStorage.setItem('hacker-theme', active ? '1' : '0');
+  var btn = document.getElementById('themeToggle');
+  if (btn) btn.classList.toggle('active', active);
+}
 </script>
 
 <script>
