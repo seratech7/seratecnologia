@@ -443,11 +443,32 @@ router.post('/products/delete/:id', (req, res) => {
 });
 
 router.get('/sellers', (req, res) => {
-  const sellers = db.query(
-    'SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id AND p.status = ?) as active_count FROM sellers s ORDER BY s.created_at DESC',
-    ['active']
+  var statusFilter = req.query.status && ['active', 'inactive', 'all'].includes(req.query.status) ? req.query.status : 'all';
+  var search = (req.query.search || '').toString().trim().toLowerCase();
+  var sellers = db.query(
+    'SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id AND p.status = ?) as active_count, (SELECT COUNT(*) FROM sales sl WHERE sl.seller_id = s.id AND sl.status NOT IN (?, ?)) as sales_count, (SELECT COALESCE(SUM(sl2.product_price),0) FROM sales sl2 WHERE sl2.seller_id = s.id AND sl2.status NOT IN (?, ?)) as revenue, (SELECT COALESCE(SUM(wt.amount),0) FROM wallet_transactions wt WHERE wt.seller_id = s.id) as wallet_balance, (SELECT COUNT(*) FROM products p3 WHERE p3.seller_id = s.id AND p3.status = ?) as pending_count FROM sellers s',
+    ['active', 'cancelled', 'pending', 'cancelled', 'pending', 'pending']
   );
-  res.render('admin/sellers', { title: 'Vendedores', sellers, error: null });
+  if (statusFilter !== 'all') sellers = sellers.filter(s => s.status === statusFilter);
+  if (search) sellers = sellers.filter(s => (s.name || '').toLowerCase().includes(search) || (s.email || '').toLowerCase().includes(search) || (s.phone || '').toLowerCase().includes(search));
+  var totalSellers = db.get('SELECT COUNT(*) as c FROM sellers');
+  var activeSellers = db.get("SELECT COUNT(*) as c FROM sellers WHERE status = 'active'");
+  var inactiveSellers = db.get("SELECT COUNT(*) as c FROM sellers WHERE status = 'inactive'");
+  var pendingProducts = db.get("SELECT COUNT(*) as c FROM products WHERE status = 'pending'");
+  res.render('admin/sellers', {
+    title: 'Vendedores',
+    sellers,
+    stats: {
+      total: totalSellers ? totalSellers.c : 0,
+      active: activeSellers ? activeSellers.c : 0,
+      inactive: inactiveSellers ? inactiveSellers.c : 0,
+      pendingProducts: pendingProducts ? pendingProducts.c : 0
+    },
+    statusFilter,
+    search: req.query.search || '',
+    error: null,
+    msg: req.query.msg || ''
+  });
 });
 
 router.post('/sellers/new', (req, res) => {
@@ -497,6 +518,64 @@ router.post('/sellers/delete/:id', (req, res) => {
   db.run('UPDATE products SET seller_id = NULL WHERE seller_id = ?', [req.params.id]);
   db.run('DELETE FROM sellers WHERE id = ?', [req.params.id]);
   res.redirect('/admin/sellers');
+});
+
+// Notificar um vendedor individual (a notificação fica visível no painel dele)
+router.post('/sellers/notify/:id', (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers?msg=Vendedor+n%C3%A3o+encontrado');
+  const message = String(req.body.message || '').trim();
+  if (!message) return res.redirect('/admin/sellers?msg=Mensagem+vazia');
+  db.addNotification(seller.email, 'seller', message, 'bell', req.body.link || '');
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'seller_notify', 'Notificou vendedor ' + seller.name + ': ' + message.slice(0, 80));
+  res.redirect('/admin/sellers?msg=Notifica%C3%A7%C3%A3o+enviada+para+'+encodeURIComponent(seller.name));
+});
+
+// Força logout do vendedor (invalida sessões dele)
+router.post('/sellers/logout/:id', (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers?msg=Vendedor+n%C3%A3o+encontrado');
+  try {
+    db.deleteAllUserSessions('seller:' + req.params.id);
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'seller_force_logout', 'Forçou logout do vendedor ' + seller.name);
+  } catch (e) {}
+  res.redirect('/admin/sellers?msg=Logout+for%C3%A7ado+para+'+encodeURIComponent(seller.name));
+});
+
+// Resetar senha do vendedor
+router.post('/sellers/reset-password/:id', (req, res) => {
+  const seller = db.get('SELECT * FROM sellers WHERE id = ?', [req.params.id]);
+  if (!seller) return res.redirect('/admin/sellers?msg=Vendedor+n%C3%A3o+encontrado');
+  const newPass = String(req.body.new_password || '').trim();
+  if (newPass.length < 6) return res.redirect('/admin/sellers?msg=Senha+deve+ter+pelo+menos+6+caracteres');
+  try {
+    const hash = bcrypt.hashSync(newPass, 10);
+    db.run('UPDATE sellers SET password_hash = ? WHERE id = ?', [hash, req.params.id]);
+    const authHive = require('../lib/auth-hive');
+    authHive.hashPassword(newPass).then(function(newHash) {
+      try {
+        const uid = 'seller:' + req.params.id;
+        const existing = db.getUserAuth(uid);
+        if (existing) db.updateUserAuthHash(uid, newHash, (existing.pepper_ver || 1) + 1);
+        else db.createUserAuth(uid, 'seller', newHash, '', 1);
+      } catch (e) { console.error('Erro users_auth seller reset:', e.message); }
+    });
+    db.logActivity('admin', req.session.adminId, req.session.adminName, 'seller_reset_password', 'Resetou senha do vendedor ' + seller.name);
+  } catch (e) {}
+  res.redirect('/admin/sellers?msg=Senha+de+'+encodeURIComponent(seller.name)+'+redefinida');
+});
+
+// Ativar / desativar TODOS os vendedores (em massa)
+router.post('/sellers/bulk-status', (req, res) => {
+  var status = req.body.status === 'inactive' ? 'inactive' : 'active';
+  db.run('UPDATE sellers SET status = ? WHERE status <> ?', [status, status]);
+  if (status === 'inactive') {
+    db.run("UPDATE products SET status = 'inactive' WHERE seller_id IN (SELECT id FROM sellers WHERE status = 'inactive') AND status = 'active'");
+  } else {
+    db.run("UPDATE products SET status = 'active' WHERE seller_id IN (SELECT id FROM sellers WHERE status = 'active') AND status = 'inactive'");
+  }
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'seller_bulk_status', 'Ação em massa: vendedores ' + (status === 'active' ? 'ativados' : 'desativados'));
+  res.redirect('/admin/sellers?msg=Todos+os+vendedores+'+ (status === 'active' ? 'ativados' : 'desativados'));
 });
 
 router.get('/sellers/:id', (req, res) => {

@@ -1,13 +1,64 @@
-<%- include('../partials/admin-header') %>
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/sellers' }) %>
+
+<style>
+.sell-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
+.sell-stat { background:var(--hack-bg-2); border:1px solid var(--hack-border); border-radius:10px; padding:14px; text-align:center; }
+.sell-stat .n { font-size:22px; font-weight:700; }
+.sell-stat .t { font-size:11px; color:var(--hack-dim); }
+.sell-toolbar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.sell-toolbar input[type=text], .sell-toolbar select { padding:7px 12px; border:1px solid var(--hack-border); border-radius:6px; background:var(--hack-bg-2); color:var(--hack-text); font-size:13px; }
+.sell-toolbar .btn { font-size:12px; }
+.actions-cell { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.wallet-pos { color:var(--hack-green); font-weight:600; }
+.wallet-neg { color:var(--hack-red); font-weight:600; }
+.rev-pos { color:var(--hack-cyan); font-weight:600; }
+.modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; }
+.modal-backdrop.show { display:flex; }
+.modal-box { background:var(--hack-bg); border:1px solid var(--hack-border); border-radius:12px; padding:24px; width:90%; max-width:420px; }
+.modal-box h3 { margin:0 0 14px; font-size:16px; display:flex; align-items:center; gap:8px; }
+.modal-box label { display:block; font-size:12px; font-weight:600; color:var(--hack-text); margin-bottom:4px; }
+.modal-box textarea, .modal-box input { width:100%; padding:8px 10px; border:1px solid var(--hack-border); border-radius:6px; background:var(--hack-bg-2); color:var(--hack-text); font-size:13px; margin-bottom:12px; box-sizing:border-box; }
+.modal-box .btn { margin-right:8px; }
+</style>
 
 <div class="admin-content">
   <div class="page-header">
     <h1><i class="fas fa-store-alt"></i> Vendedores</h1>
   </div>
 
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
   <% if (error) { %><div class="alert alert-error"><%= error %></div><% } %>
 
-  <div class="form-card">
+  <!-- ESTATÍSTICAS -->
+  <div class="sell-stats">
+    <div class="sell-stat"><div class="n" style="color:#5dade2;"><%= stats.total %></div><div class="t">Total Vendedores</div></div>
+    <div class="sell-stat"><div class="n" style="color:var(--hack-green);"><%= stats.active %></div><div class="t">Ativos</div></div>
+    <div class="sell-stat"><div class="n" style="color:var(--hack-red);"><%= stats.inactive %></div><div class="t">Inativos</div></div>
+    <div class="sell-stat"><div class="n" style="color:#ffd93b;"><%= stats.pendingProducts %></div><div class="t">Produtos Pendentes</div></div>
+  </div>
+
+  <!-- BARRA DE FERRAMENTAS -->
+  <div class="sell-toolbar">
+    <form method="GET" action="/admin/sellers" style="display:flex;gap:8px;flex:1;flex-wrap:wrap;">
+      <input type="text" name="search" value="<%= search %>" placeholder="Buscar por nome, email ou telefone..." style="flex:1;min-width:200px;">
+      <select name="status">
+        <option value="all" <%= statusFilter === 'all' ? 'selected' : '' %>>Todos os status</option>
+        <option value="active" <%= statusFilter === 'active' ? 'selected' : '' %>>Ativos</option>
+        <option value="inactive" <%= statusFilter === 'inactive' ? 'selected' : '' %>>Inativos</option>
+      </select>
+      <button type="submit" class="btn-primary" style="font-size:13px;"><i class="fas fa-search"></i> Filtrar</button>
+      <% if (search || statusFilter !== 'all') { %><a href="/admin/sellers" class="btn" style="font-size:13px;"><i class="fas fa-times"></i> Limpar</a><% } %>
+    </form>
+    <form action="/admin/sellers/bulk-status" method="POST" style="display:inline;" onsubmit="return confirm('Ativar TODOS os vendedores?')">
+      <button type="submit" name="status" value="active" class="btn" style="background:rgba(0,255,156,0.10);color:var(--hack-green);font-size:12px;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;"><i class="fas fa-check-double"></i> Ativar Todos</button>
+    </form>
+    <form action="/admin/sellers/bulk-status" method="POST" style="display:inline;" onsubmit="return confirm('Desativar TODOS os vendedores?')">
+      <button type="submit" name="status" value="inactive" class="btn" style="background:rgba(255,56,96,0.10);color:var(--hack-red);font-size:12px;border:none;padding:7px 12px;border-radius:6px;cursor:pointer;"><i class="fas fa-ban"></i> Desativar Todos</button>
+    </form>
+  </div>
+
+  <!-- NOVO VENDEDOR -->
+  <div class="form-card" style="margin-bottom:20px;">
     <h3><i class="fas fa-user-plus"></i> Novo Vendedor</h3>
     <form action="/admin/sellers/new" method="POST" class="admin-form">
       <div class="form-row">
@@ -35,38 +86,54 @@
     </form>
   </div>
 
+  <!-- LISTA -->
   <div class="table-container">
     <table class="admin-table">
       <thead>
         <tr>
           <th data-sort>Nome</th>
           <th data-sort>Email</th>
-          <th data-sort>Telefone</th>
           <th data-sort>WhatsApp</th>
           <th data-sort>Status</th>
           <th data-sort data-num="1">Produtos</th>
           <th data-sort data-num="1">Ativos</th>
+          <th data-sort data-num="1">Pend.</th>
+          <th data-sort data-num="1">Vendas</th>
+          <th data-sort data-num="1">Receita</th>
+          <th data-sort data-num="1">Carteira</th>
           <th data-sort>Cadastro</th>
           <th>Ações</th>
         </tr>
       </thead>
       <tbody>
+        <% if (sellers.length === 0) { %>
+          <tr><td colspan="12" class="empty-row">Nenhum vendedor encontrado</td></tr>
+        <% } else { %>
         <% sellers.forEach(s => { %>
           <tr>
             <td><strong><a href="/admin/sellers/<%= s.id %>" style="color:var(--accent);"><%= s.name %></a></strong></td>
             <td><%= s.email %></td>
-            <td><%= s.phone || '-' %></td>
             <td><% if (s.whatsapp) { %><a href="https://wa.me/55<%= s.whatsapp.replace(/\D/g, '') %>" target="_blank" style="color:#25D366;font-weight:600;"><i class="fab fa-whatsapp"></i> <%= s.whatsapp %></a><% } else { %>-<% } %></td>
             <td><span class="status-badge <%= s.status %>"><%= s.status === 'active' ? 'Ativo' : 'Inativo' %></span></td>
             <td><%= s.product_count || 0 %></td>
             <td><%= s.active_count || 0 %></td>
+            <td><% if ((s.pending_count||0) > 0) { %><span style="color:#ffd93b;font-weight:700;"><%= s.pending_count %></span><% } else { %>0<% } %></td>
+            <td><%= s.sales_count || 0 %></td>
+            <td class="rev-pos"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.revenue || 0) %></td>
+            <td class="<%= (s.wallet_balance||0) >= 0 ? 'wallet-pos' : 'wallet-neg' %>"><%= new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(s.wallet_balance || 0) %></td>
             <td><%= new Date(s.created_at).toLocaleDateString('pt-BR') %></td>
             <td class="actions-cell">
+              <a href="/admin/sellers/<%= s.id %>" class="btn-icon" title="Detalhes"><i class="fas fa-eye"></i></a>
               <a href="/admin/sellers/edit/<%= s.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
               <form action="/admin/sellers/toggle/<%= s.id %>" method="POST" class="inline-form" onsubmit="return confirm('<%= s.status === 'active' ? 'Desativar' : 'Ativar' %> este vendedor?')">
                 <button type="submit" class="btn-icon" title="<%= s.status === 'active' ? 'Desativar' : 'Ativar' %>">
                   <i class="fas fa-<%= s.status === 'active' ? 'ban' : 'check' %>"></i>
                 </button>
+              </form>
+              <button type="button" class="btn-icon" title="Notificar" onclick="openNotify(<%= s.id %>, '<%= s.name.replace(/'/g, "\\'") %>')"><i class="fas fa-bell"></i></button>
+              <button type="button" class="btn-icon" title="Redefinir senha" onclick="openReset(<%= s.id %>, '<%= s.name.replace(/'/g, "\\'") %>')"><i class="fas fa-key"></i></button>
+              <form action="/admin/sellers/logout/<%= s.id %>" method="POST" class="inline-form" onsubmit="return confirm('Forçar logout deste vendedor?')">
+                <button type="submit" class="btn-icon" title="Forçar logout"><i class="fas fa-sign-out-alt"></i></button>
               </form>
               <form action="/admin/sellers/delete/<%= s.id %>" method="POST" class="inline-form" onsubmit="return confirm('Excluir este vendedor? Os produtos dele serão removidos.')">
                 <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
@@ -74,9 +141,55 @@
             </td>
           </tr>
         <% }) %>
+        <% } %>
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- MODAL NOTIFICAR -->
+<div class="modal-backdrop" id="notifyModal">
+  <div class="modal-box">
+    <h3><i class="fas fa-bell" style="color:#9b59b6;"></i> Notificar Vendedor</h3>
+    <form method="POST" action="" id="notifyForm">
+      <label>Mensagem</label>
+      <textarea name="message" rows="4" placeholder="Escreva a mensagem que aparecerá no painel do vendedor..." required></textarea>
+      <label>Link (opcional)</label>
+      <input type="text" name="link" placeholder="/seller/sales">
+      <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Enviar</button>
+      <button type="button" class="btn" onclick="closeModal('notifyModal')">Cancelar</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL REDEFINIR SENHA -->
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal-box">
+    <h3><i class="fas fa-key" style="color:#e65100;"></i> Redefinir Senha</h3>
+    <form method="POST" action="" id="resetForm">
+      <label>Nova senha (mín. 6 caracteres)</label>
+      <input type="text" name="new_password" required minlength="6">
+      <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Redefinir</button>
+      <button type="button" class="btn" onclick="closeModal('resetModal')">Cancelar</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openNotify(id, name) {
+  document.getElementById('notifyForm').action = '/admin/sellers/notify/' + id;
+  document.getElementById('notifyModal').classList.add('show');
+}
+function openReset(id, name) {
+  document.getElementById('resetForm').action = '/admin/sellers/reset-password/' + id;
+  document.getElementById('resetModal').classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+document.querySelectorAll('.modal-backdrop').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) m.classList.remove('show'); });
+});
+</script>
 
 <%- include('../partials/admin-footer') %>

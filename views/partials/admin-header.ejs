@@ -51,7 +51,7 @@
         <i class="fas fa-ad"></i> <span>Anúncios</span>
       </a>
 
-      <div class="nav-section-label">Vendas</div>
+      <div class="nav-section-label">Vendas & Financeiro</div>
       <a href="/admin/sales" class="<%= currentPath.startsWith('/admin/sales') ? 'active' : '' %>">
         <i class="fas fa-shopping-bag"></i> <span>Vendas</span>
         <% if (typeof adminPendingSales !== 'undefined' && adminPendingSales > 0) { %><span class="badge-msg" style="background:#f44336;"><%= adminPendingSales %></span><% } %>
@@ -70,21 +70,8 @@
         <i class="fas fa-chart-line"></i> <span>Analytics</span>
       </a>
 
-      <div class="nav-section-label">Marketing</div>
-      <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
-        <i class="fas fa-bullhorn"></i> <span>Marketing Central</span>
-      </a>
-
-      <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> <span>Auto-Promo</span></a>
-      <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> <span>Campanhas</span></a>
-      <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> <span>QR Code</span></a>
-      <a href="/admin/marketing/reports" class="sub-link <%= (currentPath || '') === '/admin/marketing/reports' ? 'active' : '' %>"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
-      <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
-        <i class="fas fa-bullhorn"></i> <span>Notificar Todos</span>
-      </a>
-
       <div class="nav-section-label">Usuários</div>
-      <a href="/admin/sellers" class="<%= currentPath === '/admin/sellers' ? 'active' : '' %>">
+      <a href="/admin/sellers" class="<%= currentPath.startsWith('/admin/sellers') ? 'active' : '' %>">
         <i class="fas fa-store-alt"></i> <span>Vendedores</span>
       </a>
       <a href="/admin/admins" class="<%= currentPath === '/admin/admins' ? 'active' : '' %>">
@@ -95,6 +82,18 @@
       </a>
       <a href="/admin/notifications" class="<%= currentPath.startsWith('/admin/notifications') ? 'active' : '' %>">
         <i class="fas fa-bell"></i> <span>Notificações</span>
+      </a>
+
+      <div class="nav-section-label">Marketing</div>
+      <a href="/admin/marketing" class="<%= (currentPath || '').startsWith('/admin/marketing') ? 'active' : '' %>">
+        <i class="fas fa-bullhorn"></i> <span>Marketing Central</span>
+      </a>
+      <a href="/admin/marketing/autopromo" class="sub-link <%= (currentPath || '') === '/admin/marketing/autopromo' ? 'active' : '' %>"><i class="fas fa-bolt"></i> <span>Auto-Promo</span></a>
+      <a href="/admin/marketing/campaigns" class="sub-link <%= (currentPath || '') === '/admin/marketing/campaigns' ? 'active' : '' %>"><i class="fas fa-rocket"></i> <span>Campanhas</span></a>
+      <a href="/admin/marketing/qrcode" class="sub-link <%= (currentPath || '') === '/admin/marketing/qrcode' ? 'active' : '' %>"><i class="fas fa-qrcode"></i> <span>QR Code</span></a>
+      <a href="/admin/marketing/reports" class="sub-link <%= (currentPath || '') === '/admin/marketing/reports' ? 'active' : '' %>"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
+      <a href="/admin/blast" class="<%= currentPath === '/admin/blast' ? 'active' : '' %>">
+        <i class="fas fa-paper-plane"></i> <span>Notificar Todos</span>
       </a>
 
       <div class="nav-section-label">Sistema</div>
@@ -110,28 +109,12 @@
       <a href="/admin/toggles" class="<%= currentPath === '/admin/toggles' ? 'active' : '' %>">
         <i class="fas fa-toggle-on"></i> <span>Toggles</span>
       </a>
-      <a href="/admin/super" class="<%= currentPath === '/admin/super' ? 'active' : '' %>">
-        <i class="fas fa-crown"></i> <span>Super Panel</span>
-      </a>
-      <a href="/admin/logs" class="<%= currentPath === '/admin/logs' ? 'active' : '' %>">
-        <i class="fas fa-history"></i> <span>Logs</span>
-      </a>
-      <a href="/admin/ips-bloqueados" class="<%= currentPath === '/admin/ips-bloqueados' ? 'active' : '' %>">
-        <i class="fas fa-ban"></i> <span>IPs Bloqueados</span>
-      </a>
-      <a href="/admin/senha" class="<%= currentPath === '/admin/senha' ? 'active' : '' %>">
-        <i class="fas fa-key"></i> <span>Alterar Senha</span>
-      </a>
-      <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
-        <i class="fas fa-broom"></i> <span>Limpar Dados</span>
-      </a>
-      <a href="/admin/diagnostico" class="<%= currentPath.indexOf('/admin/diagnostico') === 0 ? 'active' : '' %>">
-        <i class="fas fa-stethoscope"></i> <span>Diagnóstico</span>
-      </a>
       <a href="/admin/ai-audit" class="<%= currentPath.indexOf('/admin/ai-audit') === 0 ? 'active' : '' %>" style="background:linear-gradient(90deg,rgba(155,89,182,0.25),rgba(108,52,131,0.1));border:1px solid rgba(215,161,249,0.4);border-radius:8px;margin:2px 8px;">
         <i class="fas fa-robot" style="color:#d7a1f9;"></i> <span>Auditoria IA</span>
         <span style="margin-left:auto;background:#9b59b6;color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;font-weight:700;">IA</span>
       </a>
+
+      <div class="nav-section-label">Segurança & Dados</div>
       <a href="/admin/seguranca" class="<%= currentPath === '/admin/seguranca' ? 'active' : '' %>">
         <i class="fas fa-shield-alt"></i> <span>Segurança</span>
       </a>
@@ -140,6 +123,26 @@
       </a>
       <a href="/admin/backup" class="<%= currentPath === '/admin/backup' ? 'active' : '' %>">
         <i class="fas fa-file-archive"></i> <span>Backup</span>
+      </a>
+      <a href="/admin/logs" class="<%= currentPath === '/admin/logs' ? 'active' : '' %>">
+        <i class="fas fa-history"></i> <span>Logs</span>
+      </a>
+      <a href="/admin/ips-bloqueados" class="<%= currentPath === '/admin/ips-bloqueados' ? 'active' : '' %>">
+        <i class="fas fa-ban"></i> <span>IPs Bloqueados</span>
+      </a>
+      <a href="/admin/super" class="<%= currentPath === '/admin/super' ? 'active' : '' %>">
+        <i class="fas fa-crown"></i> <span>Super Panel</span>
+      </a>
+
+      <div class="nav-section-label">Manutenção</div>
+      <a href="/admin/senha" class="<%= currentPath === '/admin/senha' ? 'active' : '' %>">
+        <i class="fas fa-key"></i> <span>Alterar Senha</span>
+      </a>
+      <a href="/admin/limpar" class="<%= currentPath === '/admin/limpar' ? 'active' : '' %>">
+        <i class="fas fa-broom"></i> <span>Limpar Dados</span>
+      </a>
+      <a href="/admin/diagnostico" class="<%= currentPath.indexOf('/admin/diagnostico') === 0 ? 'active' : '' %>">
+        <i class="fas fa-stethoscope"></i> <span>Diagnóstico</span>
       </a>
 
       <% if (!admin && seller) { %>
