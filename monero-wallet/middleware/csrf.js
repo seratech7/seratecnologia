@@ -7,6 +7,12 @@ function csrfProtection(req, res, next) {
   const header = req.headers['x-csrf-token'];
   const valid = token === req.session.csrfToken || header === req.session.csrfToken;
   if (!valid) {
+    // Após deploy no Render o disco é zerado e o cookie antigo aponta para sessão
+    // inexistente: o express-session regenera a sessão (csrfToken novo). Nas telas de
+    // login, redireciona (GET) para gerar token novo em vez de 403 seco.
+    if (req.path === '/login' || req.path === '/admin/login') {
+      return res.redirect(302, req.path);
+    }
     return res.status(403).json({ error: 'Token CSRF inválido ou expirado. Recarregue a página.' });
   }
   next();

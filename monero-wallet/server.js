@@ -59,7 +59,7 @@ app.set('trust proxy', 1);
 
 var FileStore = require('session-file-store')(session);
 app.use(session({
-  store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 604800, reapInterval: 3600 }),
+  store: new FileStore({ path: path.join(__dirname, 'sessions'), ttl: 604800, reapInterval: 3600, retries: 0 }),
   secret: process.env.SESSION_SECRET || crypto.randomUUID(),
   resave: false,
   saveUninitialized: false,
