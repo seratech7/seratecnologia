@@ -67,10 +67,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Rate limiting - login (10 attempts per 15 min)
+// Rate limiting - login (30 attempts per 15 min)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 30,
   message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false
