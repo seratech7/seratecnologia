@@ -831,6 +831,35 @@ img { max-width: 100%; height: auto; display: block; }
   border-radius: 10px;
 }
 
+/* Quick buy button on product cards */
+.product-buy-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px 12px;
+  background: #00c853;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .2s, transform .1s;
+  font-family: inherit;
+}
+
+.product-buy-btn:hover {
+  background: #00a844;
+  transform: translateY(-1px);
+}
+
+.product-buy-btn:active {
+  transform: translateY(0);
+}
+
 /* =========================================
    EMPTY STATE
    ========================================= */
@@ -3585,6 +3614,68 @@ img { max-width: 100%; height: auto; display: block; }
 
 @media (min-width: 769px) {
   .filter-overlay, .filter-sheet, .filter-toggle { display: none !important; }
+}
+
+/* =========================================
+   QUICK BUY MODAL
+   ========================================= */
+.quickbuy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.quickbuy-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  animation: quickbuyIn .2s ease;
+}
+
+@keyframes quickbuyIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.quickbuy-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f1f1;
+  color: #555;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s;
+}
+
+.quickbuy-close:hover { background: #e0e0e0; }
+
+.quickbuy-body { padding: 22px; }
+
+@media (max-width: 600px) {
+  .quickbuy-modal { max-height: 95vh; }
+  .quickbuy-body { padding: 16px; }
+  .quickbuy-body div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+  .quickbuy-thumb { width: 72px !important; height: 72px !important; }
 }
 
 /* =========================================

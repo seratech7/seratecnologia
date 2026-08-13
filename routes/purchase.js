@@ -41,6 +41,22 @@ router.get('/api/produto/:codigo', function(req, res) {
   res.json(p);
 });
 
+router.get('/api/cupom/:cupom', function(req, res) {
+  var produto = db.get("SELECT p.*, s.id as sid FROM products p LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.code = ? AND p.status = 'active'", [req.query.codigo || '']);
+  if (!produto) return res.status(404).json({ error: 'Produto não encontrado' });
+
+  var coupon = db.getCoupon(req.params.cupom);
+  if (!coupon || (coupon.seller_id && coupon.seller_id !== produto.seller_id) || produto.price < (coupon.min_order || 0)) {
+    return res.json({ error: 'Cupom inválido para este produto' });
+  }
+
+  var desconto = coupon.type === 'percentage' ? produto.price * (coupon.value / 100) : coupon.value;
+  if (desconto > produto.price) desconto = produto.price;
+  var finalPrice = Math.round((produto.price - desconto) * 100) / 100;
+
+  res.json({ success: true, price: finalPrice, original: produto.price, desconto: Math.round(desconto * 100) / 100, cupom: req.params.cupom });
+});
+
 router.post('/api/finalizar-compra', function(req, res) {
   try {
     if (db.getToggle('compras') !== '1') {

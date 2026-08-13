@@ -397,12 +397,106 @@ function q(urlParams) {
                   </a>
                 <% } %>
               </div>
+              <button type="button"
+                class="product-buy-btn"
+                data-code="<%= product.code || 'PROD-' + String(product.id).padStart(5, '0') %>"
+                data-name="<%= product.name.replace(/"/g, '&quot;') %>"
+                data-price="<%= product.flash_price && product.flash_ends_at && new Date(product.flash_ends_at) > new Date() ? product.flash_price : product.price %>"
+                data-image="<%= product.image || '' %>"
+                data-location="<%= product.location || 'Brasil' %>"
+                data-quantity="<%= product.quantity || 0 %>"
+                data-whatsapp="<%= product.seller_whatsapp || '' %>"
+                onclick="event.preventDefault();event.stopPropagation();abrirCompraRapida(this)">
+                <i class="fas fa-shopping-cart"></i> Comprar Agora
+              </button>
             </div>
           </a>
         <% }) %>
       </div>
     <% } %>
   </section>
+</div>
+
+<!-- MODAL DE COMPRA RÁPIDA -->
+<div class="quickbuy-overlay" id="quickbuyOverlay" style="display:none;">
+  <div class="quickbuy-modal" role="dialog" aria-modal="true">
+    <button type="button" class="quickbuy-close" onclick="fecharCompraRapida()" aria-label="Fechar">&times;</button>
+    <div class="quickbuy-body" id="quickbuyBody">
+      <div id="quickbuyProduto">
+        <div class="quickbuy-product" style="display:flex;gap:16px;align-items:center;margin-bottom:16px;">
+          <div class="quickbuy-thumb" id="qbImagem" style="width:90px;height:90px;border-radius:8px;background:#f5f5f5;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:30px;color:#ccc;">
+            <i class="fas fa-image"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:monospace;font-size:12px;color:#1565c0;font-weight:700;" id="qbCodigo"></div>
+            <h3 style="margin:4px 0 6px;font-size:17px;line-height:1.3;" id="qbNome"></h3>
+            <div style="font-size:24px;font-weight:800;color:#1565c0;" id="qbPreco"></div>
+            <div style="font-size:12px;color:#888;margin-top:4px;" id="qbEstoque"></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:10px;padding:16px;margin-bottom:16px;border:1px solid #eee;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <i class="fas fa-ticket-alt" style="color:#9c27b0;"></i>
+            <span style="font-size:13px;font-weight:600;color:#555;">Cupom de desconto</span>
+            <input type="text" id="qbCupom" placeholder="DIGITE O CÓDIGO" style="flex:1;min-width:120px;padding:8px 10px;border:2px solid #ddd;border-radius:6px;font-size:13px;font-family:monospace;text-transform:uppercase;letter-spacing:1px;">
+            <button type="button" onclick="aplicarCupomRapido()" style="padding:8px 14px;background:#9c27b0;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;"><i class="fas fa-check"></i> Aplicar</button>
+          </div>
+        </div>
+
+        <h4 style="margin:0 0 12px;font-size:15px;"><i class="fas fa-user"></i> Dados do Comprador</h4>
+        <form id="qbForm" onsubmit="return gerarPagamentoRapido(event)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div style="grid-column:1/-1;">
+              <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Nome Completo *</label>
+              <input type="text" name="nome" id="qbNomeComprador" required style="width:100%;padding:11px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+            </div>
+            <div>
+              <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">CPF/CNPJ *</label>
+              <input type="text" name="documento" required style="width:100%;padding:11px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+            </div>
+            <div>
+              <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Telefone/WhatsApp *</label>
+              <input type="tel" name="telefone" required style="width:100%;padding:11px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">E-mail *</label>
+              <input type="email" name="email" required style="width:100%;padding:11px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:4px;">Endereço Completo *</label>
+              <input type="text" name="endereco" required placeholder="Rua, número, bairro, cidade, estado, CEP" style="width:100%;padding:11px;border:2px solid #ddd;border-radius:8px;font-size:14px;">
+            </div>
+          </div>
+
+          <div id="qbErro" style="display:none;background:#fdecea;color:#c62828;padding:12px 16px;border-radius:8px;margin-top:12px;font-size:13px;"></div>
+
+          <div style="margin-top:16px;">
+            <button type="submit" id="qbBtnPix" style="width:100%;padding:13px;background:#00c853;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;">
+              <i class="fas fa-qrcode"></i> Gerar QR Code PIX
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div id="quickbuyPix" style="display:none;text-align:center;">
+        <h3 style="margin:0 0 6px;"><i class="fas fa-qrcode"></i> Pagamento via PIX</h3>
+        <p style="color:#666;margin:0 0 6px;font-size:13px;">Escaneie o QR Code abaixo para pagar</p>
+        <p style="font-size:13px;color:#888;margin:0 0 16px;">Pagamento para <strong id="qbPixSeller"></strong></p>
+        <div style="display:inline-block;background:#fff;padding:12px;border-radius:12px;border:2px solid #e0e0e0;">
+          <img id="qbQrImage" src="" alt="QR Code PIX" style="width:210px;height:210px;display:block;">
+        </div>
+        <div style="margin-top:12px;">
+          <button onclick="copiarPixRapido()" style="padding:9px 18px;background:#fff;color:#1565c0;border:2px solid #1565c0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+            <i class="fas fa-copy"></i> Copiar chave PIX
+          </button>
+        </div>
+        <div id="qbChaveDisplay" style="margin-top:6px;font-family:monospace;font-size:12px;color:#999;word-break:break-all;"></div>
+        <div id="qbResumo" style="margin-top:14px;text-align:left;background:#f9f9f9;border-radius:8px;padding:14px;font-size:13px;line-height:1.8;"></div>
+        <div id="qbResultado"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -514,6 +608,182 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   if (flashTimers.length) { updateFlashTimers(); setInterval(updateFlashTimers, 1000); }
 });
+
+/* ===== COMPRA RÁPIDA (modal) ===== */
+var qbProduto = null;
+var qbUltimoPayload = '';
+var qbTotal = 0;
+
+function csrfToken() { var m = document.querySelector('meta[name="csrf-token"]'); return m ? m.content : ''; }
+
+function abrirCompraRapida(btn) {
+  var price = parseFloat(btn.dataset.price) || 0;
+  var qty = parseInt(btn.dataset.quantity) || 0;
+  qbProduto = {
+    code: btn.dataset.code,
+    name: btn.dataset.name,
+    price: price,
+    image: btn.dataset.image,
+    location: btn.dataset.location,
+    quantity: qty,
+    whatsapp: btn.dataset.whatsapp
+  };
+  qbTotal = price;
+
+  var img = document.getElementById('qbImagem');
+  if (qbProduto.image) {
+    img.innerHTML = '<img src="' + qbProduto.image + '" alt="' + qbProduto.name + '" style="width:100%;height:100%;object-fit:cover;">';
+  } else {
+    img.innerHTML = '<i class="fas fa-image"></i>';
+  }
+  document.getElementById('qbCodigo').textContent = qbProduto.code;
+  document.getElementById('qbNome').textContent = qbProduto.name;
+  document.getElementById('qbPreco').textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(price);
+  var stock = document.getElementById('qbEstoque');
+  if (qty <= 0) {
+    stock.innerHTML = '<span style="color:#c62828;"><i class="fas fa-cubes"></i> Produto esgotado</span>';
+  } else if (qty <= 5) {
+    stock.innerHTML = '<span style="color:#e65100;"><i class="fas fa-cubes"></i> Só ' + qty + ' em estoque!</span>';
+  } else {
+    stock.innerHTML = '<span style="color:#2e7d32;"><i class="fas fa-cubes"></i> Em estoque</span>';
+  }
+
+  document.getElementById('qbCupom').value = '';
+  document.getElementById('qbForm').reset();
+  document.getElementById('qbErro').style.display = 'none';
+  document.getElementById('quickbuyPix').style.display = 'none';
+  document.getElementById('quickbuyProduto').style.display = 'block';
+  document.getElementById('qbResultado').innerHTML = '';
+
+  document.getElementById('quickbuyOverlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function fecharCompraRapida() {
+  document.getElementById('quickbuyOverlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.getElementById('quickbuyOverlay').addEventListener('click', function(e) {
+  if (e.target === this) fecharCompraRapida();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') fecharCompraRapida();
+});
+
+function aplicarCupomRapido() {
+  var cupomInput = document.getElementById('qbCupom');
+  var cupom = (cupomInput ? cupomInput.value : '').trim();
+  if (!qbProduto || !cupom) return;
+  fetch('/api/cupom/' + encodeURIComponent(cupom) + '?codigo=' + encodeURIComponent(qbProduto.code), {
+    headers: { 'X-CSRF-Token': csrfToken() }
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+    qbTotal = data.price;
+    document.getElementById('qbPreco').textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.price);
+    document.getElementById('qbPreco').style.color = '#2e7d32';
+  }).catch(function() { alert('Erro ao aplicar cupom'); });
+}
+
+function gerarPagamentoRapido(e) {
+  e.preventDefault();
+  if (!qbProduto) return;
+  var btn = document.getElementById('qbBtnPix');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+  document.getElementById('qbErro').style.display = 'none';
+
+  var form = document.getElementById('qbForm');
+  var dados = {
+    codigo: qbProduto.code,
+    nome: form.nome.value,
+    documento: form.documento.value,
+    telefone: form.telefone.value,
+    email: form.email.value,
+    endereco: form.endereco.value,
+    cupom: (document.getElementById('qbCupom').value || '').trim()
+  };
+
+  fetch('/api/gerar-pix', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+    body: JSON.stringify({ codigo: dados.codigo, nome: dados.nome })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.error) {
+      document.getElementById('qbErro').textContent = data.error;
+      document.getElementById('qbErro').style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar QR Code PIX';
+      return;
+    }
+
+    document.getElementById('qbQrImage').src = data.qrcode;
+    document.getElementById('qbPixSeller').textContent = data.sellerName;
+    document.getElementById('qbChaveDisplay').textContent = 'Chave: ' + data.chave;
+    qbUltimoPayload = data.payload;
+
+    var resumo = document.getElementById('qbResumo');
+    resumo.innerHTML =
+      '<strong>Produto:</strong> ' + qbProduto.name + '<br>' +
+      '<strong>Código:</strong> ' + dados.codigo + '<br>' +
+      '<strong>Valor:</strong> ' + new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(qbTotal) + '<br>' +
+      '<strong>Vendedor:</strong> ' + data.sellerName + '<br>' +
+      '<strong>Comprador:</strong> ' + dados.nome + '<br>' +
+      '<strong>WhatsApp:</strong> ' + dados.telefone + '<br>' +
+      '<strong>E-mail:</strong> ' + dados.email + '<br>' +
+      '<strong>Endereço:</strong> ' + dados.endereco;
+
+    document.getElementById('quickbuyProduto').style.display = 'none';
+    document.getElementById('quickbuyPix').style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar QR Code PIX';
+
+    fetch('/api/finalizar-compra', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+      body: JSON.stringify(dados)
+    }).then(function(r) { return r.json(); }).then(function(resp) {
+      var sellerWa = (qbProduto.whatsapp || '').replace(/\D/g, '');
+      if (resp.success) {
+        var waLink = '';
+        if (sellerWa) {
+          var waMsg = encodeURIComponent('Olá! Acabei de comprar o produto ' + dados.codigo + '. Meu WhatsApp é ' + dados.telefone);
+          waLink = '<a href="https://wa.me/55' + sellerWa + '?text=' + waMsg + '" target="_blank" style="display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:11px 22px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;">' +
+            '<i class="fab fa-whatsapp"></i> Falar com Vendedor</a>';
+        }
+        document.getElementById('qbResultado').innerHTML =
+          '<div style="margin-top:16px;padding:16px;background:#e8f5e9;border-radius:8px;text-align:center;">' +
+          '<i class="fas fa-check-circle" style="color:#2e7d32;font-size:26px;"></i>' +
+          '<p style="font-weight:700;color:#2e7d32;margin:8px 0 4px;">Compra registrada com sucesso!</p>' +
+          '<p style="font-size:13px;color:#555;margin:4px 0;">Código de rastreio:</p>' +
+          '<p style="font-size:17px;font-weight:800;color:#1565c0;font-family:monospace;letter-spacing:1px;margin:4px 0;">' + resp.trackingCode + '</p>' +
+          '<a href="/rastreio?codigo=' + resp.trackingCode + '" style="display:inline-block;margin-top:8px;padding:8px 16px;background:#1565c0;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">' +
+          '<i class="fas fa-truck"></i> Acompanhar Pedido</a>' +
+          waLink +
+          '<div style="margin-top:12px;"><button onclick="fecharCompraRapida()" style="padding:8px 16px;background:#eee;color:#555;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Fechar</button></div>' +
+          '</div>';
+      }
+    }).catch(function() {});
+  }).catch(function() {
+    document.getElementById('qbErro').textContent = 'Erro ao gerar PIX. Tente novamente.';
+    document.getElementById('qbErro').style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-qrcode"></i> Gerar QR Code PIX';
+  });
+}
+
+function copiarPixRapido() {
+  if (qbUltimoPayload) {
+    navigator.clipboard.writeText(qbUltimoPayload).then(function() {
+      alert('Código PIX copiado!');
+    }).catch(function() {
+      prompt('Copie o código PIX abaixo:', qbUltimoPayload);
+    });
+  }
+}
 </script>
 
 <%- include('partials/footer') %>
