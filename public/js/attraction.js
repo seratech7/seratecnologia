@@ -33,7 +33,7 @@
       box.appendChild(h);
     }
     var close = document.createElement('button');
-    close.textContent = 'Ã—';
+    close.textContent = '×';
     close.style.cssText = 'position:absolute;top:8px;right:12px;border:none;background:none;font-size:26px;cursor:pointer;color:#999;';
     close.onclick = function() { overlay.remove(); };
     box.appendChild(close);
@@ -68,7 +68,7 @@
   }
 
   // ============================================================
-  // 5. PROVA SOCIAL â€” Ticker ao vivo
+  // 5. PROVA SOCIAL — Ticker ao vivo
   // ============================================================
   function initSocialTicker() {
     if (sessionStorage.getItem('tickerShown')) return;
@@ -82,11 +82,11 @@
       toast.style.cssText = 'position:fixed;bottom:24px;left:24px;background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:12px 16px;box-shadow:0 6px 20px rgba(0,0,0,.18);z-index:9990;display:flex;align-items:center;gap:10px;font-family:Arial,sans-serif;font-size:13px;color:#333;max-width:320px;animation:fadeInUp .4s ease;';
       var img = document.createElement('div');
       img.style.cssText = 'width:36px;height:36px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;';
-      img.textContent = 'ðŸ›’';
+      img.textContent = '🛒';
       var text = document.createElement('div');
       text.innerHTML = item.message;
       var closeBtn = document.createElement('button');
-      closeBtn.textContent = 'Ã—';
+      closeBtn.textContent = '×';
       closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;border:none;background:none;font-size:18px;cursor:pointer;color:#bbb;';
       closeBtn.onclick = function() { toast.remove(); };
       toast.appendChild(img);
@@ -101,16 +101,14 @@
   }
 
   // ============================================================
-  // 4. NOTIFICAÃ‡Ã•ES PUSH (PWA)
+  // 4. NOTIFICAÇÕES PUSH (PWA)
   // ============================================================
   function initPush() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (Notification && Notification.permission === 'granted') return;
     if (localStorage.getItem('pushPromptShown')) return;
 
-    // Registra o service worker
     navigator.serviceWorker.register('/sw.js').then(function() {
-      // Pergunta apÃ³s 20s
       setTimeout(function() {
         if (Notification && Notification.permission === 'default') {
           localStorage.setItem('pushPromptShown', '1');
@@ -118,7 +116,6 @@
             if (perm === 'granted') {
               fetch('/api/push/public-key').then(function(r) { return r.json(); }).then(function(data) {
                 if (!data || !data.publicKey) return;
-                // Requer import de urlBase64ToUint8Array
                 var base64 = data.publicKey;
                 var padding = '='.repeat((4 - base64.length % 4) % 4);
                 var base64p = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -127,11 +124,7 @@
                 for (var i = 0; i < raw.length; i++) key[i] = raw.charCodeAt(i);
                 navigator.serviceWorker.ready.then(function(reg) {
                   reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }).then(function(sub) {
-                    fetch('/api/push/subscribe', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ endpoint: sub.endpoint, keys: sub.toJSON().keys })
-                    }).catch(function() {});
+                    postJSON('/api/push/subscribe', { endpoint: sub.endpoint, keys: sub.toJSON().keys }).catch(function() {});
                   }).catch(function() {});
                 });
               }).catch(function() {});
@@ -143,7 +136,7 @@
   }
 
   // ============================================================
-  // 2. SORTEIO AUTOMÃTICO â€” popup + formulÃ¡rio
+  // 2. SORTEIO AUTOMÁTICO — popup + formulário
   // ============================================================
   function initGiveaway() {
     if (localStorage.getItem('giveawayShown')) return;
@@ -153,16 +146,16 @@
         var total = (stats && stats.total) || 0;
         var html =
           '<div style="font-size:14px;color:#555;">' +
-          '<p style="font-size:15px;line-height:1.5;">Participe do <strong style="color:#1565c0;">Sorteio Mensal</strong> e concorra a um prÃªmio incrÃ­vel!</p>' +
-          '<p style="color:#777;font-size:13px;">' + (total > 0 ? 'ðŸ”¥ ' + total + ' pessoas jÃ¡ participaram!' : 'ðŸ”¥ Vagas limitadas!') + '</p>' +
+          '<p style="font-size:15px;line-height:1.5;">Participe do <strong style="color:#1565c0;">Sorteio Mensal</strong> e concorra a um prêmio incrível!</p>' +
+          '<p style="color:#777;font-size:13px;">' + (total > 0 ? '🔥 ' + total + ' pessoas já participaram!' : '🔥 Vagas limitadas!') + '</p>' +
           '<div style="margin:14px 0;display:flex;flex-direction:column;gap:8px;">' +
           '<input id="gaName" placeholder="Seu nome" style="padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
           '<input id="gaWhats" placeholder="WhatsApp (ex: 5511999998888)" style="padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
           '</div>' +
-          '<button id="gaBtn" style="width:100%;padding:13px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;">ðŸŽŸï¸ Quero Participar</button>' +
+          '<button id="gaBtn" style="width:100%;padding:13px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;">🎟️ Quero Participar</button>' +
           '<p style="font-size:11px;color:#aaa;margin-top:10px;">Sorteio 100% online. Resultado divulgado no nosso canal.</p>' +
           '</div>';
-        var modal = showModal(html, 'ðŸŽ Sorteio do MÃªs');
+        var modal = showModal(html, '🎁 Sorteio do Mês');
         var btn = document.getElementById('gaBtn');
         if (btn) {
           btn.onclick = function() {
@@ -171,19 +164,19 @@
             if (!name || !whats) { showToast('Preencha nome e WhatsApp'); return; }
             btn.disabled = true;
             btn.textContent = 'Enviando...';
-            postJSON('/api/sorteio/participar', { name: name, email: '', whatsapp: whatsapp }).then(function(r) { return r.json(); }).then(function(data) {
+            postJSON('/api/sorteio/participar', { name: name, email: '', whatsapp: whats }).then(function(r) { return r.json(); }).then(function(data) {
               if (data.ok) {
                 modal.overlay.remove();
-                showToast('ðŸŽ‰ ParticipaÃ§Ã£o confirmada! Boa sorte!');
+                showToast('🎉 Participação confirmada! Boa sorte!');
               } else {
                 btn.disabled = false;
-                btn.textContent = 'ðŸŽŸï¸ Quero Participar';
+                btn.textContent = '🎟️ Quero Participar';
                 showToast(data.error || 'Erro ao participar');
               }
             }).catch(function() {
               btn.disabled = false;
-              btn.textContent = 'ðŸŽŸï¸ Quero Participar';
-              showToast('Erro de conexÃ£o');
+              btn.textContent = '🎟️ Quero Participar';
+              showToast('Erro de conexão');
             });
           };
         }
@@ -192,30 +185,29 @@
   }
 
   // ============================================================
-  // 1. PROGRAMA DE INDICAÃ‡ÃƒO â€” botÃ£o "Convide amigos"
+  // 1. PROGRAMA DE INDICAÇÃO — botão "Convide amigos"
   // ============================================================
   function initReferral() {
     fetch('/api/convite').then(function(r) { return r.json(); }).then(function(data) {
       var refCode = data && data.code ? data.code : '';
       if (!refCode) return;
       var link = location.origin + '/convite/' + refCode;
-      // BotÃ£o flutuante
       var btn = document.createElement('div');
       btn.id = 'referralBtn';
       btn.style.cssText = 'position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,#7c4dff,#1565c0);color:#fff;border-radius:50px;padding:12px 18px;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;cursor:pointer;box-shadow:0 6px 20px rgba(21,101,192,.4);z-index:9995;display:flex;align-items:center;gap:8px;';
-      btn.innerHTML = 'ðŸŽ Convide e ganhe';
+      btn.innerHTML = '🎁 Convide e ganhe';
       btn.onclick = function() {
         var html =
           '<div style="font-size:14px;color:#555;">' +
-          '<p style="margin:0 0 8px;">Compartilhe seu link e <strong style="color:#1565c0;">ganhe cupons de 5%</strong> para cada amigo que visitar! Seu amigo tambÃ©m ganha <strong style="color:#7c4dff;">10% na primeira compra</strong>.</p>' +
+          '<p style="margin:0 0 8px;">Compartilhe seu link e <strong style="color:#1565c0;">ganhe cupons de 5%</strong> para cada amigo que visitar! Seu amigo também ganha <strong style="color:#7c4dff;">10% na primeira compra</strong>.</p>' +
           '<div style="display:flex;gap:8px;margin:14px 0;">' +
           '<input id="refLink" readonly value="' + link + '" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:12px;background:#f7f7f7;">' +
           '<button id="refCopy" style="padding:10px 16px;background:#1565c0;color:#fff;border:none;border-radius:8px;cursor:pointer;">Copiar</button>' +
           '</div>' +
-          '<a id="refWa" href="https://wa.me/?text=' + encodeURIComponent('Confira o ' + document.title + ' e ganhe desconto! ' + link) + '" target="_blank" style="display:block;text-align:center;padding:12px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;margin-bottom:8px;">ðŸ“± Enviar no WhatsApp</a>' +
+          '<a id="refWa" href="https://wa.me/?text=' + encodeURIComponent('Confira o ' + document.title + ' e ganhe desconto! ' + link) + '" target="_blank" style="display:block;text-align:center;padding:12px;background:#25D366;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;margin-bottom:8px;">📱 Enviar no WhatsApp</a>' +
           '<p style="font-size:12px;color:#999;margin:0;">Visitas: <strong id="refVisits">' + (data.visits || 0) + '</strong></p>' +
           '</div>';
-        var modal = showModal(html, 'ðŸŽ Convide & Ganhe');
+        var modal = showModal(html, '🎁 Convide & Ganhe');
         var copyBtn = document.getElementById('refCopy');
         if (copyBtn) copyBtn.onclick = function() {
           copyToClipboard(link);
@@ -233,16 +225,12 @@
   }
 
   // ============================================================
-  // 3. RECUPERAÃ‡ÃƒO DE VISITAS â€” integrado no product.ejs
-  // ExpÃµe funÃ§Ãµes globais para serem chamadas pelas pÃ¡ginas
+  // 3. RECUPERAÇÃO DE VISITAS — integrado no product.ejs
+  // Expõe funções globais para serem chamadas pelas páginas
   // ============================================================
   window.MartplaceAttraction = {
     trackVisit: function(productId) {
-      fetch('/api/visita', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: productId })
-      }).catch(function() {});
+      postJSON('/api/visita', { productId: productId }).catch(function() {});
     },
     checkRescue: function(productId) {
       if (sessionStorage.getItem('rescueShown_' + productId)) return;
@@ -250,20 +238,16 @@
         if (data && data.ok && data.elegivel) {
           sessionStorage.setItem('rescueShown_' + productId, '1');
           setTimeout(function() {
-            fetch('/api/visita/cupom', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productId: productId })
-            }).then(function(r) { return r.json(); }).then(function(d) {
+            postJSON('/api/visita/cupom', { productId: productId }).then(function(r) { return r.json(); }).then(function(d) {
               if (d && d.ok) {
                 var html =
                   '<div style="font-size:14px;color:#555;">' +
-                  '<p>Notamos que vocÃª voltou para ver este produto. ðŸ˜Š</p>' +
-                  '<p style="margin:14px 0;">Aqui estÃ¡ um cupom especial sÃ³ para vocÃª:</p>' +
+                  '<p>Notamos que você voltou para ver este produto. 😊</p>' +
+                  '<p style="margin:14px 0;">Aqui está um cupom especial só para você:</p>' +
                   '<div style="background:#fff3cd;border:2px dashed #f9a825;border-radius:8px;padding:14px;font-size:20px;font-weight:bold;color:#e65100;letter-spacing:2px;margin-bottom:14px;">' + d.code + '</div>' +
-                  '<p style="font-size:12px;color:#999;">5% de desconto â€” use no checkout!</p>' +
+                  '<p style="font-size:12px;color:#999;">5% de desconto — use no checkout!</p>' +
                   '</div>';
-                var modal = showModal(html, 'ðŸŽ‰ VocÃª ganhou um cupom!');
+                var modal = showModal(html, '🎉 Você ganhou um cupom!');
                 modal.overlay.onclick = function(e) {
                   if (e.target === modal.overlay) modal.overlay.remove();
                 };
@@ -277,13 +261,12 @@
   };
 
   // ============================================================
-  // INICIALIZAÃ‡ÃƒO
+  // INICIALIZAÇÃO
   // ============================================================
   document.addEventListener('DOMContentLoaded', function() {
     initPush();
     initGiveaway();
     initReferral();
-    // Ticker sÃ³ aparece apÃ³s alguns segundos
     setTimeout(initSocialTicker, 5000);
   });
 })();

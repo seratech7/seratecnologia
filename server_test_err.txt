@@ -1,2 +1,0 @@
-[CSRF] Token inválido: POST /api/sorteio/participar token: undefined session: 17b879174da6b2551f334d82eafb3715d47faa2b68769ab5
-[CSRF] Token inválido: POST /api/visita token: undefined session: dd289eb85daefc446e331df99d8de1de94f0675572ed56ed
