@@ -1,0 +1,199 @@
+<%- include('../partials/admin-header', { title: title, currentPath: '/admin/ai-audit' }) %>
+
+<style>
+.aud-hero { border-radius:12px; padding:24px; margin-bottom:20px; background:linear-gradient(135deg, rgba(18,194,233,0.08), rgba(0,255,156,0.06)); border:1px solid var(--hack-border); display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+.aud-score { width:130px; height:130px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--hack-bg-2); border:6px solid; font-weight:700; }
+.aud-score .num { font-size:36px; line-height:1; }
+.aud-score .lbl { font-size:11px; color:var(--hack-dim); margin-top:4px; }
+.aud-stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:12px; flex:1; }
+.aud-stat { background:var(--hack-bg-2); border:1px solid var(--hack-border); border-radius:10px; padding:12px; text-align:center; }
+.aud-stat .n { font-size:22px; font-weight:700; }
+.aud-stat .t { font-size:11px; color:var(--hack-dim); }
+.aud-section { border-radius:10px; padding:20px; margin-bottom:20px; background:var(--hack-bg); border:1px solid var(--hack-border); }
+.aud-section h2 { margin:0 0 14px; font-size:16px; display:flex; align-items:center; gap:8px; color:var(--hack-text-hi); }
+.aud-finding { border:1px solid var(--hack-border); border-left-width:4px; border-radius:8px; padding:12px 14px; margin-bottom:10px; background:var(--hack-bg-2); }
+.aud-finding.critical { border-left-color:#ff3860; }
+.aud-finding.high { border-left-color:#ff8f2e; }
+.aud-finding.medium { border-left-color:#ffd93b; }
+.aud-finding.low { border-left-color:#2ecc71; }
+.aud-finding.info { border-left-color:#3498db; }
+.aud-finding.resolved { opacity:.6; }
+.aud-finding.ignored { opacity:.45; }
+.aud-fh { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.aud-fh .sev { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:2px 8px; border-radius:10px; }
+.aud-fh .cat { font-size:11px; color:var(--hack-cyan); text-transform:capitalize; }
+.aud-fh .code { font-family:monospace; font-size:11px; color:var(--hack-dim); }
+.aud-title { font-size:14px; font-weight:600; flex:1; color:var(--hack-text-hi); }
+.aud-desc { font-size:12.5px; color:var(--hack-text); margin:8px 0; line-height:1.5; }
+.aud-ev { font-size:12px; color:var(--hack-dim); background:var(--hack-bg); border:1px dashed var(--hack-border); padding:6px 10px; border-radius:6px; margin:6px 0; font-family:monospace; word-break:break-all; }
+.aud-rec { font-size:12px; color:#9adfb8; margin-top:6px; }
+.aud-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.aud-btn { border:none; padding:5px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+.aud-btn.primary { background:var(--hack-green); color:#000; }
+.aud-btn.resolved { background:rgba(0,255,156,0.12); color:var(--hack-green); }
+.aud-btn.ignored { background:rgba(150,150,150,0.15); color:#bbb; }
+.aud-btn.open { background:rgba(52,152,219,0.15); color:#5dade2; }
+.aud-btn.link { background:rgba(255,255,255,0.06); color:var(--hack-text); text-decoration:none; display:inline-block; }
+.aud-ai { background:linear-gradient(135deg, rgba(155,89,182,0.08), rgba(52,152,219,0.08)); border:1px solid var(--hack-border); border-radius:10px; padding:20px; margin-bottom:20px; }
+.aud-ai .markdown { font-size:13px; line-height:1.6; color:var(--hack-text); }
+.aud-ai .markdown h1, .aud-ai .markdown h2, .aud-ai .markdown h3 { color:var(--hack-text-hi); font-size:15px; margin:12px 0 6px; }
+.aud-ai .markdown ul, .aud-ai .markdown ol { padding-left:20px; }
+.aud-ai .markdown li { margin:3px 0; }
+.aud-empty { text-align:center; color:var(--hack-dim); padding:30px; }
+.aud-config input { width:100%; padding:7px 10px; border:1px solid var(--hack-border); border-radius:6px; font-size:13px; background:var(--hack-bg-2); color:var(--hack-text); }
+.aud-config .f { margin-bottom:10px; }
+.aud-config .f label { display:block; font-size:12px; font-weight:600; color:var(--hack-text); margin-bottom:3px; }
+.aud-config .f .hint { font-size:11px; color:var(--hack-dim); margin-top:2px; }
+.filter-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.filter-tabs button { border:1px solid var(--hack-border); background:var(--hack-bg-2); color:var(--hack-text); padding:5px 12px; border-radius:16px; font-size:12px; cursor:pointer; }
+.filter-tabs button.active { background:var(--hack-green); color:#000; border-color:var(--hack-green); font-weight:600; }
+</style>
+
+<div class="admin-content">
+  <div class="admin-header-bar">
+    <h1><i class="fas fa-robot"></i> Auditoria Inteligente (IA)</h1>
+    <a href="/admin/ai-audit" class="btn-primary" style="background:#1976d2;text-decoration:none;"><i class="fas fa-sync"></i> Executar Auditoria</a>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+
+  <!-- HERO -->
+  <div class="aud-hero">
+    <div class="aud-score" style="border-color:<%= report.score >= 85 ? 'var(--hack-green)' : (report.score >= 60 ? '#ffd93b' : 'var(--hack-red)') %>;">
+      <span class="num" style="color:<%= report.score >= 85 ? 'var(--hack-green)' : (report.score >= 60 ? '#ffd93b' : 'var(--hack-red)') %>;"><%= report.score %></span>
+      <span class="lbl">SAÚDE DO SISTEMA</span>
+    </div>
+    <div class="aud-stats">
+      <div class="aud-stat"><div class="n" style="color:#ff3860;"><%= report.counts.critical %></div><div class="t">Críticos</div></div>
+      <div class="aud-stat"><div class="n" style="color:#ff8f2e;"><%= report.counts.high %></div><div class="t">Altos</div></div>
+      <div class="aud-stat"><div class="n" style="color:#ffd93b;"><%= report.counts.medium %></div><div class="t">Médios</div></div>
+      <div class="aud-stat"><div class="n" style="color:#2ecc71;"><%= report.counts.low %></div><div class="t">Baixos</div></div>
+      <div class="aud-stat"><div class="n" style="color:#3498db;"><%= report.counts.info %></div><div class="t">Informativos</div></div>
+      <div class="aud-stat"><div class="n"><%= report.findings.length %></div><div class="t">Total achados</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--hack-dim);min-width:200px;">
+      <div><i class="fas fa-clock"></i> Gerado: <%= new Date(report.generatedAt).toLocaleString('pt-BR') %></div>
+      <div><i class="fas fa-microchip"></i> Node <%= report.context.runtime.node %> · <%= report.context.runtime.memoryMb %> MB</div>
+      <div><i class="fas fa-database"></i> <%= report.context.db.tables %> tabelas · <%= report.context.db.sizeBytes ? (report.context.db.sizeBytes/1048576).toFixed(1)+' MB' : 'n/d' %></div>
+    </div>
+  </div>
+
+  <!-- ANÁLISE IA -->
+  <div class="aud-ai">
+    <h2 style="margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;color:var(--hack-text-hi);"><i class="fas fa-brain" style="color:#9b59b6;"></i> Análise da Inteligência Artificial</h2>
+    <% if (report.aiError) { %>
+      <div style="background:rgba(255,56,96,0.08);border:1px solid rgba(255,56,96,0.3);border-radius:8px;padding:14px;font-size:13px;color:#ff6b81;">
+        <i class="fas fa-exclamation-triangle"></i> Falha na análise de IA: <%= report.aiError %>
+      </div>
+    <% } else if (report.ai) { %>
+      <div class="markdown"><%- report.ai.summary %></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--hack-dim);">Modelo: <%= report.ai.model %></div>
+    <% } else { %>
+      <div style="font-size:13px;color:var(--hack-dim);">
+        <i class="fas fa-info-circle"></i> A análise automática já lista todos os problemas encontrados abaixo.
+        Para receber um <b>resumo executivo e recomendações prioritárias geradas por IA</b>, configure uma chave de API abaixo (OpenAI-compatível).
+      </div>
+      <div style="margin-top:12px;">
+        <form method="POST" action="/admin/ai-audit/analyze" style="display:inline;">
+          <button type="submit" class="btn-primary" style="background:#9b59b6;"><i class="fas fa-brain"></i> Gerar Análise com IA</button>
+        </form>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- CONFIG IA -->
+  <div class="aud-section">
+    <h2><i class="fas fa-plug"></i> Configuração da IA</h2>
+    <form method="POST" action="/admin/ai-audit/config" class="aud-config" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+      <div class="f">
+        <label>API Key</label>
+        <input type="password" name="ai_api_key" value="<%= aiConfig.api_key %>" placeholder="sk-...">
+        <div class="hint">Compatível com OpenAI, OpenRouter, Groq, etc.</div>
+      </div>
+      <div class="f">
+        <label>Base URL</label>
+        <input type="text" name="ai_base_url" value="<%= aiConfig.base_url %>" placeholder="https://api.openai.com/v1">
+        <div class="hint">Endpoint da API (sem barra final).</div>
+      </div>
+      <div class="f">
+        <label>Modelo</label>
+        <input type="text" name="ai_model" value="<%= aiConfig.model %>" placeholder="gpt-4o-mini">
+        <div class="hint">Modelo usado para a análise.</div>
+      </div>
+      <div style="grid-column:1 / -1;">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar Configurações de IA</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ACHADOS -->
+  <div class="aud-section">
+    <h2><i class="fas fa-exclamation-triangle"></i> Problemas e Vulnerabilidades (<%= report.findings.length %>)</h2>
+
+    <div class="filter-tabs">
+      <button class="active" data-filter="all" onclick="filterAud('all',this)">Todos</button>
+      <button data-filter="critical" onclick="filterAud('critical',this)">Críticos</button>
+      <button data-filter="high" onclick="filterAud('high',this)">Altos</button>
+      <button data-filter="medium" onclick="filterAud('medium',this)">Médios</button>
+      <button data-filter="low" onclick="filterAud('low',this)">Baixos</button>
+      <button data-filter="info" onclick="filterAud('info',this)">Informativos</button>
+      <button data-filter="open" onclick="filterAud('open',this)">Em aberto</button>
+    </div>
+
+    <% if (!report.findings || report.findings.length === 0) { %>
+      <div class="aud-empty"><i class="fas fa-check-circle" style="font-size:40px;color:var(--hack-green);display:block;margin-bottom:10px;"></i>Nenhum problema encontrado. Sistema saudável!</div>
+    <% } else { %>
+      <% report.findings.forEach(function(f) { %>
+        <div class="aud-finding <%= f.severity %> <%= f.status %>" data-sev="<%= f.severity %>" data-status="<%= f.status %>">
+          <div class="aud-fh">
+            <span class="sev" style="background:<%= f.severity === 'critical' ? 'rgba(255,56,96,0.15)' : (f.severity === 'high' ? 'rgba(255,143,46,0.15)' : (f.severity === 'medium' ? 'rgba(255,217,59,0.15)' : (f.severity === 'low' ? 'rgba(46,204,113,0.15)' : 'rgba(52,152,219,0.15)')) %>);color:<%= f.severity === 'critical' ? '#ff3860' : (f.severity === 'high' ? '#ff8f2e' : (f.severity === 'medium' ? '#ffd93b' : (f.severity === 'low' ? '#2ecc71' : '#3498db'))) %>;"><%= f.label %></span>
+            <span class="cat"><%= f.category %></span>
+            <span class="code"><%= f.code %></span>
+            <% if (f.status !== 'open') { %><span class="sev" style="background:rgba(150,150,150,0.15);color:#bbb;"><%= f.status === 'resolved' ? 'Resolvido' : 'Ignorado' %></span><% } %>
+          </div>
+          <div class="aud-title"><%= f.title %></div>
+          <div class="aud-desc"><%= f.description %></div>
+          <div class="aud-ev">Evidência: <%= f.evidence %></div>
+          <div class="aud-rec"><i class="fas fa-lightbulb"></i> <b>Correção:</b> <%= f.recommendation %></div>
+          <div class="aud-actions">
+            <% if (f.status === 'open') { %>
+              <form method="POST" action="/admin/ai-audit/finding/<%= f.code %>" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="status" value="resolved">
+                <button type="submit" class="aud-btn resolved"><i class="fas fa-check"></i> Resolvido</button>
+              </form>
+              <form method="POST" action="/admin/ai-audit/finding/<%= f.code %>" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="status" value="ignored">
+                <button type="submit" class="aud-btn ignored"><i class="fas fa-eye-slash"></i> Ignorar</button>
+              </form>
+            <% } else { %>
+              <form method="POST" action="/admin/ai-audit/finding/<%= f.code %>" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <input type="hidden" name="status" value="open">
+                <button type="submit" class="aud-btn open"><i class="fas fa-undo"></i> Reabrir</button>
+              </form>
+            <% } %>
+            <% if (f.link) { %><a href="<%= f.link %>" class="aud-btn link"><i class="fas fa-external-link-alt"></i> Ver no painel</a><% } %>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<script>
+function filterAud(filter, btn) {
+  document.querySelectorAll('.aud-finding').forEach(function(el) {
+    var show = false;
+    if (filter === 'all') show = true;
+    else if (filter === 'open') show = el.dataset.status === 'open';
+    else show = el.dataset.sev === filter;
+    el.style.display = show ? '' : 'none';
+  });
+  document.querySelectorAll('.filter-tabs button').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+</script>
+
+<%- include('../partials/admin-footer') %>

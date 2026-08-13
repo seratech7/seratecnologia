@@ -1441,6 +1441,66 @@ router.get('/diagnostico', requireAdmin, (req, res) => {
   res.render('admin/debug', { title: 'Diagnóstico', db: dbState, msg: req.query.msg || '' });
 });
 
+// ========== AUDITORIA IA ==========
+const { runAudit, analyzeWithAI } = require('../utils/ai-audit');
+
+router.get('/ai-audit', async (req, res) => {
+  try {
+    const report = await runAudit();
+    res.render('admin/ai-audit', {
+      title: 'Auditoria IA',
+      report: report,
+      aiConfig: {
+        api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
+        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || 'https://api.openai.com/v1',
+        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || 'gpt-4o-mini'
+      },
+      msg: req.query.msg || ''
+    });
+  } catch(e) {
+    res.status(500).send('Erro na auditoria: ' + e.message);
+  }
+});
+
+router.post('/ai-audit/finding/:code', (req, res) => {
+  const code = String(req.params.code || '').slice(0, 64);
+  const status = req.body.status === 'resolved' ? 'resolved' : (req.body.status === 'ignored' ? 'ignored' : 'open');
+  if (code) db.setAuditFindingStatus(code, status);
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'ai_audit_finding', 'Alterou status do achado ' + code + ' para ' + status);
+  res.redirect('/admin/ai-audit');
+});
+
+router.post('/ai-audit/config', (req, res) => {
+  const keys = ['ai_api_key', 'ai_base_url', 'ai_model'];
+  keys.forEach(function(key) {
+    if (req.body[key] !== undefined) {
+      db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key, String(req.body[key]).trim()]);
+    }
+  });
+  db.logActivity('admin', req.session.adminId, req.session.adminName, 'ai_audit_config', 'Configurações de IA da auditoria atualizadas');
+  res.redirect('/admin/ai-audit?msg=Configura%C3%A7%C3%B5es+de+IA+salvas');
+});
+
+router.post('/ai-audit/analyze', async (req, res) => {
+  try {
+    const report = await runAudit();
+    const open = report.findings.filter(f => f.status === 'open');
+    const ai = await analyzeWithAI(open);
+    res.render('admin/ai-audit', {
+      title: 'Auditoria IA',
+      report: Object.assign(report, { ai: ai && !ai.error ? ai : null, aiError: ai && ai.error ? ai.error : null }),
+      aiConfig: {
+        api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
+        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || 'https://api.openai.com/v1',
+        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || 'gpt-4o-mini'
+      },
+      msg: ai && ai.error ? 'Falha na análise de IA: ' + ai.error : (ai ? 'Análise de IA gerada com sucesso' : 'Configure uma chave de API de IA para usar a análise inteligente')
+    });
+  } catch(e) {
+    res.status(500).send('Erro: ' + e.message);
+  }
+});
+
 router.post('/reseed-categories', requireAdmin, (req, res) => {
   const existing = db.get('SELECT COUNT(*) as c FROM categories');
   if (existing && existing.c > 0) {
