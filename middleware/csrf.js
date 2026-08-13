@@ -1,6 +1,9 @@
 function csrfProtection(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
-  var token = req.body?._csrf || req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
+  // Para forms multipart (upload) o corpo só é parseado pelo multer da rota,
+  // que roda DEPOIS deste middleware. Então o token é enviado via query string
+  // (injetado na action do form pelo injectCsrfIntoHtml) e lido daqui.
+  var token = req.body?._csrf || req.query?._csrf || req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
   if (!token || token !== req.session?.csrfToken) {
     // Após um deploy no Render o disco é zerado e o cookie antigo aponta para uma
     // sessão inexistente: o express-session regenera a sessão (csrfToken novo), então
@@ -52,6 +55,18 @@ function injectCsrfIntoHtml(html, token) {
     cleaned = cleaned.replace(/<form\b[^>]*>/gi, function(m) {
       if (/name=["']_csrf/i.test(m)) return m;
       if (/method=["']get["']/i.test(m)) return m;
+      var isMultipart = /enctype=["']multipart\/form-data["']/i.test(m);
+      // Forms multipart não têm o corpo parseado antes do CSRF (multer roda na
+      // rota), então o token vai na action via query string.
+      if (isMultipart) {
+        var actionMatch = m.match(/action=["']([^"']*)["']/i);
+        var action = actionMatch ? actionMatch[1] : '';
+        var sep = action.indexOf('?') >= 0 ? '&' : '?';
+        m = actionMatch
+          ? m.replace(/action=["'][^"']*["']/i, 'action="' + action + sep + '_csrf=' + token + '"')
+          : m.replace(/>\s*$/, ' action="' + sep.slice(1) + '_csrf=' + token + '">');
+        return m;
+      }
       return m + '<input type="hidden" name="_csrf" value="' + token + '">';
     });
   }
