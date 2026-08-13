@@ -928,6 +928,15 @@ async function initDb() {
 
   // Test sale removed for security
 
+  // === AUDITORIA IA: status de achados (para não repetir achados já tratados) ===
+  db.run(`
+    CREATE TABLE IF NOT EXISTS audit_findings_status (
+      code TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'open',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   saveDb();
 
   return db;
@@ -1762,6 +1771,26 @@ function deleteCustomerAddress(addressId, customerId) {
 
 function getCustomerOrders(customerId) {
   return query("SELECT s.*, p.image as product_image, p.name as product_name_join FROM sales s LEFT JOIN products p ON s.product_id = p.id WHERE s.customer_id = ? ORDER BY s.created_at DESC", [customerId]);
+}
+
+// === AUDITORIA IA ===
+function getAuditFindingStatuses() {
+  try {
+    return query("SELECT code, status FROM audit_findings_status");
+  } catch(e) { return []; }
+}
+
+function getAuditFindingStatus(code) {
+  try {
+    return get("SELECT * FROM audit_findings_status WHERE code = ?", [code]);
+  } catch(e) { return null; }
+}
+
+function setAuditFindingStatus(code, status) {
+  try {
+    run("INSERT INTO audit_findings_status (code, status, updated_at) VALUES (?, ?, datetime('now')) ON CONFLICT(code) DO UPDATE SET status = excluded.status, updated_at = datetime('now')",
+      [code, status || 'open']);
+  } catch(e) {}
 }
 
 module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders };
