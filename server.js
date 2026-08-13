@@ -157,7 +157,8 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
+    // 'auto': Secure quando a requisição chega por HTTPS (Render), sem quebrar HTTP local
+    secure: 'auto'
   }
 }));
 
