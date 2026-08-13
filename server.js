@@ -108,14 +108,46 @@ const generalLimiter = rateLimit({
 // File upload validation
 const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, 'public', 'uploads')),
-  filename: (req, file, cb) => {
+// Storage customizado: grava no disco (public/uploads) E no banco (file_store)
+// em paralelo, garantindo que a foto continue servida mesmo após deploys
+// (disco efêmero do Render).
+const storage = {
+  _handleFile(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
     const safeExt = allowedExtensions.includes(ext) ? ext : '.jpg';
-    cb(null, Date.now() + '-' + crypto.randomBytes(8).toString('hex') + safeExt);
+    const filename = Date.now() + '-' + crypto.randomBytes(8).toString('hex') + safeExt;
+    const destPath = path.join(__dirname, 'public', 'uploads', filename);
+    const chunks = [];
+    const out = fs.createWriteStream(destPath);
+    file.stream.on('data', (c) => chunks.push(c));
+    file.stream.on('error', (e) => cb(e));
+    file.stream.pipe(out);
+    out.on('error', (e) => cb(e));
+    out.on('finish', () => {
+      try {
+        persistUploadToStore(filename, Buffer.concat(chunks), file.mimetype);
+      } catch (e) {}
+      cb(null, { path: destPath, filename, size: Buffer.concat(chunks).length });
+    });
+  },
+  _removeFile(req, file, cb) {
+    try { if (file.path) fs.unlinkSync(file.path); } catch (e) {}
+    try { if (file.filename) db.deleteFileFromStore(file.filename); } catch (e) {}
+    cb(null);
   }
-});
+};
+
+// Persiste cópias dos uploads no banco (file_store) para sobreviverem a deploys
+// com disco efêmero (Render). O multer diskStorage grava no disco; este helper
+// copia o arquivo gravado para o banco assim que o buffer é recebido.
+const persistUploadToStore = (filename, buffer, mimetype) => {
+  try {
+    if (!db) return;
+    db.saveFileToStore(filename, buffer, mimetype || 'image/jpeg');
+  } catch (e) {
+    console.error('[uploads] falha ao persistir no file_store:', e.message);
+  }
+};
 const upload = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -233,6 +265,25 @@ if (SECRET_ADMIN !== '/admin') app.use('/admin/login', loginLimiter);
 if (SECRET_SELLER !== '/seller') app.use('/seller/login', loginLimiter);
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Fallback para arquivos de upload: se o arquivo sumiu do disco (ex.: deploy no Render,
+// que usa disco efêmero), serve a cópia persistida no banco (file_store).
+app.use('/uploads', (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  var filename = path.basename(decodeURIComponent(req.path || ''));
+  if (!filename || filename.indexOf('.') === -1) return next();
+  var filePath = path.join(__dirname, 'public', 'uploads', filename);
+  if (fs.existsSync(filePath)) return next();
+  try {
+    var stored = db.getFileFromStore(filename);
+    if (!stored) return next();
+    res.setHeader('Content-Type', stored.contentType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(Buffer.isBuffer(stored.data) ? stored.data : Buffer.from(stored.data));
+  } catch (e) {
+    return next();
+  }
+});
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -517,6 +568,13 @@ async function start() {
   if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir, { recursive: true });
 
   await initDb();
+
+  // Garante que os uploads existentes no disco tenham cópia no banco
+  // (file_store), para não sumirem após deploys com disco efêmero.
+  try {
+    const backfilled = db.backfillFileStore(uploadsDir);
+    if (backfilled > 0) console.log(`[uploads] ${backfilled} arquivo(s) copiado(s) para o file_store`);
+  } catch (e) { console.error('[uploads] backfill falhou:', e.message); }
   app.listen(PORT, () => {
     console.log(`🚀 SeraTecnologia rodando em http://localhost:${PORT}`);
     console.log(`📊 Painel Admin: http://localhost:${PORT}${SECRET_ADMIN}/login`);

@@ -237,7 +237,7 @@ module.exports = function() {
     const templates = db.getMarketingTemplates(platform || null);
     res.render('admin/marketing/templates', {
       title: 'Modelos de Mensagem', currentPath: '/admin/marketing/templates',
-      templates, platform,
+      templates, platform, id: null, csrfToken: req.session.csrfToken,
       error: null, success: null
     });
   });

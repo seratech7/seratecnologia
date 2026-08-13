@@ -7,3 +7,6 @@
 [auto] Promoção diária agendado para 14/08/2026, 09:00:00
 [auto] Sorteio mensal agendado para 01/09/2026, 12:00:00
 [auto] Agendador iniciado (ping a cada 6h, promoção diária às 9:00, anúncio às 18:00)
+[auto] Push enviado: {"sent":0,"total":1}
+[backup] backup-20260813-200825.sqlite (mantidos últimos 30)
+[autosave] push falhou (sem credencial disponível ou erro)

@@ -1806,4 +1806,53 @@ function setAuditFindingStatus(code, status) {
   } catch(e) {}
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus };
+// === ARMAZENAMENTO PERSISTENTE DE UPLOADS ===
+function saveFileToStore(filename, data, contentType) {
+  try {
+    if (!data) return;
+    var buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+    run('INSERT INTO file_store (filename, data, content_type, size, created_at) VALUES (?, ?, ?, ?, datetime("now")) ON CONFLICT(filename) DO UPDATE SET data = excluded.data, content_type = excluded.content_type, size = excluded.size, created_at = datetime("now")',
+      [filename, buf, contentType || '', buf.length]);
+  } catch(e) { console.error('[file_store] save error:', e.message); }
+}
+
+function getFileFromStore(filename) {
+  try {
+    var r = get('SELECT data, content_type FROM file_store WHERE filename = ?', [filename]);
+    if (!r || !r.data) return null;
+    return { data: r.data, contentType: r.content_type || 'application/octet-stream' };
+  } catch(e) { return null; }
+}
+
+function deleteFileFromStore(filename) {
+  try { run('DELETE FROM file_store WHERE filename = ?', [filename]); } catch(e) {}
+}
+
+function fileExistsInStore(filename) {
+  try { return !!get('SELECT 1 as x FROM file_store WHERE filename = ?', [filename]); } catch(e) { return false; }
+}
+
+// Backfill: copia arquivos existentes em public/uploads para o file_store
+function backfillFileStore(uploadsDir) {
+  var fsx = require('fs');
+  var pathx = require('path');
+  if (!fsx.existsSync(uploadsDir)) return 0;
+  var count = 0;
+  try {
+    var files = fsx.readdirSync(uploadsDir);
+    files.forEach(function(f) {
+      var full = pathx.join(uploadsDir, f);
+      var st = fsx.statSync(full);
+      if (!st.isFile()) return;
+      if (fileExistsInStore(f)) return;
+      try {
+        var data = fsx.readFileSync(full);
+        saveFileToStore(f, data, 'application/octet-stream');
+        count++;
+      } catch(e) {}
+    });
+  } catch(e) {}
+  return count;
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus, saveFileToStore, getFileFromStore, deleteFileFromStore, fileExistsInStore, backfillFileStore };
