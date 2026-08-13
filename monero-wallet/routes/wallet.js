@@ -6,7 +6,7 @@ const { getWallet } = require('../lib/wallet');
 
 const router = express.Router();
 
-router.use(requireAuth);
+router.use(['/wallet', '/deposit', '/withdraw', '/history'], requireAuth);
 
 async function ensureAddress(user) {
   let addr = db.getAddressByUser(user.id);
@@ -84,12 +84,12 @@ router.post('/withdraw', async (req, res) => {
   const fee = db.getSetting('withdrawal_fee_atomic') || '0';
   const total = (BigInt(amountAtomic) + BigInt(fee)).toString();
   const balance = BigInt(db.getUserBalance(user.id));
-  if (balance < total) {
+  if (balance < BigInt(total)) {
     return res.status(400).json({ error: 'Saldo insuficiente para saque + taxa.' });
   }
 
   // Reserva o saldo imediatamente para evitar saque duplo
-  const newBal = (balance - total).toString();
+  const newBal = (balance - BigInt(total)).toString();
   db.updateUserBalance(user.id, newBal);
   db.run('INSERT INTO transactions (user_id, type, amount_atomic, balance_after_atomic, description, reference_type, reference_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
     [user.id, 'withdraw', '-' + amountAtomic, newBal, 'Saque solicitado', 'withdraw', 0]);

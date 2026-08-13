@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 
 function csrfProtection(req, res, next) {
+  if (req.path.indexOf('/api/') === 0) return next();
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
   const token = req.body && req.body._csrf;
   const header = req.headers['x-csrf-token'];

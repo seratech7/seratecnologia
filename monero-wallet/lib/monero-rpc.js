@@ -70,11 +70,14 @@ class MoneroWalletRpc {
 
   // Retorna transferências recebidas (depósitos) com endereço interno
   async getIncomingTransfers() {
+    const addrs = await this._call('get_address', { account_index: 0 });
+    const indexToAddr = {};
+    (addrs.addresses || []).forEach((a) => { indexToAddr[a.address_index] = a.address; });
     const r = await this._call('incoming_transfers', { transfer_type: 'all', account_index: 0 });
     const transfers = (r.transfers || []).map((t) => ({
       txid: t.tx_hash,
+      address: indexToAddr[t.subaddr_index] || null,
       amount: String(t.amount),
-      address_index: t.subaddr_index,
       confirmations: t.confirmations
     }));
     return transfers;
@@ -147,10 +150,11 @@ class MockMoneroWallet {
   }
 
   async getIncomingTransfers() {
+    db.incrementMockConfirmations();
     const mock = db.getMockTransfers();
     const result = [];
     for (const t of mock) {
-      result.push({ txid: t.txid, amount: t.amount_atomic, address_index: 0, confirmations: t.confirmations });
+      result.push({ txid: t.txid, address: t.address, amount: t.amount_atomic, confirmations: t.confirmations });
     }
     return result;
   }

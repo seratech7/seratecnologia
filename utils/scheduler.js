@@ -50,6 +50,38 @@ async function autoPromoteDaily() {
   }
 }
 
+// Sorteio automático (todo dia 1º do mês às 12h)
+async function autoGiveaway() {
+  try {
+    const attraction = require('./attraction');
+    const stats = attraction.getGiveawayStats();
+    if (!stats.total) return { ok: false, reason: 'nenhum participante' };
+    const winner = attraction.drawGiveawayWinner();
+    console.log('[auto] Sorteio executado, vencedor:', winner ? winner.name : 'nenhum');
+    return { ok: true, winner };
+  } catch (e) {
+    console.error('[auto] Erro no sorteio:', e.message);
+    return { ok: false, reason: e.message };
+  }
+}
+
+// Envia notificações push de produtos novos (se VAPID configurado)
+async function autoPushNewProducts() {
+  try {
+    const push = require('./push');
+    if (!push.hasKeys()) return { ok: false, reason: 'VAPID não configurado' };
+    const products = db.query("SELECT * FROM products WHERE status='active' ORDER BY created_at DESC LIMIT 3");
+    if (!products.length) return { ok: false, reason: 'sem produtos' };
+    const top = products[0];
+    const res = await push.sendPushToAll('🆕 Novo produto no ' + process.env.SITE_NAME || 'Martplace', top.name + ' — confira agora!', '/produto/' + top.id);
+    console.log('[auto] Push enviado:', JSON.stringify(res));
+    return { ok: true, ...res };
+  } catch (e) {
+    console.error('[auto] Erro no push:', e.message);
+    return { ok: false, reason: e.message };
+  }
+}
+
 function startScheduler() {
   if (process.env.AUTO_DISABLED === 'true') {
     console.log('[auto] Agendador desativado (AUTO_DISABLED=true)');
@@ -79,8 +111,34 @@ function startScheduler() {
 
   scheduleDaily(PROMOTE_HOUR, autoPromoteDaily, 'Promoção diária');
 
-  // 3) Atualização da DB periodicamente (backup já é feito no server)
+  // 3) Sorteio automático no dia 1º de cada mês às 12h
+  function scheduleMonthly(day, hour, fn, label) {
+    function arm() {
+      const now = new Date();
+      const next = new Date(now);
+      next.setDate(day);
+      next.setHours(hour, 0, 0, 0);
+      if (next <= now) {
+        next.setMonth(next.getMonth() + 1);
+        next.setDate(day);
+      }
+      const delay = next - now;
+      console.log('[auto] ' + label + ' agendado para ' + next.toLocaleString());
+      setTimeout(() => {
+        fn().catch(() => {});
+        arm();
+      }, delay);
+    }
+    arm();
+  }
+  scheduleMonthly(1, 12, autoGiveaway, 'Sorteio mensal');
+
+  // 4) Push de novos produtos a cada 6h
+  setInterval(() => { autoPushNewProducts().catch(() => {}); }, 6 * 3600 * 1000);
+  setTimeout(() => { autoPushNewProducts().catch(() => {}); }, 90000);
+
+  // 5) Atualização da DB periodicamente (backup já é feito no server)
   console.log('[auto] Agendador iniciado (ping a cada ' + PING_INTERVAL + 'h, promoção diária às ' + PROMOTE_HOUR + ':00, anúncio às ' + ANN_HOUR + ':00)');
 }
 
-module.exports = { startScheduler, autoIndexNewProducts, autoPromoteDaily, announceNewProduct: automation.announceNewProduct };
+module.exports = { startScheduler, autoIndexNewProducts, autoPromoteDaily, autoGiveaway, autoPushNewProducts, announceNewProduct: automation.announceNewProduct };

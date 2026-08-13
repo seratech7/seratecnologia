@@ -474,5 +474,55 @@ module.exports = function() {
     }
   });
 
+  // ============================================================
+  //  ATRAÇÃO DE VISITANTES (referral, sorteio, recuperação, push)
+  // ============================================================
+  router.get('/marketing/attraction', (req, res) => {
+    const attraction = require('../utils/attraction');
+    const refStats = attraction.getReferralStats();
+    const gaStats = attraction.getGiveawayStats();
+    const abandoned = db.query('SELECT COUNT(*) as c FROM abandoned_visits') || [];
+    const abandonedCount = abandoned.length ? abandoned[0].c : 0;
+    const pushCount = (db.get('SELECT COUNT(*) as c FROM push_subscriptions') || {}).c || 0;
+    const top = attraction.getTopSellers(5);
+    res.render('admin/marketing/attraction', {
+      title: 'Atração de Visitantes', currentPath: '/admin/marketing/attraction',
+      refStats, gaStats, abandonedCount, pushCount, top,
+      siteUrl: attraction.SITE_URL,
+      discordConfigured: !!process.env.DISCORD_WEBHOOK_URL,
+      pushConfigured: !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+      error: null, success: null
+    });
+  });
+
+  // Executar sorteio agora
+  router.post('/marketing/attraction/draw', (req, res) => {
+    try {
+      const attraction = require('../utils/attraction');
+      const winner = attraction.drawGiveawayWinner();
+      if (!winner) return res.redirect('/admin/marketing/attraction?error=Nenhum participante ainda');
+      res.redirect('/admin/marketing/attraction?success=' + encodeURIComponent('Vencedor sorteado: ' + (winner.name || 'Participante') + ' (notificado no Discord)'));
+    } catch (e) {
+      res.redirect('/admin/marketing/attraction?error=' + encodeURIComponent(e.message));
+    }
+  });
+
+  // Limpar participantes do sorteio
+  router.post('/marketing/attraction/giveaway/reset', (req, res) => {
+    db.run('DELETE FROM giveaway_entries');
+    res.redirect('/admin/marketing/attraction?success=Participantes do sorteio limpos');
+  });
+
+  // Gerar VAPID keys
+  router.post('/marketing/attraction/vapid', (req, res) => {
+    try {
+      const webpush = require('web-push');
+      const keys = webpush.generateVAPIDKeys();
+      res.redirect('/admin/marketing/attraction?success=' + encodeURIComponent('VAPID geradas! Adicione no .env:\n\nVAPID_PUBLIC_KEY=' + keys.publicKey + '\nVAPID_PRIVATE_KEY=' + keys.privateKey));
+    } catch (e) {
+      res.redirect('/admin/marketing/attraction?error=' + encodeURIComponent(e.message));
+    }
+  });
+
   return router;
 };

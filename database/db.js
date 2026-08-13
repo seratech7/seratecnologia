@@ -4,6 +4,11 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
+const PEPPER = process.env.AUTH_PEPPER || crypto.randomBytes(32).toString('hex');
+const SESSION_ENC_KEY = crypto.createHash('sha256').update(process.env.SESSION_ENC_KEY || crypto.randomBytes(32).toString('hex')).digest();
+const DEVICE_ID_COOKIE = '__device_id';
+const SESSION_COOKIE_PREFIX = '__Host-';
+
 const DB_PATH = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, '..', 'database.sqlite');
 
 let db = null;
@@ -369,6 +374,12 @@ async function initDb() {
     if (!colNames.includes('tracking_estimated_days')) {
       db.run("ALTER TABLE sales ADD COLUMN tracking_estimated_days INTEGER DEFAULT 10");
     }
+    if (!colNames.includes('city')) {
+      db.run("ALTER TABLE sales ADD COLUMN city TEXT DEFAULT ''");
+    }
+    if (!colNames.includes('buyer_name')) {
+      db.run("ALTER TABLE sales ADD COLUMN buyer_name TEXT DEFAULT ''");
+    }
   }
 
   db.run(`
@@ -481,6 +492,75 @@ async function initDb() {
       success INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users_auth (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      uid TEXT UNIQUE NOT NULL,
+      user_type TEXT NOT NULL,
+      argon_hash TEXT NOT NULL,
+      mfa_secret_enc TEXT DEFAULT '',
+      totp_enabled INTEGER DEFAULT 0,
+      passkey_id TEXT DEFAULT '',
+      recovery_hashes TEXT DEFAULT '',
+      pepper_ver INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      sid_hash TEXT PRIMARY KEY,
+      user_uid TEXT NOT NULL,
+      user_type TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      ua_hash TEXT NOT NULL,
+      ip_zone TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_seen DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS auth_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_uid TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      ip TEXT NOT NULL,
+      user_agent TEXT NOT NULL,
+      result TEXT NOT NULL,
+      details TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS auth_devices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_uid TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      label TEXT DEFAULT '',
+      last_ip TEXT DEFAULT '',
+      last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
+      revoked INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_uid, device_id)
+    )
+  `);
+
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_uid);
+  `);
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_auth_sessions_expires ON auth_sessions(expires_at);
+  `);
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_auth_events_user ON auth_events(user_uid);
+  `);
+  db.run(`
+    CREATE INDEX IF NOT EXISTS idx_auth_devices_user ON auth_devices(user_uid);
   `);
 
   db.run(`
@@ -618,6 +698,65 @@ async function initDb() {
       content TEXT NOT NULL,
       scheduled_for DATETIME NOT NULL,
       status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // === ATRAÇÃO DE VISITANTES (referral, giveaway, recuperação, push) ===
+  db.run(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      referrer_code TEXT NOT NULL,
+      referrer_ip TEXT DEFAULT '',
+      visitor_ip TEXT DEFAULT '',
+      visitor_session TEXT DEFAULT '',
+      converted INTEGER DEFAULT 0,
+      coupon_generated INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  var refCols = db.exec("PRAGMA table_info(referrals)");
+  if (refCols.length > 0) {
+    var refNames = refCols[0].values.map(function(r) { return r[1]; });
+    if (!refNames.includes('coupon_generated')) db.run("ALTER TABLE referrals ADD COLUMN coupon_generated INTEGER DEFAULT 0");
+  }
+  db.run(`
+    CREATE TABLE IF NOT EXISTS giveaway_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT DEFAULT '',
+      email TEXT DEFAULT '',
+      whatsapp TEXT DEFAULT '',
+      ip TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS abandoned_visits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      ip TEXT DEFAULT '',
+      last_product_id INTEGER DEFAULT 0,
+      last_product_name TEXT DEFAULT '',
+      visits_count INTEGER DEFAULT 1,
+      coupon_offered INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      endpoint TEXT UNIQUE NOT NULL,
+      keys_json TEXT DEFAULT '',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS social_proof (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      message TEXT DEFAULT '',
+      meta TEXT DEFAULT '',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -1386,4 +1525,87 @@ function updateSellerNotifPrefs(sellerId, prefs) {
   run("UPDATE sellers SET notify_email_sale = ?, notify_email_approve = ? WHERE id = ?", [prefs.notify_email_sale ? 1 : 0, prefs.notify_email_approve ? 1 : 0, sellerId]);
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs };
+// === AUTHHIVE FUNCTIONS ===
+function createUserAuth(uid, userType, passwordHash, mfaSecretEnc, pepperVer) {
+  run("INSERT INTO users_auth (uid, user_type, argon_hash, mfa_secret_enc, pepper_ver) VALUES (?, ?, ?, ?, ?)",
+    [uid, userType, passwordHash, mfaSecretEnc || '', pepperVer || 1]);
+}
+
+function getUserAuth(uid) {
+  return get("SELECT * FROM users_auth WHERE uid = ?", [uid]);
+}
+
+function getUserAuthByTypeAndId(userType, userId) {
+  return get("SELECT * FROM users_auth WHERE uid = ?", [userType + ':' + userId]);
+}
+
+function updateUserAuthHash(uid, newHash, pepperVer) {
+  run("UPDATE users_auth SET argon_hash = ?, pepper_ver = ? WHERE uid = ?", [newHash, pepperVer, uid]);
+}
+
+function updateUserAuthMFA(uid, mfaSecretEnc, totpEnabled, recoveryHashes) {
+  run("UPDATE users_auth SET mfa_secret_enc = ?, totp_enabled = ?, recovery_hashes = ? WHERE uid = ?",
+    [mfaSecretEnc || '', totpEnabled ? 1 : 0, recoveryHashes || '', uid]);
+}
+
+function updateUserAuthPasskey(uid, passkeyId) {
+  run("UPDATE users_auth SET passkey_id = ? WHERE uid = ?", [passkeyId || '', uid]);
+}
+
+function createAuthSession(sidHash, userUid, userType, deviceId, uaHash, ipZone, expiresAt) {
+  run("INSERT INTO auth_sessions (sid_hash, user_uid, user_type, device_id, ua_hash, ip_zone, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [sidHash, userUid, userType, deviceId, uaHash, ipZone, expiresAt]);
+}
+
+function getAuthSession(sidHash) {
+  return get("SELECT * FROM auth_sessions WHERE sid_hash = ? AND expires_at > datetime('now')", [sidHash]);
+}
+
+function updateAuthSessionLastSeen(sidHash) {
+  run("UPDATE auth_sessions SET last_seen = datetime('now') WHERE sid_hash = ?", [sidHash]);
+}
+
+function deleteAuthSession(sidHash) {
+  run("DELETE FROM auth_sessions WHERE sid_hash = ?", [sidHash]);
+}
+
+function deleteAllUserSessions(userUid) {
+  run("DELETE FROM auth_sessions WHERE user_uid = ?", [userUid]);
+}
+
+function getUserSessions(userUid) {
+  return query("SELECT * FROM auth_sessions WHERE user_uid = ? ORDER BY last_seen DESC", [userUid]);
+}
+
+function logAuthEvent(userUid, eventType, ip, userAgent, result, details) {
+  run("INSERT INTO auth_events (user_uid, event_type, ip, user_agent, result, details) VALUES (?, ?, ?, ?, ?, ?)",
+    [userUid, eventType, ip || '', userAgent || '', result, details || '']);
+}
+
+function getAuthEvents(userUid, limit) {
+  return query("SELECT * FROM auth_events WHERE user_uid = ? ORDER BY created_at DESC LIMIT ?", [userUid, limit || 100]);
+}
+
+function createAuthDevice(userUid, deviceId, label, ip) {
+  run("INSERT OR REPLACE INTO auth_devices (user_uid, device_id, label, last_ip, last_seen) VALUES (?, ?, ?, ?, datetime('now'))",
+    [userUid, deviceId, label || '', ip || '']);
+}
+
+function getAuthDevices(userUid) {
+  return query("SELECT * FROM auth_devices WHERE user_uid = ? ORDER BY last_seen DESC", [userUid]);
+}
+
+function revokeAuthDevice(userUid, deviceId) {
+  run("UPDATE auth_devices SET revoked = 1 WHERE user_uid = ? AND device_id = ?", [userUid, deviceId]);
+  run("DELETE FROM auth_sessions WHERE user_uid = ? AND device_id = ?", [userUid, deviceId]);
+}
+
+function updateAuthDeviceLabel(userUid, deviceId, label) {
+  run("UPDATE auth_devices SET label = ? WHERE user_uid = ? AND device_id = ?", [label, userUid, deviceId]);
+}
+
+function cleanupExpiredSessions() {
+  run("DELETE FROM auth_sessions WHERE expires_at <= datetime('now')");
+}
+
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions };

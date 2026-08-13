@@ -364,6 +364,24 @@ app.use('/', notificationRoutes);
 app.use('/', purchaseRoutes);
 app.use('/', mercadopagoRoutes);
 app.use('/api', adRoutes);
+app.use('/', require('./routes/attraction'));
+
+// VAPID public key para o cliente (PWA)
+app.get('/api/push/public-key', (req, res) => {
+  const { getPublicKey } = require('./utils/push');
+  res.json({ publicKey: getPublicKey() });
+});
+
+// PWA: manifest e service worker
+app.get('/manifest.webmanifest', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'public', 'manifest.webmanifest'));
+});
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.setHeader('Service-Worker-Allowed', '/');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
 
 // Sitemap — only last 50 products to prevent enumeration
 app.get('/sitemap.xml', (req, res) => {

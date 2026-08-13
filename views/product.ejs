@@ -215,4 +215,18 @@
   <% } %>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var productId = <%= product.id %>;
+  if (window.MartplaceAttraction) {
+    // Rastreia a visita (para recuperação de visitas abandonadas)
+    window.MartplaceAttraction.trackVisit(productId);
+    // Verifica se o visitante merece cupom de resgate
+    setTimeout(function() {
+      window.MartplaceAttraction.checkRescue(productId);
+    }, 15000);
+  }
+});
+</script>
+
 <%- include('partials/footer') %>
