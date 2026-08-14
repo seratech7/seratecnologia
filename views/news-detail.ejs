@@ -120,6 +120,21 @@ body.hacker-theme .news-detail-page {
   font-size: 13px; color: var(--ndim); background: var(--nchip, #eef2ff);
   padding: 8px 14px; border-radius: 24px;
 }
+
+.nd-share {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-top: 22px;
+}
+.nd-share-label { font-size: 13px; color: var(--ndim); font-weight: 600; margin-right: 2px; }
+.nd-share-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--nborder); background: var(--ncard); color: var(--ntext);
+  padding: 9px 15px; border-radius: 24px; cursor: pointer; font-size: 13.5px; font-weight: 600;
+  text-decoration: none; transition: all .15s;
+}
+.nd-share-btn:hover { transform: translateY(-2px); border-color: var(--primary); color: var(--primary); }
+.nd-share-btn i { font-size: 16px; }
+.nd-share-btn.copied { background: #00b894; color: #fff; border-color: #00b894; }
 </style>
 
 <div class="news-detail-page">
@@ -138,9 +153,18 @@ body.hacker-theme .news-detail-page {
         <div class="nd-meta">
           <span><i class="far fa-calendar"></i> <%= new Date(article.created_at).toLocaleDateString('pt-BR') %></span>
           <span><i class="far fa-eye"></i> <%= article.views || 0 %> visualizações</span>
+          <% var _w = (article.content||'').split(/\s+/).filter(Boolean).length; var _rt = Math.max(1, Math.round(_w/200)); %>
+          <span><i class="far fa-clock"></i> <%= _rt %> min de leitura</span>
           <% if (article.author) { %><span class="nd-author"><i class="far fa-user"></i> <%= article.author %></span><% } %>
         </div>
         <div class="nd-prose"><%- article.content %></div>
+
+        <div class="nd-share">
+          <span class="nd-share-label"><i class="fas fa-share-alt"></i> Compartilhar</span>
+          <a class="nd-share-btn" id="share-wa" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+          <a class="nd-share-btn" id="share-tg" target="_blank" rel="noopener"><i class="fab fa-telegram-plane"></i> Telegram</a>
+          <button class="nd-share-btn" id="share-copy"><i class="far fa-copy"></i> Copiar link</button>
+        </div>
 
         <div class="nd-reactions" id="nd-reactions">
           <span class="nd-reactions-label">Esta notícia foi útil?</span>
@@ -179,6 +203,29 @@ body.hacker-theme .news-detail-page {
 
 <script>
 (function () {
+  var shareUrl = <%- JSON.stringify(og && og.url ? og.url : '') %>;
+  var shareTitle = <%- JSON.stringify(article && article.title ? article.title : '') %>;
+  var wa = document.getElementById('share-wa');
+  var tg = document.getElementById('share-tg');
+  var copy = document.getElementById('share-copy');
+  if (wa) wa.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(shareTitle + ' ' + shareUrl);
+  if (tg) tg.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(shareTitle);
+  if (copy) {
+    copy.addEventListener('click', function () {
+      var done = function () {
+        copy.classList.add('copied');
+        copy.innerHTML = '<i class="fas fa-check"></i> Link copiado';
+        setTimeout(function () { copy.classList.remove('copied'); copy.innerHTML = '<i class="far fa-copy"></i> Copiar link'; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(done).catch(done);
+      } else {
+        var t = document.createElement('textarea'); t.value = shareUrl; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done();
+      }
+    });
+  }
+
   var box = document.getElementById('nd-reactions');
   if (!box) return;
   var initial = <%- JSON.stringify(reactions || {}) %>;

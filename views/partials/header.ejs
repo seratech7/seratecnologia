@@ -9,6 +9,14 @@
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1565c0">
+  <% if (typeof og !== 'undefined' && og) { %>
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="<%= og.title %>">
+  <meta property="og:description" content="<%= og.description %>">
+  <meta property="og:image" content="<%= og.image %>">
+  <meta property="og:url" content="<%= og.url %>">
+  <meta name="twitter:card" content="summary_large_image">
+  <% } %>
   <script>
     if (localStorage.getItem('hacker-theme') === '1') {
       document.documentElement.classList.add('hacker-theme');

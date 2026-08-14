@@ -1,140 +1,128 @@
 <%- include('partials/header') %>
 
+<% function catClass(c){ return 'cat-' + String(c||'').replace(/[^a-z0-9]/gi,''); }
+   function isNewNews(d){ try { return (Date.now() - new Date(d).getTime()) < 172800000; } catch(e){ return false; } }
+   function readTimeNews(c){ var w=(c||'').split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w/200)); }
+   function sizeFor(i){ var m=i%5; return m===0?'size-lg':(m===3?'size-tall':''); }
+   function imgFor(n,s){ return n.image || ('https://picsum.photos/seed/'+encodeURIComponent(n.slug)+(s==='size-lg'?'/800/500':(s==='size-tall'?'/600/800':'/600/400'))); }
+   var gridNews = news.filter(function(n){ return !(n.featured && !selectedCategory); });
+%>
+
 <style>
 .news-page {
-  --nbg: #f5f7fb;
-  --ntext: #0d1b2a;
-  --ndim: #6b7280;
-  --ncard: #ffffff;
-  --nborder: #e6e9ef;
-  --nchip: #eef2ff;
-  --nchip-text: #2a3b55;
-  --nshadow: 0 6px 24px rgba(13, 27, 42, 0.08);
-  background: var(--nbg);
-  min-height: calc(100vh - var(--header-height));
-  padding-bottom: 56px;
+  --nbg: #f5f7fb; --ntext: #0d1b2a; --ndim: #6b7280; --ncard: #ffffff;
+  --nborder: #e6e9ef; --nchip: #eef2ff; --nchip-text: #2a3b55; --nshadow: 0 6px 24px rgba(13,27,42,0.08);
+  background: var(--nbg); min-height: calc(100vh - var(--header-height)); padding-bottom: 56px;
 }
 body.hacker-theme .news-page {
-  --nbg: #05070d;
-  --ntext: #c8d6e5;
-  --ndim: #5a6c85;
-  --ncard: #0c1322;
-  --nborder: #1c2a3f;
-  --nchip: #101a2e;
-  --nchip-text: #9fb3d1;
-  --nshadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --nbg: #05070d; --ntext: #c8d6e5; --ndim: #5a6c85; --ncard: #0c1322;
+  --nborder: #1c2a3f; --nchip: #101a2e; --nchip-text: #9fb3d1; --nshadow: 0 6px 24px rgba(0,0,0,0.4);
 }
 
-/* Hero full-width */
+/* Cores por categoria */
+.news-card.cat-Hacking, .news-chip.cat-Hacking { --cc: #ff4d4f; }
+.news-card.cat-Games, .news-chip.cat-Games { --cc: #7c3aed; }
+.news-card.cat-Tecnologia, .news-chip.cat-Tecnologia { --cc: #00b894; }
+
 .news-hero {
   background: linear-gradient(135deg, #0066ff 0%, #0047b3 55%, #0a1628 100%);
-  color: #fff;
-  padding: 44px 24px 34px;
-  position: relative; overflow: hidden;
+  color: #fff; padding: 44px 24px 34px; position: relative; overflow: hidden;
 }
-body.hacker-theme .news-hero {
-  background: linear-gradient(135deg, #062a1f 0%, #04141f 55%, #020308 100%);
-  border-bottom: 1px solid #1c2a3f;
-}
-.news-hero::after {
-  content: ""; position: absolute; right: -60px; top: -60px;
-  width: 260px; height: 260px;
-  background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 70%); border-radius: 50%;
-}
-.news-hero-inner { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
-.news-kicker {
-  display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; background: rgba(255,255,255,0.15);
-  padding: 5px 12px; border-radius: 20px; margin-bottom: 12px;
-}
-.news-hero h1 { font-size: 40px; line-height: 1.1; margin: 0 0 8px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
-.news-hero p { margin: 0 0 20px; opacity: 0.85; font-size: 15px; max-width: 620px; }
+body.hacker-theme .news-hero { background: linear-gradient(135deg, #062a1f 0%, #04141f 55%, #020308 100%); border-bottom: 1px solid #1c2a3f; }
+.news-hero::after { content:""; position:absolute; right:-60px; top:-60px; width:260px; height:260px; background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 70%); border-radius:50%; }
+.news-hero-inner { max-width:1400px; margin:0 auto; position:relative; z-index:1; }
+.news-kicker { display:inline-block; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:20px; margin-bottom:12px; }
+.news-hero h1 { font-size:40px; line-height:1.1; margin:0 0 8px; font-weight:800; display:flex; align-items:center; gap:12px; }
+.news-hero p { margin:0 0 20px; opacity:.85; font-size:15px; max-width:620px; }
+.news-search { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.95); border-radius:12px; padding:6px 6px 6px 14px; max-width:480px; box-shadow:0 8px 24px rgba(0,0,0,0.18); }
+.news-search i { color:#415a77; }
+.news-search input { flex:1; border:0; outline:0; background:transparent; font-size:14px; color:#0d1b2a; padding:8px 4px; }
+.news-search input::placeholder { color:#778da9; }
+.news-search button { border:0; background:var(--primary); color:#fff; padding:10px 18px; border-radius:9px; font-weight:600; cursor:pointer; transition:background .15s; }
+.news-search button:hover { background:var(--primary-dark); }
 
-.news-search {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.95); border-radius: 12px; padding: 6px 6px 6px 14px;
-  max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-}
-.news-search i { color: #415a77; }
-.news-search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 14px; color: #0d1b2a; padding: 8px 4px; }
-.news-search input::placeholder { color: #778da9; }
-.news-search button { border: 0; background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 9px; font-weight: 600; cursor: pointer; transition: background .15s; }
-.news-search button:hover { background: var(--primary-dark); }
-
-/* Barra de filtros (alterna entre os temas) */
 .news-filters {
-  position: sticky; top: var(--header-height); z-index: 50;
-  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-  max-width: 1400px; margin: 0 auto; padding: 18px 24px;
-  background: color-mix(in srgb, var(--nbg) 88%, transparent);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--nborder);
+  position:sticky; top:var(--header-height); z-index:50; display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  max-width:1400px; margin:0 auto; padding:18px 24px;
+  background: color-mix(in srgb, var(--nbg) 88%, transparent); backdrop-filter: blur(8px); border-bottom:1px solid var(--nborder);
 }
 .news-chip {
-  border: 1px solid var(--nborder); background: var(--nchip); color: var(--nchip-text);
-  padding: 9px 18px; border-radius: 30px; font-size: 13.5px; font-weight: 600; cursor: pointer;
-  transition: all .15s; text-decoration: none;
+  display:inline-flex; align-items:center; gap:7px; border:1px solid var(--nborder); background:var(--nchip);
+  color:var(--nchip-text); padding:9px 16px; border-radius:30px; font-size:13.5px; font-weight:600; cursor:pointer; transition:all .15s; text-decoration:none;
 }
-.news-chip:hover { border-color: var(--primary); color: var(--primary); }
-.news-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,102,255,0.35); }
-.news-filter-hint { margin-left: auto; font-size: 12.5px; color: var(--ndim); }
+.news-chip i { color: var(--cc, var(--primary)); }
+.news-chip .chip-count { background: var(--cc, var(--primary)); color:#fff; border-radius:20px; padding:1px 8px; font-size:11px; font-weight:700; }
+.news-chip:hover { border-color:var(--primary); color:var(--primary); }
+.news-chip.active { background:var(--primary); color:#fff; border-color:var(--primary); box-shadow:0 4px 12px rgba(0,102,255,0.35); }
+.news-chip.active i, .news-chip.active .chip-count { color:#fff; }
+.news-filter-hint { margin-left:auto; font-size:12.5px; color:var(--ndim); }
 
-/* Seção Destaques */
-.news-section-title {
-  font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-  color: var(--ndim); margin: 28px 0 16px; display: flex; align-items: center; gap: 8px;
-}
-.news-section-title::before { content: ""; width: 4px; height: 16px; border-radius: 3px; background: var(--primary); }
-.news-featured-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  grid-auto-flow: dense; gap: 18px; max-width: 1400px; margin: 0 auto; padding: 0 24px;
-}
-.news-featured-grid .news-card.size-lg { grid-column: span 2; }
+.news-section-title { font-size:14px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ndim); margin:28px 0 16px; display:flex; align-items:center; gap:8px; max-width:1400px; margin-left:auto; margin-right:auto; padding:0 24px; }
+.news-section-title::before { content:""; width:4px; height:16px; border-radius:3px; background:var(--primary); }
+.news-featured-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); grid-auto-flow:dense; gap:18px; max-width:1400px; margin:0 auto; padding:0 24px; }
+.news-featured-grid .news-card.size-lg { grid-column:span 2; }
 
-/* Grid de revista full-width */
 .news-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  grid-auto-flow: dense;
-  gap: 18px;
-  max-width: 1400px; margin: 0 auto; padding: 24px;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); grid-auto-flow:dense; gap:18px;
+  max-width:1400px; margin:0 auto; padding:24px;
 }
 .news-card {
-  display: flex; flex-direction: column; text-decoration: none; color: var(--ntext);
-  background: var(--ncard); border: 1px solid var(--nborder); border-radius: 14px;
-  overflow: hidden; box-shadow: var(--nshadow);
-  transition: transform .18s, box-shadow .18s, border-color .18s;
+  display:flex; flex-direction:column; text-decoration:none; color:var(--ntext); background:var(--ncard);
+  border:1px solid var(--nborder); border-radius:14px; overflow:hidden; box-shadow:var(--nshadow);
+  transition:transform .18s, box-shadow .18s, border-color .18s; animation:fadeUp .4s ease both;
 }
-.news-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(13,27,42,0.14); border-color: var(--primary); }
-.news-card.size-lg { grid-column: span 2; }
-.news-card.size-tall { grid-row: span 2; }
-.news-thumb { position: relative; width: 100%; height: 180px; overflow: hidden; background: linear-gradient(135deg, #1e3a8a, #0ea5e9); }
-.news-card.size-lg .news-thumb { height: 300px; }
-.news-card.size-tall .news-thumb { height: 300px; }
-.news-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
-.news-card:hover .news-thumb img { transform: scale(1.05); }
-.news-thumb .news-cat {
-  position: absolute; top: 12px; left: 12px; background: rgba(0,102,255,0.92); color: #fff;
-  font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 5px 11px; border-radius: 20px; text-transform: uppercase;
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.news-card:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(13,27,42,0.14); border-color:var(--cc, var(--primary)); }
+.news-card.size-lg { grid-column:span 2; }
+.news-card.size-tall { grid-row:span 2; }
+.news-thumb { position:relative; width:100%; height:180px; overflow:hidden; background:linear-gradient(135deg, #1e3a8a, #0ea5e9); }
+.news-card.size-lg .news-thumb { height:300px; }
+.news-card.size-tall .news-thumb { height:300px; }
+.news-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+.news-card:hover .news-thumb img { transform:scale(1.05); }
+.news-cat {
+  position:absolute; top:12px; left:12px; background:rgba(0,102,255,0.92); color:#fff;
+  font-size:11px; font-weight:700; letter-spacing:.5px; padding:5px 11px; border-radius:20px; text-transform:uppercase;
 }
-.news-body2 { padding: 15px 16px 16px; display: flex; flex-direction: column; flex: 1; }
-.news-title { font-size: 16px; line-height: 1.35; margin: 0 0 8px; font-weight: 700; }
-.news-card.size-lg .news-title { font-size: 22px; }
-.news-excerpt { color: var(--ndim); font-size: 13.5px; margin: 0 0 14px; line-height: 1.5; flex: 1; }
-.news-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--ndim); border-top: 1px solid var(--nborder); padding-top: 12px; }
-.news-meta .news-views { display: inline-flex; align-items: center; gap: 5px; }
+.news-cat.cat-Hacking { background:rgba(255,77,79,0.92); }
+.news-cat.cat-Games { background:rgba(124,58,237,0.92); }
+.news-cat.cat-Tecnologia { background:rgba(0,184,148,0.92); }
+.news-badges { position:absolute; bottom:12px; left:12px; display:flex; gap:6px; flex-wrap:wrap; }
+.news-badge { font-size:10px; font-weight:800; letter-spacing:.5px; padding:3px 8px; border-radius:20px; text-transform:uppercase; }
+.news-badge.novo { background:#ff4d4f; color:#fff; }
+.news-badge.time { background:rgba(0,0,0,0.55); color:#fff; backdrop-filter:blur(2px); }
+.news-body2 { padding:15px 16px 16px; display:flex; flex-direction:column; flex:1; }
+.news-title { font-size:16px; line-height:1.35; margin:0 0 8px; font-weight:700; }
+.news-card.size-lg .news-title { font-size:22px; }
+.news-excerpt { color:var(--ndim); font-size:13.5px; margin:0 0 14px; line-height:1.5; flex:1; }
+.news-meta { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--ndim); border-top:1px solid var(--nborder); padding-top:12px; }
+.news-meta .news-views { display:inline-flex; align-items:center; gap:5px; }
 
-.news-empty {
-  text-align: center; padding: 60px 20px; color: var(--ndim);
-  background: var(--ncard); border: 1px dashed var(--nborder); border-radius: 14px;
-  max-width: 1400px; margin: 0 auto 24px;
+.news-skeleton { display:none; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:18px; padding:0 24px; max-width:1400px; margin:0 auto; }
+.news-skeleton .sk { background:var(--ncard); border:1px solid var(--nborder); border-radius:14px; overflow:hidden; }
+.news-skeleton .sk-thumb { height:180px; }
+.news-skeleton .sk-line { height:12px; margin:12px 14px; border-radius:6px; }
+.news-skeleton .sk, .news-skeleton .sk-thumb, .news-skeleton .sk-line {
+  background:linear-gradient(90deg, #e9edf3 25%, #f4f6fa 37%, #e9edf3 63%);
+  background-size:400% 100%; animation:shimmer 1.3s infinite;
 }
-.news-empty i { font-size: 32px; display: block; margin-bottom: 10px; opacity: .5; }
+body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb, body.hacker-theme .news-skeleton .sk-line {
+  background:linear-gradient(90deg, #101a2e 25%, #16223a 37%, #101a2e 63%); background-size:400% 100%;
+}
+@keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
 
-@media (max-width: 600px) {
-  .news-card.size-lg, .news-card.size-tall { grid-column: span 1; grid-row: span 1; }
-  .news-card.size-lg .news-thumb, .news-card.size-tall .news-thumb { height: 180px; }
-  .news-hero h1 { font-size: 30px; }
+.news-loadmore { display:block; margin:26px auto; padding:12px 30px; border:1px solid var(--primary); background:transparent; color:var(--primary); border-radius:30px; font-weight:700; cursor:pointer; transition:all .15s; }
+.news-loadmore:hover { background:var(--primary); color:#fff; }
+.news-loadmore:disabled { opacity:.6; cursor:default; }
+#news-sentinel { height:1px; }
+
+.news-empty { text-align:center; padding:60px 20px; color:var(--ndim); background:var(--ncard); border:1px dashed var(--nborder); border-radius:14px; max-width:1400px; margin:0 auto 24px; }
+.news-empty i { font-size:32px; display:block; margin-bottom:10px; opacity:.5; }
+
+@media (max-width:600px) {
+  .news-card.size-lg, .news-card.size-tall { grid-column:span 1; grid-row:span 1; }
+  .news-card.size-lg .news-thumb, .news-card.size-tall .news-thumb { height:180px; }
+  .news-hero h1 { font-size:30px; }
 }
 </style>
 
@@ -143,7 +131,7 @@ body.hacker-theme .news-hero {
     <div class="news-hero-inner">
       <span class="news-kicker"><i class="fas fa-microchip"></i> Games &amp; Hacking</span>
       <h1><i class="fas fa-newspaper"></i> Notícias</h1>
-      <p>As últimas novidades, análises e alertas de segurança. Alterne entre os temas para filtrar a cobertura.</p>
+      <p>As últimas novidades, análises e alertas de segurança. Alterne os temas ou role para ver tudo.</p>
       <form action="/noticias" method="GET" class="news-search">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar notícias..." value="<%= search %>">
@@ -154,9 +142,12 @@ body.hacker-theme .news-hero {
 
   <% if (categories.length > 0) { %>
   <nav class="news-filters">
-    <a href="/noticias" class="news-chip tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema="">Todas</a>
+    <a href="/noticias" class="news-chip cat-Todas tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema=""><i class="fas fa-th-large"></i> Todas</a>
     <% categories.forEach(function(c) { %>
-      <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="news-chip tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>"><%= c.category %></a>
+      <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="news-chip cat-<%= catClass(c.category) %> tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>">
+        <i class="<%= c.category === 'Hacking' ? 'fas fa-skull-crossbones' : (c.category === 'Games' ? 'fas fa-gamepad' : 'fas fa-tag') %>"></i>
+        <%= c.category %> <span class="chip-count"><%= (categoryCounts && categoryCounts[c.category]) || 0 %></span>
+      </a>
     <% }) %>
     <span class="news-filter-hint"><i class="fas fa-sliders-h"></i> Alterne os temas para filtrar</span>
   </nav>
@@ -168,11 +159,10 @@ body.hacker-theme .news-hero {
     <div class="news-featured-grid">
       <% featured.forEach(function(n, fi) { %>
         <% var fsize = fi === 0 ? 'size-lg' : ''; %>
-        <% var fimg = n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (fsize ? '/800/500' : '/600/400')); %>
-        <a href="/noticia/<%= n.slug %>" class="news-card <%= fsize %>" data-tema="<%= n.category %>">
+        <a href="/noticia/<%= n.slug %>" class="news-card <%= fsize %> <%= catClass(n.category) %>" data-tema="<%= n.category %>">
           <div class="news-thumb">
-            <img src="<%= fimg %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
-            <span class="news-cat"><%= n.category %></span>
+            <img src="<%= imgFor(n, fsize) %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+            <span class="news-cat <%= catClass(n.category) %>"><%= n.category %></span>
           </div>
           <div class="news-body2">
             <h3 class="news-title"><%= n.title %></h3>
@@ -191,15 +181,17 @@ body.hacker-theme .news-hero {
   <% if (news.length === 0) { %>
     <div class="news-empty"><i class="far fa-folder-open"></i>Nenhuma notícia encontrada.</div>
   <% } else { %>
-  <% var gridNews = news.filter(function(n) { return !(n.featured && !selectedCategory); }); %>
   <div class="news-grid" id="news-grid">
     <% gridNews.forEach(function(n, idx) { %>
-      <% var sizeClass = ''; var m = idx % 5; if (m === 0) { sizeClass = 'size-lg'; } else if (m === 3) { sizeClass = 'size-tall'; } %>
-      <% var img = n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (sizeClass === 'size-lg' ? '/800/500' : (sizeClass === 'size-tall' ? '/600/800' : '/600/400'))); %>
-      <a href="/noticia/<%= n.slug %>" class="news-card <%= sizeClass %>" data-tema="<%= n.category %>">
+      <% var sc = sizeFor(idx); var nw = isNewNews(n.created_at); var rt = readTimeNews(n.content); %>
+      <a href="/noticia/<%= n.slug %>" class="news-card <%= sc %> <%= catClass(n.category) %>" data-tema="<%= n.category %>">
         <div class="news-thumb">
-          <img src="<%= img %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
-          <span class="news-cat"><%= n.category %></span>
+          <img src="<%= imgFor(n, sc) %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+          <span class="news-cat <%= catClass(n.category) %>"><%= n.category %></span>
+          <span class="news-badges">
+            <% if (nw) { %><span class="news-badge novo">NOVO</span><% } %>
+            <span class="news-badge time"><i class="far fa-clock"></i> <%= rt %> min</span>
+          </span>
         </div>
         <div class="news-body2">
           <h3 class="news-title"><%= n.title %></h3>
@@ -212,6 +204,13 @@ body.hacker-theme .news-hero {
       </a>
     <% }) %>
   </div>
+  <div class="news-skeleton" id="news-skeleton">
+    <div class="sk"><div class="sk-thumb"></div><div class="sk-line"></div><div class="sk-line" style="width:60%"></div></div>
+    <div class="sk"><div class="sk-thumb"></div><div class="sk-line"></div><div class="sk-line" style="width:60%"></div></div>
+    <div class="sk"><div class="sk-thumb"></div><div class="sk-line"></div><div class="sk-line" style="width:60%"></div></div>
+  </div>
+  <div id="news-sentinel"></div>
+  <button class="news-loadmore" id="news-loadmore" style="display:none;">Carregar mais</button>
   <% } %>
 
   <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
@@ -219,26 +218,109 @@ body.hacker-theme .news-hero {
 
 <script>
 (function () {
-  var botoes = document.querySelectorAll('.tema-btn');
-  var cards = document.querySelectorAll('#news-grid .news-card');
-  var vazio = document.getElementById('news-empty');
-  function filtrar(tema) {
-    var visiveis = 0;
-    cards.forEach(function (c) {
-      var ok = !tema || c.getAttribute('data-tema') === tema;
-      c.style.display = ok ? '' : 'none';
-      if (ok) visiveis++;
-    });
-    if (vazio) vazio.style.display = visiveis === 0 ? '' : 'none';
+  var grid = document.getElementById('news-grid');
+  var loadMoreBtn = document.getElementById('news-loadmore');
+  var sentinel = document.getElementById('news-sentinel');
+  var skeleton = document.getElementById('news-skeleton');
+  var empty = document.getElementById('news-empty');
+  var featuredSection = document.querySelector('.news-featured');
+  var state = {
+    category: '<%= selectedCategory %>',
+    search: '<%= search %>',
+    offset: <%- news.length %>,
+    limit: <%- initialLimit %>,
+    loading: false,
+    hasMore: <%- hasMore ? 'true' : 'false' %>
+  };
+
+  function catClass(c) { return 'cat-' + String(c || '').replace(/[^a-z0-9]/gi, ''); }
+  function isNewNews(d) { try { return (Date.now() - new Date(d).getTime()) < 172800000; } catch (e) { return false; } }
+  function readTimeNews(c) { var w = (c || '').split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w / 200)); }
+  function sizeFor(i) { var m = i % 5; return m === 0 ? 'size-lg' : (m === 3 ? 'size-tall' : ''); }
+  function imgFor(n, s) {
+    return n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (s === 'size-lg' ? '/800/500' : (s === 'size-tall' ? '/600/800' : '/600/400')));
   }
-  botoes.forEach(function (b) {
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  function buildCard(n, idx) {
+    var size = sizeFor(idx);
+    var cat = catClass(n.category);
+    var badges = '';
+    if (isNewNews(n.created_at)) badges += '<span class="news-badge novo">NOVO</span>';
+    badges += '<span class="news-badge time"><i class="far fa-clock"></i> ' + readTimeNews(n.content) + ' min</span>';
+    return '<a href="/noticia/' + esc(n.slug) + '" class="news-card ' + size + ' ' + cat + '" data-tema="' + esc(n.category) + '">' +
+      '<div class="news-thumb">' +
+        '<img src="' + imgFor(n, size) + '" alt="' + esc(n.title) + '" loading="lazy" onerror="this.style.display=\'none\';">' +
+        '<span class="news-cat ' + cat + '">' + esc(n.category) + '</span>' +
+        '<span class="news-badges">' + badges + '</span>' +
+      '</div>' +
+      '<div class="news-body2">' +
+        '<h3 class="news-title">' + esc(n.title) + '</h3>' +
+        '<p class="news-excerpt">' + esc((n.excerpt || '').slice(0, 140)) + '</p>' +
+        '<div class="news-meta"><span><i class="far fa-calendar"></i> ' + new Date(n.created_at).toLocaleDateString('pt-BR') + '</span><span class="news-views"><i class="far fa-eye"></i> ' + (n.views || 0) + '</span></div>' +
+      '</div>' +
+    '</a>';
+  }
+
+  function appendItems(items, start) {
+    var html = '';
+    for (var i = 0; i < items.length; i++) html += buildCard(items[i], start + i);
+    grid.insertAdjacentHTML('beforeend', html);
+  }
+
+  function setBusy(b) {
+    state.loading = b;
+    if (loadMoreBtn) loadMoreBtn.disabled = b;
+    if (skeleton) skeleton.style.display = b ? 'grid' : 'none';
+  }
+
+  function loadMore() {
+    if (state.loading || !state.hasMore) return;
+    setBusy(true);
+    var url = '/noticias/api?category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&offset=' + state.offset + '&limit=' + state.limit;
+    fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+      appendItems(data.items || [], state.offset);
+      state.offset = data.nextOffset || (state.offset + (data.items ? data.items.length : 0));
+      state.hasMore = !!data.hasMore;
+      if (loadMoreBtn) loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+      setBusy(false);
+    }).catch(function () { setBusy(false); });
+  }
+
+  var chips = document.querySelectorAll('.news-chip');
+  chips.forEach(function (b) {
     b.addEventListener('click', function (e) {
       e.preventDefault();
-      botoes.forEach(function (x) { x.classList.remove('active'); });
+      chips.forEach(function (x) { x.classList.remove('active'); });
       b.classList.add('active');
-      filtrar(b.getAttribute('data-tema'));
+      var cat = b.getAttribute('data-tema') || '';
+      state.category = cat; state.offset = 0; state.hasMore = true; state.loading = false;
+      if (featuredSection) featuredSection.style.display = cat ? 'none' : '';
+      grid.innerHTML = '';
+      if (empty) empty.style.display = 'none';
+      setBusy(true);
+      var url = '/noticias/api?category=' + encodeURIComponent(cat) + '&search=' + encodeURIComponent(state.search) + '&offset=0&limit=' + state.limit;
+      fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+        appendItems(data.items || [], 0);
+        state.offset = data.nextOffset || (data.items ? data.items.length : 0);
+        state.hasMore = !!data.hasMore;
+        if (loadMoreBtn) loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+        if ((data.items || []).length === 0 && empty) empty.style.display = '';
+        setBusy(false);
+      }).catch(function () { setBusy(false); });
     });
   });
+
+  if ('IntersectionObserver' in window && sentinel) {
+    var io = new IntersectionObserver(function (entries) {
+      if (entries[0].isIntersecting) loadMore();
+    }, { rootMargin: '500px' });
+    io.observe(sentinel);
+  }
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', loadMore);
+    loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+  }
 })();
 </script>
 
