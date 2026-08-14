@@ -38,7 +38,7 @@ router.get('/', (req, res) => {
     const total = db.getNewsCount({ category, search });
     const news = db.getNews({ category, search, limit, offset: 0 }) || [];
     const featured = db.getFeaturedNews(3) || [];
-    const videos = db.getNews({ video: true, limit: 8 }) || [];
+    const videos = db.getNews({ video: true, limit: 4 }) || [];
     const hasMore = news.length < total;
     res.render('news', {
       title: 'Notícias - Games & Hacking',

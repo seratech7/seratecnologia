@@ -56,6 +56,11 @@ body.hacker-theme .news-detail-page {
   font-size: 12px; font-weight: 700; letter-spacing: .5px;
   padding: 5px 13px; border-radius: 20px; text-transform: uppercase; margin-bottom: 14px;
 }
+.nd-feat-pill {
+  display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff;
+  font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  padding: 5px 13px; border-radius: 20px; text-transform: uppercase; margin-bottom: 14px;
+}
 .nd-title { font-size: 30px; line-height: 1.25; margin: 0 0 14px; font-weight: 800; color: var(--ntext); }
 .nd-meta {
   display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
@@ -156,6 +161,7 @@ body.hacker-theme .news-detail-page {
       </div>
       <div class="nd-content">
         <span class="nd-cat-pill"><%= article.category %></span>
+        <% if (article.featured) { %><span class="nd-feat-pill"><i class="fas fa-star"></i> Destaque</span><% } %>
         <h1 class="nd-title"><%= article.title %></h1>
         <div class="nd-meta">
           <span><i class="far fa-calendar"></i> <%= new Date(article.created_at).toLocaleDateString('pt-BR') %></span>

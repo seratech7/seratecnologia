@@ -93,6 +93,7 @@ body.hacker-theme .news-hero { background: linear-gradient(135deg, #062a1f 0%, #
 .news-badge { font-size:10px; font-weight:800; letter-spacing:.5px; padding:3px 8px; border-radius:20px; text-transform:uppercase; }
 .news-badge.novo { background:#ff4d4f; color:#fff; }
 .news-badge.time { background:rgba(0,0,0,0.55); color:#fff; backdrop-filter:blur(2px); }
+.news-feat-badge { position:absolute; top:12px; right:12px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-size:10px; font-weight:800; letter-spacing:.5px; padding:4px 9px; border-radius:20px; text-transform:uppercase; display:inline-flex; align-items:center; gap:4px; box-shadow:0 2px 8px rgba(0,0,0,.3); z-index:3; }
 .news-body2 { padding:15px 16px 16px; display:flex; flex-direction:column; flex:1; }
 .news-title { font-size:16px; line-height:1.35; margin:0 0 8px; font-weight:700; }
 .news-card.size-lg .news-title { font-size:22px; }
@@ -124,7 +125,11 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 .news-chip.cat-Videos i { color:#ff0000; }
 
 .news-videos { max-width:1400px; margin:0 auto; padding:0 24px; }
-.news-video-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:18px; }
+.news-video-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:16px; }
+@media (max-width:760px) {
+  .news-video-grid { grid-auto-flow:column; grid-auto-columns:78%; grid-template-columns:none; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x mandatory; }
+  .news-video-grid > .news-video-card { scroll-snap-align:start; }
+}
 .news-video-card { background:var(--ncard); border:1px solid var(--nborder); border-radius:14px; overflow:hidden; box-shadow:var(--nshadow); transition:transform .18s, border-color .18s; }
 .news-video-card:hover { transform:translateY(-4px); border-color:var(--primary); }
 .news-video-thumb { position:relative; display:block; aspect-ratio:16/9; overflow:hidden; background:#000; cursor:pointer; }
@@ -213,6 +218,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
           <div class="news-thumb">
             <img src="<%= imgFor(n, fsize) %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
             <span class="news-cat <%= catClass(n.category) %>"><%= n.category %></span>
+            <span class="news-feat-badge"><i class="fas fa-star"></i> Destaque</span>
           </div>
           <div class="news-body2">
             <h3 class="news-title"><%= n.title %></h3>
