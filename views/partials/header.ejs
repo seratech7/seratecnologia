@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
       else { adImg.src = ''; adImg.style.display = 'none'; topAd.classList.remove('has-img'); }
     }
     topAd.style.display = '';
-    if (mc) mc.style.paddingTop = '32px';
+    if (mc) mc.style.paddingTop = (topAd.offsetHeight || 32) + 'px';
     adClose.disabled = true;
     adClose.style.opacity = '0.3';
     adClose.style.cursor = 'default';

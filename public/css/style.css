@@ -2991,7 +2991,7 @@ img { max-width: 100%; height: auto; display: block; }
   flex-shrink: 0;
 }
 
-.top-ad.has-img { padding: 4px 16px; }
+.top-ad.has-img { height: auto; min-height: 40px; padding: 5px 16px; }
 
 .top-ad-label {
   font-size: 10px;
