@@ -89,6 +89,91 @@ router.get('/', (req, res) => {
   }
 });
 
+router.get('/marketplace', (req, res) => {
+  try {
+    const { search, category, condition: cond, price_min, price_max, sort, location } = req.query;
+    const categories = db.query('SELECT * FROM categories ORDER BY name') || [];
+    const locations = db.query("SELECT DISTINCT location FROM products WHERE location IS NOT NULL AND location != '' AND status = 'active' ORDER BY location") || [];
+
+    let sql = "SELECT p.*, c.name as category_name, c.slug as category_slug, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count, s.name as seller_name, s.whatsapp as seller_whatsapp FROM products p LEFT JOIN categories c ON p.category_id = c.id LEFT JOIN sellers s ON p.seller_id = s.id WHERE p.status = ?";
+    let params = ['active'];
+
+    if (search) {
+      sql += ' AND (p.name LIKE ? OR p.description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (category) {
+      sql += ' AND c.slug = ?';
+      params.push(category);
+    }
+
+    if (cond) {
+      sql += ' AND p.condition = ?';
+      params.push(cond);
+    }
+
+    if (location) {
+      sql += ' AND p.location = ?';
+      params.push(location);
+    }
+
+    if (price_min) {
+      sql += ' AND p.price >= ?';
+      params.push(parseFloat(price_min));
+    }
+
+    if (price_max) {
+      sql += ' AND p.price <= ?';
+      params.push(parseFloat(price_max));
+    }
+
+    if (sort === 'flash') {
+      sql += " AND p.flash_price IS NOT NULL AND p.flash_ends_at > datetime('now')";
+    }
+    let orderBy = 'p.featured DESC, p.created_at DESC';
+    if (sort === 'price_asc') orderBy = 'p.price ASC';
+    else if (sort === 'price_desc') orderBy = 'p.price DESC';
+    else if (sort === 'oldest') orderBy = 'p.created_at ASC';
+    else if (sort === 'flash') orderBy = 'p.flash_ends_at ASC';
+    sql += ' ORDER BY ' + orderBy;
+
+    const products = db.query(sql, params) || [];
+    const heroBanners = db.getToggle('banners') === '1' ? (db.getBannersByPosition('hero') || []) : [];
+    const flashProducts = db.getFlashSales() || [];
+
+    res.render('index', {
+      title: 'Marketplace',
+      products,
+      categories,
+      locations,
+      banners: heroBanners,
+      flashProducts,
+      search: search || '',
+      selectedCategory: category || '',
+      selectedCondition: cond || '',
+      selectedLocation: location || '',
+      priceMin: price_min || '',
+      priceMax: price_max || '',
+      selectedSort: sort || '',
+      homepageError: ''
+    });
+  } catch (e) {
+    console.error('Marketplace error:', e);
+    res.render('index', {
+      title: 'Marketplace',
+      products: [],
+      categories: [],
+      locations: [],
+      banners: [],
+      flashProducts: [],
+      search: '', selectedCategory: '', selectedCondition: '',
+      selectedLocation: '', priceMin: '', priceMax: '', selectedSort: '',
+      homepageError: (e && e.message) || (e && e.toString()) || JSON.stringify(e) || 'Erro desconhecido'
+    });
+  }
+});
+
 router.get('/produto/:id', (req, res) => {
   const product = db.get(
     "SELECT p.*, c.name as category_name, c.slug as category_slug, c.icon as category_icon, (SELECT COUNT(*) FROM page_views WHERE product_id = p.id) as views, (SELECT COUNT(*) FROM sales WHERE product_id = p.id AND status NOT IN ('cancelled','pending')) as sales_count FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = ?",
