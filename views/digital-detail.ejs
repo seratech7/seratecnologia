@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+
+<div class="marketplace-container" style="padding:32px 16px;max-width:760px;margin:0 auto;">
+  <a href="/logins" style="color:var(--primary);font-size:14px;text-decoration:none;"><i class="fas fa-arrow-left"></i> Voltar aos logins</a>
+
+  <div style="background:var(--card-bg);border:1px solid var(--hack-border);border-radius:14px;overflow:hidden;margin-top:16px;">
+    <% if (product.image) { %><img src="<%= product.image %>" alt="<%= product.name %>" style="width:100%;max-height:320px;object-fit:cover;"><% } %>
+    <div style="padding:24px;">
+      <% if (product.badge) { %><span class="status-badge active" style="font-size:12px;"><%= product.badge %></span><% } %>
+      <h1 style="font-size:26px;margin:10px 0;"><%= product.name %></h1>
+      <p style="color:var(--text);font-size:15px;line-height:1.6;"><%= product.description || '' %></p>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 0;border-top:1px solid var(--hack-border);padding-top:18px;">
+        <div>
+          <span style="font-size:13px;color:var(--hack-dim);display:block;">Preço</span>
+          <strong style="font-size:28px;color:var(--primary);">R$ <%= Number(product.price).toFixed(2) %></strong>
+        </div>
+        <span style="font-size:14px;color:<%= inStock ? '#4caf50' : '#c62828' %>;font-weight:600;">
+          <%= inStock ? '✓ Em estoque' : '✗ Esgotado' %>
+        </span>
+      </div>
+
+      <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
+
+      <% if (inStock) { %>
+      <form method="POST" action="/login/<%= product.slug %>/comprar" style="display:flex;flex-direction:column;gap:12px;">
+        <div class="form-group">
+          <label style="font-size:13px;color:var(--hack-dim);">Seu nome</label>
+          <input type="text" name="buyer_name" class="admin-input" required placeholder="Nome completo">
+        </div>
+        <div class="form-group">
+          <label style="font-size:13px;color:var(--hack-dim);">E-mail para receber os dados</label>
+          <input type="email" name="buyer_email" class="admin-input" required placeholder="voce@email.com">
+        </div>
+        <div class="form-group">
+          <label style="font-size:13px;color:var(--hack-dim);">WhatsApp (opcional)</label>
+          <input type="text" name="buyer_phone" class="admin-input" placeholder="(11) 99999-9999">
+        </div>
+        <button type="submit" class="btn-primary" style="margin-top:8px;padding:14px;font-size:16px;">
+          <i class="fas fa-bolt"></i> Comprar e receber agora
+        </button>
+        <p style="font-size:12px;color:var(--hack-dim);text-align:center;margin:4px 0 0;">Entrega automática dos dados de acesso após a confirmação.</p>
+      </form>
+      <% } else { %>
+        <div class="empty-row" style="text-align:center;padding:20px;">Produto indisponível no momento.</div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

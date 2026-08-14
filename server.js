@@ -29,6 +29,8 @@ const notificationRoutes = require('./routes/notifications');
 const purchaseRoutes = require('./routes/purchase');
 const mercadopagoRoutes = require('./routes/mercadopago');
 const customerRoutes = require('./routes/customer');
+const newsRoutes = require('./routes/news');
+const digitalRoutes = require('./routes/digital');
 const { toggleMiddleware } = require('./middleware/toggles');
 const { csrfProtection, injectCsrfTokens } = require('./middleware/csrf');
 const { securityMiddleware } = require('./middleware/security');
@@ -491,6 +493,23 @@ app.use('/', mercadopagoRoutes);
 app.use('/', customerRoutes);
 app.use('/api', adRoutes);
 app.use('/', require('./routes/attraction'));
+
+// Notícias e produtos digitais (logins com entrega automática)
+app.use('/noticias', newsRoutes);
+app.use('/logins', digitalRoutes);
+app.get('/entrega/:code', (req, res) => {
+  try {
+    const sale = db.getDigitalSaleByDeliveryCode(req.params.code);
+    if (!sale) return res.status(404).render('404', { title: 'Código de entrega inválido' });
+    res.render('digital-delivery', {
+      title: 'Entrega - ' + (sale.product_name || 'Produto'),
+      sale
+    });
+  } catch (e) {
+    console.error('Delivery error:', e);
+    res.status(404).render('404', { title: 'Erro na entrega' });
+  }
+});
 
 // VAPID public key para o cliente (PWA)
 app.get('/api/push/public-key', (req, res) => {

@@ -950,6 +950,70 @@ async function initDb() {
     )
   `);
 
+  // === NOTÍCIAS (portal de jogos & hacking) ===
+  db.run(`
+    CREATE TABLE IF NOT EXISTS news (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      excerpt TEXT,
+      content TEXT,
+      category TEXT NOT NULL DEFAULT 'jogos',
+      image TEXT,
+      author TEXT DEFAULT 'Redação',
+      featured INTEGER DEFAULT 0,
+      published INTEGER DEFAULT 1,
+      views INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // === PRODUTOS DIGITAIS (venda de logins com entrega automática) ===
+  db.run(`
+    CREATE TABLE IF NOT EXISTS digital_products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      slug TEXT UNIQUE NOT NULL,
+      description TEXT,
+      price REAL NOT NULL DEFAULT 0,
+      category TEXT NOT NULL DEFAULT 'outros',
+      image TEXT,
+      badge TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      sold_count INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS digital_stock (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      credential TEXT NOT NULL,
+      password TEXT,
+      note TEXT,
+      status TEXT NOT NULL DEFAULT 'available',
+      sale_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS digital_sales (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      stock_id INTEGER,
+      buyer_name TEXT,
+      buyer_email TEXT,
+      buyer_phone TEXT,
+      price REAL NOT NULL DEFAULT 0,
+      delivery_code TEXT UNIQUE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'confirmed',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   saveDb();
 
   return db;
@@ -1855,4 +1919,107 @@ function backfillFileStore(uploadsDir) {
   return count;
 }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus, saveFileToStore, getFileFromStore, deleteFileFromStore, fileExistsInStore, backfillFileStore };
+// === NOTÍCIAS ===
+function getNews(opts) {
+  opts = opts || {};
+  var sql = "SELECT n.* FROM news n WHERE 1=1";
+  var params = [];
+  if (opts.category) { sql += " AND n.category = ?"; params.push(opts.category); }
+  if (opts.search) { sql += " AND (n.title LIKE ? OR n.excerpt LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
+  if (opts.published === undefined || opts.published === true) { sql += " AND n.published = 1"; }
+  sql += " ORDER BY n.featured DESC, n.created_at DESC";
+  if (opts.limit) { sql += " LIMIT ?"; params.push(parseInt(opts.limit)); }
+  return query(sql, params);
+}
+
+function getNewsById(id) { return get("SELECT * FROM news WHERE id = ?", [id]); }
+function getNewsBySlug(slug) { return get("SELECT * FROM news WHERE slug = ?", [slug]); }
+function getNewsCategories() { return query("SELECT DISTINCT category FROM news WHERE published = 1 ORDER BY category"); }
+function getFeaturedNews(limit) { return query("SELECT * FROM news WHERE published = 1 AND featured = 1 ORDER BY created_at DESC LIMIT ?", [limit || 5]); }
+function saveNews(data, id) {
+  var title = String(data.title || '').trim().slice(0, 200);
+  var slug = String(data.slug || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 150);
+  if (!slug) slug = 'noticia-' + Date.now();
+  if (id) {
+    run("UPDATE news SET title=?, slug=?, excerpt=?, content=?, category=?, image=?, author=?, featured=?, published=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0), id]);
+    return id;
+  }
+  run("INSERT INTO news (title, slug, excerpt, content, category, image, author, featured, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0)]);
+  var r = get("SELECT MAX(id) as id FROM news");
+  return r ? r.id : null;
+}
+function deleteNews(id) { run("DELETE FROM news WHERE id = ?", [id]); }
+function toggleNewsPublish(id) { run("UPDATE news SET published = CASE WHEN published = 1 THEN 0 ELSE 1 END WHERE id = ?", [id]); }
+function toggleNewsFeatured(id) { run("UPDATE news SET featured = CASE WHEN featured = 1 THEN 0 ELSE 1 END WHERE id = ?", [id]); }
+function incrementNewsViews(id) { run("UPDATE news SET views = COALESCE(views,0) + 1 WHERE id = ?", [id]); }
+
+// === PRODUTOS DIGITAIS / LOGINS ===
+function getDigitalProducts(opts) {
+  opts = opts || {};
+  var sql = "SELECT dp.*, (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') as stock_count FROM digital_products dp WHERE 1=1";
+  var params = [];
+  if (opts.category) { sql += " AND dp.category = ?"; params.push(opts.category); }
+  if (opts.search) { sql += " AND (dp.name LIKE ? OR dp.description LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
+  if (opts.active) { sql += " AND dp.status = 'active'"; }
+  sql += " ORDER BY dp.created_at DESC";
+  return query(sql, params);
+}
+function getDigitalProductById(id) {
+  return get("SELECT dp.*, (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') as stock_count FROM digital_products dp WHERE dp.id = ?", [id]);
+}
+function getDigitalProductBySlug(slug) {
+  return get("SELECT dp.*, (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') as stock_count FROM digital_products dp WHERE dp.slug = ?", [slug]);
+}
+function saveDigitalProduct(data, id) {
+  var name = String(data.name || '').trim().slice(0, 200);
+  var slug = String(data.slug || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 150);
+  if (!slug) slug = 'login-' + Date.now();
+  var price = Math.max(0, parseFloat(data.price) || 0);
+  if (id) {
+    run("UPDATE digital_products SET name=?, slug=?, description=?, price=?, category=?, image=?, badge=?, status=? WHERE id=?",
+      [name, slug, data.description || '', price, data.category || 'outros', data.image || null, data.badge || null, data.status || 'active', id]);
+    return id;
+  }
+  run("INSERT INTO digital_products (name, slug, description, price, category, image, badge, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [name, slug, data.description || '', price, data.category || 'outros', data.image || null, data.badge || null, data.status || 'active']);
+  var r = get("SELECT MAX(id) as id FROM digital_products");
+  return r ? r.id : null;
+}
+function deleteDigitalProduct(id) { run("DELETE FROM digital_products WHERE id = ?", [id]); run("DELETE FROM digital_stock WHERE product_id = ?", [id]); }
+function toggleDigitalProduct(id) { run("UPDATE digital_products SET status = CASE WHEN status = 'active' THEN 'inactive' ELSE 'active' END WHERE id = ?", [id]); }
+function getDigitalStock(productId) {
+  return query("SELECT ds.*, (SELECT name FROM digital_products WHERE id = ds.product_id) as product_name FROM digital_stock ds WHERE ds.product_id = ? ORDER BY ds.status, ds.id DESC", [productId]);
+}
+function getDigitalStockById(id) { return get("SELECT * FROM digital_stock WHERE id = ?", [id]); }
+function getAvailableDigitalStock(productId) {
+  return get("SELECT * FROM digital_stock WHERE product_id = ? AND status = 'available' ORDER BY id ASC LIMIT 1", [productId]);
+}
+function getDigitalAvailableCount(productId) {
+  var r = get("SELECT COUNT(*) as c FROM digital_stock WHERE product_id = ? AND status = 'available'", [productId]);
+  return r ? r.c : 0;
+}
+function addDigitalStock(productId, credential, password, note) {
+  run("INSERT INTO digital_stock (product_id, credential, password, note) VALUES (?, ?, ?, ?)", [productId, credential, password || '', note || '']);
+}
+function deleteDigitalStock(id) { run("DELETE FROM digital_stock WHERE id = ?", [id]); }
+function markDigitalStockSold(stockId, saleId) {
+  run("UPDATE digital_stock SET status = 'sold', sale_id = ? WHERE id = ?", [saleId, stockId]);
+}
+function createDigitalSale(data) {
+  run("INSERT INTO digital_sales (product_id, stock_id, buyer_name, buyer_email, buyer_phone, price, delivery_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    [data.product_id, data.stock_id || null, data.buyer_name || '', data.buyer_email || '', data.buyer_phone || '', data.price || 0, data.delivery_code, data.status || 'confirmed']);
+  var r = get("SELECT MAX(id) as id FROM digital_sales");
+  return r ? r.id : null;
+}
+function getDigitalSaleByDeliveryCode(code) {
+  return get("SELECT ds.*, dp.name as product_name, dp.image as product_image, dsk.credential, dsk.password, dsk.note FROM digital_sales ds LEFT JOIN digital_products dp ON ds.product_id = dp.id LEFT JOIN digital_stock dsk ON ds.stock_id = dsk.id WHERE ds.delivery_code = ?", [code]);
+}
+function getDigitalSales(limit) {
+  return query("SELECT ds.*, dp.name as product_name, dp.image as product_image FROM digital_sales ds LEFT JOIN digital_products dp ON ds.product_id = dp.id ORDER BY ds.id DESC LIMIT ?", [limit || 100]);
+}
+function getDigitalStockBySaleId(saleId) { return get("SELECT * FROM digital_stock WHERE sale_id = ?", [saleId]); }
+function incrementDigitalSold(productId) { run("UPDATE digital_products SET sold_count = COALESCE(sold_count,0) + 1 WHERE id = ?", [productId]); }
+
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus, saveFileToStore, getFileFromStore, deleteFileFromStore, fileExistsInStore, backfillFileStore, getNews, getNewsById, getNewsBySlug, getNewsCategories, getFeaturedNews, saveNews, deleteNews, toggleNewsPublish, toggleNewsFeatured, incrementNewsViews, getDigitalProducts, getDigitalProductById, getDigitalProductBySlug, saveDigitalProduct, deleteDigitalProduct, toggleDigitalProduct, getDigitalStock, getDigitalStockById, getAvailableDigitalStock, getDigitalAvailableCount, addDigitalStock, deleteDigitalStock, markDigitalStockSold, createDigitalSale, getDigitalSaleByDeliveryCode, getDigitalSales, getDigitalStockBySaleId, incrementDigitalSold };
