@@ -37,7 +37,7 @@ async function gerarImagem(titulo, categoria, slug, id) {
 
 async function gerarComIA(theme, apiKey, baseUrl, model, hint) {
   var system = 'Você é um redator de um site brasileiro de Games & Hacking. Escreva uma notícia original, atual e realista sobre o tema informado. Responda SOMENTE com um JSON válido em UMA ÚNICA LINHA, sem explicações e sem blocos de código, no formato: {"title":"...","excerpt":"...","content":"..."}. O excerpt deve ter no máximo 160 caracteres. O content deve ser 2 a 4 parágrafos em português do Brasil, usando \\n para separar parágrafos (nunca quebras de linha reais).';
-  var user = 'Tema da notícia: ' + theme + (hint ? '. Ângulo/sugoesto para variar: ' + hint : '');
+  var user = 'Tema da notícia: ' + theme + '. Escreva uma notícia atual e relevante para agosto de 2026' + (hint ? ', com o ângulo: ' + hint : '') + '.';
   var controller = new AbortController();
   var timer = setTimeout(function () { controller.abort(); }, 45000);
   var resp = await fetch(baseUrl + '/chat/completions', {
@@ -82,7 +82,12 @@ function gerarLocal(theme, i) {
   return { title: title, excerpt: excerpt, content: content };
 }
 
-async function criar(theme, usarIA, hint) {
+var DEMO_VIDEOS = [
+  'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+  'https://www.youtube.com/watch?v=jNQXAC9IVRw'
+];
+
+async function criar(theme, usarIA, hint, video) {
   var art;
   if (usarIA) {
     var apiKey = getConfig('ai_api_key', '') || process.env.AI_API_KEY || process.env.GROQ_API_KEY || '';
@@ -102,10 +107,11 @@ async function criar(theme, usarIA, hint) {
     image: '',
     author: 'Redação Automática',
     featured: 0,
-    published: 1
+    published: 1,
+    video: video || ''
   });
   var img = await gerarImagem(art.title, theme, slug, id);
-  console.log('  imagem:', img || '(placeholder)');
+  console.log('  imagem:', img || '(placeholder)', video ? '| video: ' + video : '');
   return id;
 }
 
@@ -122,23 +128,31 @@ async function criar(theme, usarIA, hint) {
   console.log('Notícias anteriores removidas:', existentes.length);
   var criados = [];
   var angulos = ['lançamento de produto', 'vazamento/leak', 'vulnerabilidade de segurança', 'torneio/competição', 'análise/tutorial', 'movimento da comunidade', 'atualização de software', 'novo dispositivo', 'polêmica/contrato', 'pesquisa/estudo'];
-  for (var i = 0; i < temas.length; i++) {
+   for (var i = 0; i < temas.length; i++) {
     for (var j = 0; j < count; j++) {
       var hint = angulos[j % angulos.length];
+      var video = (j % 4 === 0) ? DEMO_VIDEOS[(i * 10 + j) % DEMO_VIDEOS.length] : '';
       try {
-        var id = await criar(temas[i], usarIA, hint);
+        var id = await criar(temas[i], usarIA, hint, video);
         criados.push(temas[i] + ' (id ' + id + ')');
         console.log('Criada notícia', (j + 1) + '/' + count, 'tema:', temas[i]);
       } catch (e) {
         console.log('Falha no tema', temas[i], '-', e.message, '| usando fallback local');
         try {
-          var id2 = await criar(temas[i], false);
+          var id2 = await criar(temas[i], false, '', video);
           criados.push(temas[i] + ' (id ' + id2 + ', local)');
         } catch (e2) { console.log('Fallback também falhou:', e2.message); }
       }
       await new Promise(function (r) { setTimeout(r, 700); });
     }
   }
+  try {
+    var fh = db.query("SELECT id FROM news WHERE category='Hacking' ORDER BY id LIMIT 2") || [];
+    var fg = db.query("SELECT id FROM news WHERE category='Games' ORDER BY id LIMIT 1") || [];
+    fh.forEach(function (x) { try { db.toggleNewsFeatured(x.id); } catch (e) {} });
+    fg.forEach(function (x) { try { db.toggleNewsFeatured(x.id); } catch (e) {} });
+    console.log('Destaques marcados:', fh.length + fg.length);
+  } catch (e) { console.log('featured err', e.message); }
   try { db.saveDb(); } catch (e) { console.log('saveDb err', e.message); }
   console.log('Total criadas:', criados.length, criados.join(', '));
 })();

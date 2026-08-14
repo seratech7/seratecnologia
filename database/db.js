@@ -965,9 +965,16 @@ async function initDb() {
       published INTEGER DEFAULT 1,
       views INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      video TEXT DEFAULT ''
     )
   `);
+
+  var newsInfo = db.exec("PRAGMA table_info(news)");
+  if (newsInfo.length > 0) {
+    var newsCols = newsInfo[0].values.map(function (r) { return r[1]; });
+    if (!newsCols.includes('video')) db.run("ALTER TABLE news ADD COLUMN video TEXT DEFAULT ''");
+  }
 
   db.run(`
     CREATE TABLE IF NOT EXISTS news_reactions (
@@ -1937,6 +1944,7 @@ function getNews(opts) {
   var params = [];
   if (opts.category) { sql += " AND n.category = ?"; params.push(opts.category); }
   if (opts.search) { sql += " AND (n.title LIKE ? OR n.excerpt LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
+  if (opts.video) { sql += " AND n.video IS NOT NULL AND n.video <> ''"; }
   if (opts.published === undefined || opts.published === true) { sql += " AND n.published = 1"; }
   sql += " ORDER BY n.featured DESC, n.created_at DESC";
   if (opts.offset && opts.limit) {
@@ -1967,13 +1975,14 @@ function saveNews(data, id) {
   var title = String(data.title || '').trim().slice(0, 200);
   var slug = String(data.slug || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 150);
   if (!slug) slug = 'noticia-' + Date.now();
+  var video = (data.video && String(data.video).trim()) ? String(data.video).trim() : null;
   if (id) {
-    run("UPDATE news SET title=?, slug=?, excerpt=?, content=?, category=?, image=?, author=?, featured=?, published=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-      [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0), id]);
+    run("UPDATE news SET title=?, slug=?, excerpt=?, content=?, category=?, image=?, author=?, featured=?, published=?, video=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+      [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0), video, id]);
     return id;
   }
-  run("INSERT INTO news (title, slug, excerpt, content, category, image, author, featured, published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0)]);
+  run("INSERT INTO news (title, slug, excerpt, content, category, image, author, featured, published, video) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [title, slug, (data.excerpt || '').slice(0, 500), data.content || '', data.category || 'jogos', data.image || null, data.author || 'Redação', data.featured ? 1 : 0, data.published === undefined ? 1 : (data.published ? 1 : 0), video]);
   var r = get("SELECT MAX(id) as id FROM news");
   return r ? r.id : null;
 }

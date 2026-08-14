@@ -5,7 +5,9 @@
    function readTimeNews(c){ var w=(c||'').split(/\s+/).filter(Boolean).length; return Math.max(1, Math.round(w/200)); }
    function sizeFor(i){ var m=i%5; return m===0?'size-lg':(m===3?'size-tall':''); }
    function imgFor(n,s){ return n.image || ('https://picsum.photos/seed/'+encodeURIComponent(n.slug)+(s==='size-lg'?'/800/500':(s==='size-tall'?'/600/800':'/600/400'))); }
+   function ytId(v){ if(!v) return ''; var m=String(v).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/); return m?m[1]:''; }
    var gridNews = news.filter(function(n){ return !(n.featured && !selectedCategory); });
+   var galleryVideos = (typeof videos !== 'undefined' && videos) ? videos.filter(function(v){ return ytId(v.video); }) : [];
 %>
 
 <style>
@@ -119,6 +121,33 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 .news-empty { text-align:center; padding:60px 20px; color:var(--ndim); background:var(--ncard); border:1px dashed var(--nborder); border-radius:14px; max-width:1400px; margin:0 auto 24px; }
 .news-empty i { font-size:32px; display:block; margin-bottom:10px; opacity:.5; }
 
+.news-chip.cat-Videos i { color:#ff0000; }
+
+.news-videos { max-width:1400px; margin:0 auto; padding:0 24px; }
+.news-video-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:18px; }
+.news-video-card { background:var(--ncard); border:1px solid var(--nborder); border-radius:14px; overflow:hidden; box-shadow:var(--nshadow); transition:transform .18s, border-color .18s; }
+.news-video-card:hover { transform:translateY(-4px); border-color:var(--primary); }
+.news-video-thumb { position:relative; display:block; aspect-ratio:16/9; overflow:hidden; background:#000; cursor:pointer; }
+.news-video-thumb img { width:100%; height:100%; object-fit:cover; }
+.news-play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+.news-play::before { content:""; position:absolute; width:64px; height:64px; border-radius:50%; background:rgba(255,0,0,0.88); transition:transform .15s; }
+.news-video-thumb:hover .news-play::before { transform:scale(1.1); }
+.news-play i { position:relative; color:#fff; font-size:22px; margin-left:3px; }
+.news-video-body { padding:13px 15px 16px; display:flex; flex-direction:column; gap:8px; }
+.news-video-title { color:var(--ntext); font-weight:700; font-size:14.5px; line-height:1.35; text-decoration:none; }
+.news-video-title:hover { color:var(--primary); }
+
+.news-play-badge { position:absolute; top:12px; right:12px; width:34px; height:34px; border-radius:50%; background:rgba(255,0,0,0.9); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:2; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+.news-play-badge i { font-size:13px; margin-left:2px; }
+
+.news-modal { position:fixed; inset:0; background:rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
+.news-modal.open { display:flex; }
+.news-modal-box { width:min(900px, 100%); background:var(--ncard); border-radius:14px; overflow:hidden; position:relative; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.news-modal-close { position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:50%; border:0; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; font-size:16px; }
+.news-modal-frame { position:relative; width:100%; padding-top:56.25%; background:#000; }
+.news-modal-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.news-modal-box h3 { margin:0; padding:16px 18px; font-size:16px; color:var(--ntext); }
+
 @media (max-width:600px) {
   .news-card.size-lg, .news-card.size-tall { grid-column:span 1; grid-row:span 1; }
   .news-card.size-lg .news-thumb, .news-card.size-tall .news-thumb { height:180px; }
@@ -143,6 +172,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   <% if (categories.length > 0) { %>
   <nav class="news-filters">
     <a href="/noticias" class="news-chip cat-Todas tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema=""><i class="fas fa-th-large"></i> Todas</a>
+    <a href="/noticias?video=1" class="news-chip cat-Videos tema-btn" data-video="1"><i class="fab fa-youtube"></i> Vídeos</a>
     <% categories.forEach(function(c) { %>
       <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="news-chip cat-<%= catClass(c.category) %> tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>">
         <i class="<%= c.category === 'Hacking' ? 'fas fa-skull-crossbones' : (c.category === 'Games' ? 'fas fa-gamepad' : 'fas fa-tag') %>"></i>
@@ -151,6 +181,26 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     <% }) %>
     <span class="news-filter-hint"><i class="fas fa-sliders-h"></i> Alterne os temas para filtrar</span>
   </nav>
+  <% } %>
+
+  <% if (galleryVideos && galleryVideos.length > 0) { %>
+  <section class="news-videos" id="news-videos">
+    <h2 class="news-section-title"><i class="fab fa-youtube"></i> Galeria de Vídeos</h2>
+    <div class="news-video-grid">
+      <% galleryVideos.forEach(function(v) { var vid = ytId(v.video); %>
+        <div class="news-video-card" data-vid="<%= vid %>" data-title="<%= v.title %>">
+          <a href="/noticia/<%= v.slug %>" class="news-video-thumb">
+            <img src="https://img.youtube.com/vi/<%= vid %>/hqdefault.jpg" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/video-fallback.jpg';">
+            <span class="news-play"><i class="fas fa-play"></i></span>
+          </a>
+          <div class="news-video-body">
+            <span class="news-cat <%= catClass(v.category) %>"><%= v.category %></span>
+            <a href="/noticia/<%= v.slug %>" class="news-video-title"><%= v.title %></a>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </section>
   <% } %>
 
   <% if (featured && featured.length > 0) { %>
@@ -192,6 +242,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
             <% if (nw) { %><span class="news-badge novo">NOVO</span><% } %>
             <span class="news-badge time"><i class="far fa-clock"></i> <%= rt %> min</span>
           </span>
+          <% if (n.video) { %><span class="news-play-badge" data-vid="<%= ytId(n.video) %>"><i class="fas fa-play"></i></span><% } %>
         </div>
         <div class="news-body2">
           <h3 class="news-title"><%= n.title %></h3>
@@ -216,6 +267,14 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
 </div>
 
+<div class="news-modal" id="news-modal">
+  <div class="news-modal-box">
+    <button class="news-modal-close" id="news-modal-close"><i class="fas fa-times"></i></button>
+    <div class="news-modal-frame"><iframe id="news-modal-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <h3 id="news-modal-title"></h3>
+  </div>
+</div>
+
 <script>
 (function () {
   var grid = document.getElementById('news-grid');
@@ -227,11 +286,45 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   var state = {
     category: '<%= selectedCategory %>',
     search: '<%= search %>',
+    video: false,
     offset: <%- news.length %>,
     limit: <%- initialLimit %>,
     loading: false,
     hasMore: <%- hasMore ? 'true' : 'false' %>
   };
+
+  var modal = document.getElementById('news-modal');
+  var modalIframe = document.getElementById('news-modal-iframe');
+  var modalTitle = document.getElementById('news-modal-title');
+  function openVideo(vid, title) {
+    if (!modal || !vid) return;
+    modalIframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0';
+    if (modalTitle) modalTitle.textContent = title || '';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeVideo() {
+    if (!modal) return;
+    modal.classList.remove('open');
+    modalIframe.src = '';
+    document.body.style.overflow = '';
+  }
+  if (modal) {
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeVideo(); });
+    var mc = document.getElementById('news-modal-close');
+    if (mc) mc.addEventListener('click', closeVideo);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeVideo(); });
+  }
+  document.addEventListener('click', function (e) {
+    var pb = e.target.closest ? e.target.closest('.news-play-badge, .news-video-thumb .news-play') : null;
+    if (pb) {
+      e.preventDefault();
+      var card = pb.closest('[data-vid]');
+      var vid = card ? card.getAttribute('data-vid') : (pb.getAttribute('data-vid') || '');
+      var title = card ? (card.getAttribute('data-title') || '') : '';
+      openVideo(vid, title);
+    }
+  });
 
   function catClass(c) { return 'cat-' + String(c || '').replace(/[^a-z0-9]/gi, ''); }
   function isNewNews(d) { try { return (Date.now() - new Date(d).getTime()) < 172800000; } catch (e) { return false; } }
@@ -240,6 +333,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   function imgFor(n, s) {
     return n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (s === 'size-lg' ? '/800/500' : (s === 'size-tall' ? '/600/800' : '/600/400')));
   }
+  function ytId(v) { if (!v) return ''; var m = String(v).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/); return m ? m[1] : ''; }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   function buildCard(n, idx) {
@@ -253,6 +347,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
         '<img src="' + imgFor(n, size) + '" alt="' + esc(n.title) + '" loading="lazy" onerror="this.style.display=\'none\';">' +
         '<span class="news-cat ' + cat + '">' + esc(n.category) + '</span>' +
         '<span class="news-badges">' + badges + '</span>' +
+        (n.video ? '<span class="news-play-badge" data-vid="' + ytId(n.video) + '"><i class="fas fa-play"></i></span>' : '') +
       '</div>' +
       '<div class="news-body2">' +
         '<h3 class="news-title">' + esc(n.title) + '</h3>' +
@@ -277,7 +372,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   function loadMore() {
     if (state.loading || !state.hasMore) return;
     setBusy(true);
-    var url = '/noticias/api?category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&offset=' + state.offset + '&limit=' + state.limit;
+    var url = '/noticias/api?' + (state.video ? 'video=1&' : '') + 'category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&offset=' + state.offset + '&limit=' + state.limit;
     fetch(url).then(function (r) { return r.json(); }).then(function (data) {
       appendItems(data.items || [], state.offset);
       state.offset = data.nextOffset || (state.offset + (data.items ? data.items.length : 0));
@@ -293,13 +388,16 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
       e.preventDefault();
       chips.forEach(function (x) { x.classList.remove('active'); });
       b.classList.add('active');
-      var cat = b.getAttribute('data-tema') || '';
-      state.category = cat; state.offset = 0; state.hasMore = true; state.loading = false;
-      if (featuredSection) featuredSection.style.display = cat ? 'none' : '';
+      var isVideo = b.getAttribute('data-video') === '1';
+      var cat = isVideo ? '' : (b.getAttribute('data-tema') || '');
+      state.category = cat; state.video = isVideo; state.offset = 0; state.hasMore = true; state.loading = false;
+      if (featuredSection) featuredSection.style.display = (cat || isVideo) ? 'none' : '';
+      var gallerySection = document.getElementById('news-videos');
+      if (gallerySection) gallerySection.style.display = (isVideo || cat) ? 'none' : '';
       grid.innerHTML = '';
       if (empty) empty.style.display = 'none';
       setBusy(true);
-      var url = '/noticias/api?category=' + encodeURIComponent(cat) + '&search=' + encodeURIComponent(state.search) + '&offset=0&limit=' + state.limit;
+      var url = '/noticias/api?' + (isVideo ? 'video=1&' : '') + 'category=' + encodeURIComponent(cat) + '&search=' + encodeURIComponent(state.search) + '&offset=0&limit=' + state.limit;
       fetch(url).then(function (r) { return r.json(); }).then(function (data) {
         appendItems(data.items || [], 0);
         state.offset = data.nextOffset || (data.items ? data.items.length : 0);

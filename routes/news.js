@@ -7,10 +7,19 @@ router.get('/api', (req, res) => {
   try {
     const category = req.query.category || '';
     const search = req.query.search || '';
+    const onlyVideo = req.query.video === '1';
     const offset = parseInt(req.query.offset || '0', 10);
     const limit = parseInt(req.query.limit || '9', 10);
-    const news = db.getNews({ category: category || undefined, search: search || undefined, limit, offset }) || [];
-    const total = db.getNewsCount({ category: category || undefined, search: search || undefined });
+    const opts = { limit, offset };
+    if (category) opts.category = category;
+    if (search) opts.search = search;
+    if (onlyVideo) opts.video = true;
+    const news = db.getNews(opts) || [];
+    const countOpts = {};
+    if (category) countOpts.category = category;
+    if (search) countOpts.search = search;
+    if (onlyVideo) countOpts.video = true;
+    const total = db.getNewsCount(countOpts);
     const hasMore = (offset + news.length) < total;
     res.json({ items: news, hasMore, total, nextOffset: offset + news.length });
   } catch (e) {
@@ -29,6 +38,7 @@ router.get('/', (req, res) => {
     const total = db.getNewsCount({ category, search });
     const news = db.getNews({ category, search, limit, offset: 0 }) || [];
     const featured = db.getFeaturedNews(3) || [];
+    const videos = db.getNews({ video: true, limit: 8 }) || [];
     const hasMore = news.length < total;
     res.render('news', {
       title: 'Notícias - Games & Hacking',
@@ -36,6 +46,7 @@ router.get('/', (req, res) => {
       categories: cats,
       categoryCounts,
       featured,
+      videos,
       selectedCategory: category || '',
       search: search || '',
       initialLimit: limit,
