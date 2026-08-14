@@ -15,9 +15,9 @@
 
   <% if (categories.length > 0) { %>
   <div class="news-cats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
-    <a href="/noticias" class="btn-small <%= !selectedCategory ? 'active' : '' %>">Todas</a>
+    <a href="/noticias" class="btn-small tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema="">Todas</a>
     <% categories.forEach(function(c) { %>
-      <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="btn-small <%= selectedCategory === c.category ? 'active' : '' %>"><%= c.category %></a>
+      <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="btn-small tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>"><%= c.category %></a>
     <% }) %>
   </div>
   <% } %>
@@ -43,9 +43,9 @@
   <% if (news.length === 0) { %>
     <div class="empty-row" style="text-align:center;padding:40px;color:var(--hack-dim);">Nenhuma notícia encontrada.</div>
   <% } else { %>
-  <div class="news-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
+  <div class="news-grid" id="news-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
     <% news.forEach(function(n) { %>
-      <a href="/noticia/<%= n.slug %>" class="news-card" style="text-decoration:none;color:inherit;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;overflow:hidden;transition:transform .15s;">
+      <a href="/noticia/<%= n.slug %>" class="news-card" data-tema="<%= n.category %>" style="text-decoration:none;color:inherit;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;overflow:hidden;transition:transform .15s;">
         <% if (n.image) { %><img src="<%= n.image %>" alt="<%= n.title %>" style="width:100%;height:150px;object-fit:cover;"><% } %>
         <div style="padding:14px;">
           <span class="status-badge" style="font-size:11px;background:var(--hack-bg-2);color:var(--hack-dim);"><%= n.category %></span>
@@ -58,5 +58,35 @@
   </div>
   <% } %>
 </div>
+
+<div id="news-empty" class="empty-row" style="display:none;text-align:center;padding:40px;color:var(--hack-dim);">Nenhuma notícia neste tema.</div>
+
+<script>
+(function () {
+  var botoes = document.querySelectorAll('.tema-btn');
+  var cards = document.querySelectorAll('#news-grid .news-card');
+  var vazio = document.getElementById('news-empty');
+  var destaques = document.querySelector('section');
+  function filtrar(tema) {
+    var visiveis = 0;
+    cards.forEach(function (c) {
+      var ok = !tema || c.getAttribute('data-tema') === tema;
+      c.style.display = ok ? '' : 'none';
+      if (ok) visiveis++;
+    });
+    if (vazio) vazio.style.display = visiveis === 0 ? '' : 'none';
+    if (destaques && tema) destaques.style.display = 'none';
+    else if (destaques) destaques.style.display = '';
+  }
+  botoes.forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      botoes.forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      filtrar(b.getAttribute('data-tema'));
+    });
+  });
+})();
+</script>
 
 <%- include('partials/footer') %>
