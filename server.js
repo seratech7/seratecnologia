@@ -517,6 +517,7 @@ app.use('/', require('./routes/attraction'));
 
 // Notícias e produtos digitais (logins com entrega automática)
 app.use('/noticias', newsRoutes);
+app.use('/noticia', newsRoutes);
 app.use('/logins', digitalRoutes);
 app.get('/entrega/:code', (req, res) => {
   try {

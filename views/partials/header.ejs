@@ -41,7 +41,7 @@
       </a>
     </div>
     <div class="header-center" id="searchContainer">
-      <form action="/comprar" method="GET" class="search-form">
+      <form action="/marketplace" method="GET" class="search-form">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar HD, SSD, notebook..." value="<%= typeof search !== 'undefined' ? search : '' %>">
         <button type="submit">Buscar</button>
@@ -55,7 +55,7 @@
         <i class="fas fa-newspaper"></i>
         <span>Notícias</span>
       </a>
-      <a href="/comprar" class="btn-admin-header" style="margin-right:4px;">
+      <a href="/marketplace" class="btn-admin-header" style="margin-right:4px;">
         <i class="fas fa-shopping-cart"></i>
         <span>Marketplace</span>
       </a>
@@ -110,25 +110,25 @@
     <button class="mobile-close" id="mobileClose">&times;</button>
   </div>
   <div class="mobile-menu-body">
-    <form action="/comprar" method="GET" class="mobile-search-form">
+    <form action="/marketplace" method="GET" class="mobile-search-form">
       <input type="text" name="search" placeholder="Buscar produtos..." value="<%= typeof search !== 'undefined' ? search : '' %>">
       <button type="submit"><i class="fas fa-search"></i></button>
     </form>
     <div class="mobile-nav-links">
       <a href="/noticias"><i class="fas fa-newspaper"></i> Notícias & Hacking</a>
-      <a href="/comprar"><i class="fas fa-shopping-cart"></i> Marketplace</a>
+      <a href="/marketplace"><i class="fas fa-shopping-cart"></i> Marketplace</a>
       <a href="/logins"><i class="fas fa-key"></i> Logins & Contas</a>
       <a href="/rastreio"><i class="fas fa-truck"></i> Rastrear Pedido</a>
       <a href="#" onclick="toggleHackerTheme();return false;"><i class="fas fa-terminal"></i> Tema Hacker</a>
       <a href="#" class="mobile-sub-toggle" id="catToggle"><i class="fas fa-th-large"></i> Categorias <i class="fas fa-chevron-down"></i></a>
       <div class="mobile-submenu" id="catSubmenu">
-        <a href="/comprar">Todas</a>
-        <a href="/comprar?category=ssds">⚡ SSDs</a>
-        <a href="/comprar?category=hds-armazenamento">💾 HDs</a>
-        <a href="/comprar?category=memoria-ram">🧠 Memória RAM</a>
-        <a href="/comprar?category=processadores">🔲 Processadores</a>
-        <a href="/comprar?category=placas-video">🎮 Placas de Vídeo</a>
-        <a href="/comprar?category=placas-mae">🔧 Placas-mãe</a>
+        <a href="/marketplace">Todas</a>
+        <a href="/marketplace?category=ssds">⚡ SSDs</a>
+        <a href="/marketplace?category=hds-armazenamento">💾 HDs</a>
+        <a href="/marketplace?category=memoria-ram">🧠 Memória RAM</a>
+        <a href="/marketplace?category=processadores">🔲 Processadores</a>
+        <a href="/marketplace?category=placas-video">🎮 Placas de Vídeo</a>
+        <a href="/marketplace?category=placas-mae">🔧 Placas-mãe</a>
       </div>
       <% if (admin) { %>
         <a href="/admin/dashboard"><i class="fas fa-cog"></i> Painel Admin</a>
