@@ -2981,6 +2981,18 @@ img { max-width: 100%; height: auto; display: block; }
   color: rgba(255, 255, 255, 0.85);
 }
 
+.top-ad-img {
+  height: 30px;
+  width: auto;
+  max-width: 120px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.top-ad.has-img { padding: 4px 16px; }
+
 .top-ad-label {
   font-size: 10px;
   font-weight: 700;

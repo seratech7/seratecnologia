@@ -751,9 +751,11 @@ router.get('/ads/new', (req, res) => {
   res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: null });
 });
 
-router.post('/ads/new', (req, res) => {
+router.post('/ads/new', upload.single('imageFile'), (req, res) => {
   const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status } = req.body;
   if (!text) return res.render('admin/ad-form', { title: 'Novo Anúncio', ad: null, error: 'Texto do anúncio é obrigatório' });
+  var imageVal = (image || '').toString().trim().slice(0, 200);
+  if (req.file) imageVal = '/uploads/' + req.file.filename;
   try {
     db.run(
       'INSERT INTO ads (title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -761,7 +763,7 @@ router.post('/ads/new', (req, res) => {
         (title || '').toString().trim().slice(0, 100),
         text.toString().trim().slice(0, 500),
         (link || '').toString().trim().slice(0, 200),
-        (image || '').toString().trim().slice(0, 200),
+        imageVal,
         parseInt(display_duration) || 15,
         parseInt(cooldown) || 86400,
         start_date || null,
@@ -782,18 +784,21 @@ router.get('/ads/edit/:id', (req, res) => {
   res.render('admin/ad-form', { title: 'Editar Anúncio', ad, error: null });
 });
 
-router.post('/ads/edit/:id', (req, res) => {
+router.post('/ads/edit/:id', upload.single('imageFile'), (req, res) => {
   const ad = db.get('SELECT * FROM ads WHERE id = ?', [req.params.id]);
   if (!ad) return res.redirect('/admin/ads');
   const { title, text, link, image, display_duration, cooldown, start_date, end_date, sort_order, status } = req.body;
   if (!text) return res.render('admin/ad-form', { title: 'Editar Anúncio', ad, error: 'Texto do anúncio é obrigatório' });
+  var imageVal = (image || '').toString().trim().slice(0, 200);
+  if (req.file) imageVal = '/uploads/' + req.file.filename;
+  else if (req.body.image_clear) imageVal = '';
   db.run(
     'UPDATE ads SET title = ?, text = ?, link = ?, image = ?, display_duration = ?, cooldown = ?, start_date = ?, end_date = ?, sort_order = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     [
       (title || '').toString().trim().slice(0, 100),
       text.toString().trim().slice(0, 500),
       (link || '').toString().trim().slice(0, 200),
-      (image || '').toString().trim().slice(0, 200),
+      imageVal,
       parseInt(display_duration) || 15,
       parseInt(cooldown) || 86400,
       start_date || null,

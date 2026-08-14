@@ -234,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <div class="top-ad" id="topAd">
   <div class="top-ad-content">
+    <img class="top-ad-img" id="adImg" src="" alt="" style="display:none;">
     <span class="top-ad-label">PUBLICIDADE</span>
     <span class="top-ad-text" id="adText"></span>
   </div>
@@ -245,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function() {
   var adText = document.getElementById('adText');
   var adClose = document.getElementById('adClose');
   var topAd = document.getElementById('topAd');
+  var adImg = document.getElementById('adImg');
   var mc = document.querySelector('.main-content');
   var adData = null;
   var adStartTime = 0;
@@ -254,6 +256,10 @@ document.addEventListener('DOMContentLoaded', function() {
     adData = ad;
     adStartTime = Date.now();
     adText.innerHTML = ad.text || ad.title || '';
+    if (adImg) {
+      if (ad.image) { adImg.src = ad.image; adImg.style.display = ''; topAd.classList.add('has-img'); }
+      else { adImg.src = ''; adImg.style.display = 'none'; topAd.classList.remove('has-img'); }
+    }
     topAd.style.display = '';
     if (mc) mc.style.paddingTop = '32px';
     adClose.disabled = true;
