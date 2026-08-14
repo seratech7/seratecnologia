@@ -12,7 +12,7 @@
   --nshadow: 0 6px 24px rgba(13, 27, 42, 0.08);
   background: var(--nbg);
   min-height: calc(100vh - var(--header-height));
-  padding-bottom: 48px;
+  padding-bottom: 56px;
 }
 body.hacker-theme .news-page {
   --nbg: #05070d;
@@ -25,147 +25,105 @@ body.hacker-theme .news-page {
   --nshadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 
+/* Hero full-width */
 .news-hero {
   background: linear-gradient(135deg, #0066ff 0%, #0047b3 55%, #0a1628 100%);
   color: #fff;
-  padding: 40px 16px 30px;
-  position: relative;
-  overflow: hidden;
+  padding: 44px 24px 34px;
+  position: relative; overflow: hidden;
 }
 body.hacker-theme .news-hero {
   background: linear-gradient(135deg, #062a1f 0%, #04141f 55%, #020308 100%);
   border-bottom: 1px solid #1c2a3f;
 }
 .news-hero::after {
-  content: "";
-  position: absolute;
-  right: -60px; top: -60px;
-  width: 240px; height: 240px;
-  background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
-  border-radius: 50%;
+  content: ""; position: absolute; right: -60px; top: -60px;
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 70%); border-radius: 50%;
 }
-.news-hero-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 1; }
+.news-hero-inner { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
 .news-kicker {
-  display: inline-block;
-  font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: rgba(255,255,255,0.15);
+  display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; background: rgba(255,255,255,0.15);
   padding: 5px 12px; border-radius: 20px; margin-bottom: 12px;
 }
-.news-hero h1 {
-  font-size: 38px; line-height: 1.1; margin: 0 0 8px; font-weight: 800;
-  display: flex; align-items: center; gap: 12px;
-}
-.news-hero p { margin: 0 0 20px; opacity: 0.85; font-size: 15px; max-width: 560px; }
+.news-hero h1 { font-size: 40px; line-height: 1.1; margin: 0 0 8px; font-weight: 800; display: flex; align-items: center; gap: 12px; }
+.news-hero p { margin: 0 0 20px; opacity: 0.85; font-size: 15px; max-width: 620px; }
 
 .news-search {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.95);
-  border-radius: 12px; padding: 6px 6px 6px 14px;
-  max-width: 460px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.95); border-radius: 12px; padding: 6px 6px 6px 14px;
+  max-width: 480px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
 }
 .news-search i { color: #415a77; }
-.news-search input {
-  flex: 1; border: 0; outline: 0; background: transparent;
-  font-size: 14px; color: #0d1b2a; padding: 8px 4px;
-}
+.news-search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 14px; color: #0d1b2a; padding: 8px 4px; }
 .news-search input::placeholder { color: #778da9; }
-.news-search button {
-  border: 0; background: var(--primary); color: #fff;
-  padding: 10px 18px; border-radius: 9px; font-weight: 600; cursor: pointer;
-  transition: background .15s;
-}
+.news-search button { border: 0; background: var(--primary); color: #fff; padding: 10px 18px; border-radius: 9px; font-weight: 600; cursor: pointer; transition: background .15s; }
 .news-search button:hover { background: var(--primary-dark); }
 
-.news-body { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
-
+/* Barra de filtros (alterna entre os temas) */
 .news-filters {
-  display: flex; gap: 10px; flex-wrap: wrap;
-  margin: 26px 0 22px;
+  position: sticky; top: var(--header-height); z-index: 50;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  max-width: 1400px; margin: 0 auto; padding: 18px 24px;
+  background: color-mix(in srgb, var(--nbg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--nborder);
 }
 .news-chip {
-  border: 1px solid var(--nborder);
-  background: var(--nchip);
-  color: var(--nchip-text);
-  padding: 9px 18px; border-radius: 30px;
-  font-size: 13.5px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--nborder); background: var(--nchip); color: var(--nchip-text);
+  padding: 9px 18px; border-radius: 30px; font-size: 13.5px; font-weight: 600; cursor: pointer;
   transition: all .15s; text-decoration: none;
 }
 .news-chip:hover { border-color: var(--primary); color: var(--primary); }
-.news-chip.active {
-  background: var(--primary); color: #fff; border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(0,102,255,0.35);
-}
+.news-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,102,255,0.35); }
+.news-filter-hint { margin-left: auto; font-size: 12.5px; color: var(--ndim); }
 
-.news-section-title {
-  font-size: 14px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; color: var(--ndim);
-  margin: 0 0 16px; display: flex; align-items: center; gap: 8px;
-}
-.news-section-title::before {
-  content: ""; width: 4px; height: 16px; border-radius: 3px; background: var(--primary);
-}
-
-.news-featured { margin-bottom: 34px; }
-.news-featured-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 18px;
-}
-.news-featured-grid .news-card { grid-column: span 1; }
-@media (min-width: 760px) {
-  .news-featured-grid .news-card:first-child {
-    grid-column: span 2; flex-direction: row;
-  }
-  .news-featured-grid .news-card:first-child .news-thumb { width: 50%; height: 100%; min-height: 220px; }
-  .news-featured-grid .news-card:first-child .news-body2 { padding: 22px; }
-  .news-featured-grid .news-card:first-child .news-title { font-size: 21px; }
-}
-
+/* Grid de revista full-width */
 .news-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-auto-flow: dense;
+  gap: 18px;
+  max-width: 1400px; margin: 0 auto; padding: 24px;
 }
-
 .news-card {
-  display: flex; flex-direction: column;
-  background: var(--ncard); border: 1px solid var(--nborder);
-  border-radius: 14px; overflow: hidden; color: var(--ntext);
-  box-shadow: var(--nshadow); transition: transform .18s, box-shadow .18s, border-color .18s;
+  display: flex; flex-direction: column; text-decoration: none; color: var(--ntext);
+  background: var(--ncard); border: 1px solid var(--nborder); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--nshadow);
+  transition: transform .18s, box-shadow .18s, border-color .18s;
 }
-.news-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(13,27,42,0.14);
-  border-color: var(--primary);
-}
-.news-thumb {
-  position: relative; width: 100%; height: 170px; overflow: hidden;
-  background: linear-gradient(135deg, #1e3a8a, #0ea5e9);
-}
+.news-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(13,27,42,0.14); border-color: var(--primary); }
+.news-card.size-lg { grid-column: span 2; }
+.news-card.size-tall { grid-row: span 2; }
+.news-thumb { position: relative; width: 100%; height: 180px; overflow: hidden; background: linear-gradient(135deg, #1e3a8a, #0ea5e9); }
+.news-card.size-lg .news-thumb { height: 300px; }
+.news-card.size-tall .news-thumb { height: 300px; }
 .news-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
 .news-card:hover .news-thumb img { transform: scale(1.05); }
 .news-thumb .news-cat {
-  position: absolute; top: 12px; left: 12px;
-  background: rgba(0,102,255,0.92); color: #fff;
-  font-size: 11px; font-weight: 700; letter-spacing: .5px;
-  padding: 5px 11px; border-radius: 20px; text-transform: uppercase;
+  position: absolute; top: 12px; left: 12px; background: rgba(0,102,255,0.92); color: #fff;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; padding: 5px 11px; border-radius: 20px; text-transform: uppercase;
 }
-.news-thumb .news-cat.empty-icon {
-  background: rgba(255,255,255,0.18); backdrop-filter: blur(4px);
-}
-.news-body2 { padding: 16px; display: flex; flex-direction: column; flex: 1; }
+.news-body2 { padding: 15px 16px 16px; display: flex; flex-direction: column; flex: 1; }
 .news-title { font-size: 16px; line-height: 1.35; margin: 0 0 8px; font-weight: 700; }
+.news-card.size-lg .news-title { font-size: 22px; }
 .news-excerpt { color: var(--ndim); font-size: 13.5px; margin: 0 0 14px; line-height: 1.5; flex: 1; }
-.news-meta {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; color: var(--ndim); border-top: 1px solid var(--nborder); padding-top: 12px;
-}
+.news-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--ndim); border-top: 1px solid var(--nborder); padding-top: 12px; }
 .news-meta .news-views { display: inline-flex; align-items: center; gap: 5px; }
 
 .news-empty {
   text-align: center; padding: 60px 20px; color: var(--ndim);
   background: var(--ncard); border: 1px dashed var(--nborder); border-radius: 14px;
+  max-width: 1400px; margin: 0 auto 24px;
 }
 .news-empty i { font-size: 32px; display: block; margin-bottom: 10px; opacity: .5; }
+
+@media (max-width: 600px) {
+  .news-card.size-lg, .news-card.size-tall { grid-column: span 1; grid-row: span 1; }
+  .news-card.size-lg .news-thumb, .news-card.size-tall .news-thumb { height: 180px; }
+  .news-hero h1 { font-size: 30px; }
+}
 </style>
 
 <div class="news-page">
@@ -173,7 +131,7 @@ body.hacker-theme .news-hero {
     <div class="news-hero-inner">
       <span class="news-kicker"><i class="fas fa-microchip"></i> Games &amp; Hacking</span>
       <h1><i class="fas fa-newspaper"></i> Notícias</h1>
-      <p>As últimas novidades, análises e alertas de segurança do mundo dos games e do hacking. Filtre por tema para encontrar o que interessa.</p>
+      <p>As últimas novidades, análises e alertas de segurança. Alterne entre os temas para filtrar a cobertura.</p>
       <form action="/noticias" method="GET" class="news-search">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar notícias..." value="<%= search %>">
@@ -182,68 +140,42 @@ body.hacker-theme .news-hero {
     </div>
   </header>
 
-  <div class="news-body">
-    <% if (categories.length > 0) { %>
-    <nav class="news-filters">
-      <a href="/noticias" class="news-chip tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema="">Todas</a>
-      <% categories.forEach(function(c) { %>
-        <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="news-chip tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>"><%= c.category %></a>
-      <% }) %>
-    </nav>
-    <% } %>
+  <% if (categories.length > 0) { %>
+  <nav class="news-filters">
+    <a href="/noticias" class="news-chip tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema="">Todas</a>
+    <% categories.forEach(function(c) { %>
+      <a href="/noticias?category=<%= encodeURIComponent(c.category) %>" class="news-chip tema-btn <%= selectedCategory === c.category ? 'active' : '' %>" data-tema="<%= c.category %>"><%= c.category %></a>
+    <% }) %>
+    <span class="news-filter-hint"><i class="fas fa-sliders-h"></i> Alterne os temas para filtrar</span>
+  </nav>
+  <% } %>
 
-    <% if (featured.length > 0) { %>
-    <section class="news-featured">
-      <h2 class="news-section-title">Destaques</h2>
-      <div class="news-featured-grid">
-        <% featured.forEach(function(n) { %>
-          <a href="/noticia/<%= n.slug %>" class="news-card" data-tema="<%= n.category %>">
-            <div class="news-thumb">
-              <% if (n.image) { %><img src="<%= n.image %>" alt="<%= n.title %>"><% } else { %><span class="news-cat empty-icon"><i class="fas fa-newspaper"></i></span><% } %>
-              <span class="news-cat"><%= n.category %></span>
-            </div>
-            <div class="news-body2">
-              <h3 class="news-title"><%= n.title %></h3>
-              <p class="news-excerpt"><%= (n.excerpt || '').slice(0,160) %></p>
-              <div class="news-meta">
-                <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
-                <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
-              </div>
-            </div>
-          </a>
-        <% }) %>
-      </div>
-    </section>
-    <% } %>
-
-    <% if (news.length === 0) { %>
-      <div class="news-empty"><i class="far fa-folder-open"></i>Nenhuma notícia encontrada.</div>
-    <% } else { %>
-    <section>
-      <h2 class="news-section-title">Últimas notícias</h2>
-      <div class="news-grid" id="news-grid">
-        <% news.forEach(function(n) { %>
-          <a href="/noticia/<%= n.slug %>" class="news-card" data-tema="<%= n.category %>">
-            <div class="news-thumb">
-              <% if (n.image) { %><img src="<%= n.image %>" alt="<%= n.title %>"><% } else { %><span class="news-cat empty-icon"><i class="fas fa-newspaper"></i></span><% } %>
-              <span class="news-cat"><%= n.category %></span>
-            </div>
-            <div class="news-body2">
-              <h3 class="news-title"><%= n.title %></h3>
-              <p class="news-excerpt"><%= (n.excerpt || '').slice(0,140) %></p>
-              <div class="news-meta">
-                <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
-                <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
-              </div>
-            </div>
-          </a>
-        <% }) %>
-      </div>
-    </section>
-    <% } %>
-
-    <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
+  <% if (news.length === 0) { %>
+    <div class="news-empty"><i class="far fa-folder-open"></i>Nenhuma notícia encontrada.</div>
+  <% } else { %>
+  <div class="news-grid" id="news-grid">
+    <% news.forEach(function(n, idx) { %>
+      <% var sizeClass = ''; var m = idx % 5; if (m === 0) { sizeClass = 'size-lg'; } else if (m === 3) { sizeClass = 'size-tall'; } %>
+      <% var img = n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (sizeClass === 'size-lg' ? '/800/500' : (sizeClass === 'size-tall' ? '/600/800' : '/600/400'))); %>
+      <a href="/noticia/<%= n.slug %>" class="news-card <%= sizeClass %>" data-tema="<%= n.category %>">
+        <div class="news-thumb">
+          <img src="<%= img %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+          <span class="news-cat"><%= n.category %></span>
+        </div>
+        <div class="news-body2">
+          <h3 class="news-title"><%= n.title %></h3>
+          <p class="news-excerpt"><%= (n.excerpt || '').slice(0,140) %></p>
+          <div class="news-meta">
+            <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
+            <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
+          </div>
+        </div>
+      </a>
+    <% }) %>
   </div>
+  <% } %>
+
+  <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
 </div>
 
 <script>
@@ -251,7 +183,6 @@ body.hacker-theme .news-hero {
   var botoes = document.querySelectorAll('.tema-btn');
   var cards = document.querySelectorAll('#news-grid .news-card');
   var vazio = document.getElementById('news-empty');
-  var destaques = document.querySelector('.news-featured');
   function filtrar(tema) {
     var visiveis = 0;
     cards.forEach(function (c) {
@@ -260,8 +191,6 @@ body.hacker-theme .news-hero {
       if (ok) visiveis++;
     });
     if (vazio) vazio.style.display = visiveis === 0 ? '' : 'none';
-    if (destaques && tema) destaques.style.display = 'none';
-    else if (destaques) destaques.style.display = '';
   }
   botoes.forEach(function (b) {
     b.addEventListener('click', function (e) {
