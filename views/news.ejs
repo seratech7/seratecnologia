@@ -151,6 +151,8 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 .news-modal-close { position:absolute; top:10px; right:10px; z-index:3; width:38px; height:38px; border-radius:50%; border:0; background:rgba(0,0,0,.6); color:#fff; cursor:pointer; font-size:16px; }
 .news-modal-frame { position:relative; width:100%; padding-top:56.25%; background:#000; }
 .news-modal-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.news-modal-yt { display:inline-flex; align-items:center; gap:8px; margin-top:14px; color:#fff; text-decoration:none; background:rgba(255,0,0,0.85); padding:9px 16px; border-radius:20px; font-size:13px; font-weight:700; }
+.news-modal-yt:hover { background:#ff0000; }
 .news-modal-box h3 { margin:0; padding:16px 18px; font-size:16px; color:var(--ntext); }
 
 @media (max-width:600px) {
@@ -278,6 +280,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     <button class="news-modal-close" id="news-modal-close"><i class="fas fa-times"></i></button>
     <div class="news-modal-frame"><iframe id="news-modal-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
     <h3 id="news-modal-title"></h3>
+    <a id="news-modal-yt" class="news-modal-yt" href="#" target="_blank" rel="noopener">Assistir no YouTube <i class="fab fa-youtube"></i></a>
   </div>
 </div>
 
@@ -302,10 +305,12 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   var modal = document.getElementById('news-modal');
   var modalIframe = document.getElementById('news-modal-iframe');
   var modalTitle = document.getElementById('news-modal-title');
+  var modalYt = document.getElementById('news-modal-yt');
   function openVideo(vid, title) {
     if (!modal || !vid) return;
-    modalIframe.src = 'https://www.youtube.com/embed/' + vid + '?autoplay=1&rel=0';
+    modalIframe.src = 'https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0';
     if (modalTitle) modalTitle.textContent = title || '';
+    if (modalYt) modalYt.href = 'https://www.youtube.com/watch?v=' + vid;
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
   }

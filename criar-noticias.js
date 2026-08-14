@@ -83,8 +83,7 @@ function gerarLocal(theme, i) {
 }
 
 var DEMO_VIDEOS = [
-  'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-  'https://www.youtube.com/watch?v=jNQXAC9IVRw'
+  'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 ];
 
 async function criar(theme, usarIA, hint, video) {

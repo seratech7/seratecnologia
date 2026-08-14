@@ -100,7 +100,7 @@ async function runAgent(params) {
   if (count > 20) count = 20;
   var briefing = params.briefing || getConfig('news_agent_briefing', '');
   var addVideo = params.video !== undefined ? params.video : (getConfig('news_agent_video', '0') === '1');
-  var demoVideos = ['https://www.youtube.com/watch?v=aqz-KE-bpKQ', 'https://www.youtube.com/watch?v=jNQXAC9IVRw'];
+    var demoVideos = ['https://www.youtube.com/watch?v=dQw4w9WgXcQ'];
 
   var created = [];
   var errors = [];
