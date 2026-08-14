@@ -7,7 +7,7 @@
    function imgFor(n,s){ return n.image || ('https://picsum.photos/seed/'+encodeURIComponent(n.slug)+(s==='size-lg'?'/800/500':(s==='size-tall'?'/600/800':'/600/400'))); }
    function ytId(v){ if(!v) return ''; var m=String(v).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/); return m?m[1]:''; }
    var gridNews = news.filter(function(n){ return !(n.featured && !selectedCategory); });
-   var galleryVideos = (typeof videos !== 'undefined' && videos) ? videos.filter(function(v){ return ytId(v.video); }) : [];
+   var galleryVideos = (typeof videos !== 'undefined' && videos) ? videos.filter(function(v){ return v && v.video; }) : [];
 %>
 
 <style>
@@ -131,6 +131,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   .news-video-grid > .news-video-card { scroll-snap-align:start; }
 }
 .news-video-card { background:var(--ncard); border:1px solid var(--nborder); border-radius:14px; overflow:hidden; box-shadow:var(--nshadow); transition:transform .18s, border-color .18s; }
+.news-video-tag { position:absolute; top:10px; left:10px; z-index:2; background:rgba(220,38,38,0.95); color:#fff; font-size:10px; font-weight:800; letter-spacing:.4px; padding:4px 8px; border-radius:6px; text-transform:uppercase; }
 .news-video-card:hover { transform:translateY(-4px); border-color:var(--primary); }
 .news-video-thumb { position:relative; display:block; aspect-ratio:16/9; overflow:hidden; background:#000; cursor:pointer; }
 .news-video-thumb img { width:100%; height:100%; object-fit:cover; }
@@ -192,10 +193,15 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   <section class="news-videos" id="news-videos">
     <h2 class="news-section-title"><i class="fab fa-youtube"></i> Galeria de Vídeos</h2>
     <div class="news-video-grid">
-      <% galleryVideos.forEach(function(v) { var vid = ytId(v.video); %>
+      <% galleryVideos.forEach(function(v) { var vid = ytId(v.video); var isLocal = !vid; %>
         <div class="news-video-card" data-vid="<%= vid %>" data-video="<%= v.video %>" data-title="<%= v.title %>">
           <a href="/noticia/<%= v.slug %>" class="news-video-thumb">
-            <img src="https://img.youtube.com/vi/<%= vid %>/hqdefault.jpg" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/video-fallback.jpg';">
+            <% if (isLocal) { %>
+              <img src="<%= v.image || ('https://picsum.photos/seed/' + encodeURIComponent(v.slug) + '/600/400') %>" alt="<%= v.title %>" loading="lazy">
+              <span class="news-video-tag"><i class="fas fa-video"></i> Vídeo</span>
+            <% } else { %>
+              <img src="https://img.youtube.com/vi/<%= vid %>/hqdefault.jpg" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/video-fallback.jpg';">
+            <% } %>
             <span class="news-play"><i class="fas fa-play"></i></span>
           </a>
           <div class="news-video-body">
