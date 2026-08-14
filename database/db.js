@@ -1962,6 +1962,7 @@ function getNewsCount(opts) {
   var params = [];
   if (opts.category) { sql += " AND n.category = ?"; params.push(opts.category); }
   if (opts.search) { sql += " AND (n.title LIKE ? OR n.excerpt LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
+  if (opts.video) { sql += " AND n.video IS NOT NULL AND n.video <> ''"; }
   if (opts.published === undefined || opts.published === true) { sql += " AND n.published = 1"; }
   var r = query(sql, params);
   return r && r[0] ? r[0].c : 0;
