@@ -6,7 +6,7 @@ function getConfig(key, def) {
 }
 
 async function gerarComIA(theme, apiKey, baseUrl, model) {
-  var system = 'Você é um redator de um site brasileiro de Games & Hacking. Escreva uma notícia original, atual e realista sobre o tema informado. Responda SOMENTE com um JSON válido, sem explicações e sem blocos de código, no formato: {"title":"...","excerpt":"...","content":"..."}. O excerpt deve ter no máximo 160 caracteres. O content deve ser 2 a 4 parágrafos em português do Brasil.';
+  var system = 'Você é um redator de um site brasileiro de Games & Hacking. Escreva uma notícia original, atual e realista sobre o tema informado. Responda SOMENTE com um JSON válido em UMA ÚNICA LINHA, sem explicações e sem blocos de código, no formato: {"title":"...","excerpt":"...","content":"..."}. O excerpt deve ter no máximo 160 caracteres. O content deve ser 2 a 4 parágrafos em português do Brasil, usando \\n para separar parágrafos (nunca quebras de linha reais).';
   var user = 'Tema da notícia: ' + theme;
   var controller = new AbortController();
   var timer = setTimeout(function () { controller.abort(); }, 45000);
@@ -28,8 +28,15 @@ async function gerarComIA(theme, apiKey, baseUrl, model) {
   var data = await resp.json();
   var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   if (!content) throw new Error('Resposta da IA vazia');
-  var jsonStr = content.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-  return JSON.parse(jsonStr);
+  var jsonStr = content.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  jsonStr = jsonStr.slice(jsonStr.indexOf('{'), jsonStr.lastIndexOf('}') + 1);
+  function parseFlex(s) {
+    try { return JSON.parse(s); } catch (e) {}
+    try { return JSON.parse(s.replace(/\r/g, '\\r').replace(/\n/g, '\\n')); } catch (e) {}
+    try { return JSON.parse(s.replace(/[\r\n]+/g, ' ')); } catch (e) {}
+    throw new Error('JSON da IA inválido');
+  }
+  return parseFlex(jsonStr);
 }
 
 function gerarLocal(theme, i) {
