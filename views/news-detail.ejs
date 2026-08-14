@@ -128,7 +128,8 @@ body.hacker-theme .news-detail-page {
 
     <article class="nd-article">
       <div class="nd-cover">
-        <% if (article.image) { %><img src="<%= article.image %>" alt="<%= article.title %>"><% } else { %><span class="nd-cat empty-icon"><i class="fas fa-newspaper"></i></span><% } %>
+        <% var dimg = article.image || ('https://picsum.photos/seed/' + encodeURIComponent(article.slug) + '/1000/600'); %>
+        <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.style.display='none';">
         <span class="nd-cat"><%= article.category %></span>
       </div>
       <div class="nd-content">

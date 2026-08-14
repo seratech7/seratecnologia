@@ -1,8 +1,38 @@
 const db = require('./database/db');
+const fs = require('fs');
+const path = require('path');
+
+const UPLOAD_DIR = path.join(__dirname, 'public', 'uploads', 'news');
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 function getConfig(key, def) {
   var r = db.get("SELECT value FROM config WHERE key = ?", [key]);
   return r ? r.value : def;
+}
+
+async function gerarImagem(titulo, categoria, slug, id) {
+  var base = categoria === 'Hacking'
+    ? 'cybersecurity hacking, dark tech, code, neon'
+    : 'video game, gaming setup, esports, colorful';
+  var prompt = encodeURIComponent(base + ', news illustration, ' + titulo + ', cinematic, highly detailed');
+  var url = 'https://image.pollinations.ai/prompt/' + prompt + '?width=900&height=600&nologo=true&model=flux&seed=' + id;
+  try {
+    var controller = new AbortController();
+    var timer = setTimeout(function () { controller.abort(); }, 40000);
+    var resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!resp.ok) throw new Error('status ' + resp.status);
+    var buf = Buffer.from(await resp.arrayBuffer());
+    if (buf.length < 5000) throw new Error('imagem muito pequena');
+    var file = path.join(UPLOAD_DIR, slug + '.jpg');
+    fs.writeFileSync(file, buf);
+    var rel = '/uploads/news/' + slug + '.jpg';
+    db.run('UPDATE news SET image = ? WHERE id = ?', [rel, id]);
+    return rel;
+  } catch (e) {
+    console.log('  imagem falhou:', e.message);
+    return null;
+  }
 }
 
 async function gerarComIA(theme, apiKey, baseUrl, model, hint) {
@@ -74,6 +104,8 @@ async function criar(theme, usarIA, hint) {
     featured: 0,
     published: 1
   });
+  var img = await gerarImagem(art.title, theme, slug, id);
+  console.log('  imagem:', img || '(placeholder)');
   return id;
 }
 
