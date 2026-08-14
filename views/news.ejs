@@ -79,6 +79,18 @@ body.hacker-theme .news-hero {
 .news-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(0,102,255,0.35); }
 .news-filter-hint { margin-left: auto; font-size: 12.5px; color: var(--ndim); }
 
+/* Seção Destaques */
+.news-section-title {
+  font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--ndim); margin: 28px 0 16px; display: flex; align-items: center; gap: 8px;
+}
+.news-section-title::before { content: ""; width: 4px; height: 16px; border-radius: 3px; background: var(--primary); }
+.news-featured-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-auto-flow: dense; gap: 18px; max-width: 1400px; margin: 0 auto; padding: 0 24px;
+}
+.news-featured-grid .news-card.size-lg { grid-column: span 2; }
+
 /* Grid de revista full-width */
 .news-grid {
   display: grid;
@@ -150,11 +162,38 @@ body.hacker-theme .news-hero {
   </nav>
   <% } %>
 
+  <% if (featured && featured.length > 0) { %>
+  <section class="news-featured">
+    <h2 class="news-section-title">Destaques</h2>
+    <div class="news-featured-grid">
+      <% featured.forEach(function(n, fi) { %>
+        <% var fsize = fi === 0 ? 'size-lg' : ''; %>
+        <% var fimg = n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (fsize ? '/800/500' : '/600/400')); %>
+        <a href="/noticia/<%= n.slug %>" class="news-card <%= fsize %>" data-tema="<%= n.category %>">
+          <div class="news-thumb">
+            <img src="<%= fimg %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+            <span class="news-cat"><%= n.category %></span>
+          </div>
+          <div class="news-body2">
+            <h3 class="news-title"><%= n.title %></h3>
+            <p class="news-excerpt"><%= (n.excerpt || '').slice(0,160) %></p>
+            <div class="news-meta">
+              <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
+              <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
+            </div>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
   <% if (news.length === 0) { %>
     <div class="news-empty"><i class="far fa-folder-open"></i>Nenhuma notícia encontrada.</div>
   <% } else { %>
+  <% var gridNews = news.filter(function(n) { return !(n.featured && !selectedCategory); }); %>
   <div class="news-grid" id="news-grid">
-    <% news.forEach(function(n, idx) { %>
+    <% gridNews.forEach(function(n, idx) { %>
       <% var sizeClass = ''; var m = idx % 5; if (m === 0) { sizeClass = 'size-lg'; } else if (m === 3) { sizeClass = 'size-tall'; } %>
       <% var img = n.image || ('https://picsum.photos/seed/' + encodeURIComponent(n.slug) + (sizeClass === 'size-lg' ? '/800/500' : (sizeClass === 'size-tall' ? '/600/800' : '/600/400'))); %>
       <a href="/noticia/<%= n.slug %>" class="news-card <%= sizeClass %>" data-tema="<%= n.category %>">
