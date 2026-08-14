@@ -172,7 +172,7 @@ body.hacker-theme .news-detail-page {
           </div>
           <% } %>
         <% } else { %>
-          <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.style.display='none';">
+          <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.src='/img/phone-placeholder.svg';">
         <% } %>
         <span class="nd-cat"><%= article.category %></span>
       </div>

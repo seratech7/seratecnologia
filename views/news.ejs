@@ -197,7 +197,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
         <div class="news-video-card" data-vid="<%= vid %>" data-video="<%= v.video %>" data-title="<%= v.title %>">
           <a href="/noticia/<%= v.slug %>" class="news-video-thumb">
             <% if (isLocal) { %>
-              <img src="<%= v.image || ('https://picsum.photos/seed/' + encodeURIComponent(v.slug) + '/600/400') %>" alt="<%= v.title %>" loading="lazy">
+              <img src="<%= v.image || ('https://picsum.photos/seed/' + encodeURIComponent(v.slug) + '/600/400') %>" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/phone-placeholder.svg';">
               <span class="news-video-tag"><i class="fas fa-video"></i> Vídeo</span>
             <% } else { %>
               <img src="https://img.youtube.com/vi/<%= vid %>/hqdefault.jpg" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/video-fallback.jpg';">
@@ -222,7 +222,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
         <% var fsize = fi === 0 ? 'size-lg' : ''; %>
         <a href="/noticia/<%= n.slug %>" class="news-card <%= fsize %> <%= catClass(n.category) %>" data-tema="<%= n.category %>">
           <div class="news-thumb">
-            <img src="<%= imgFor(n, fsize) %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+            <img src="<%= imgFor(n, fsize) %>" alt="<%= n.title %>" loading="lazy" onerror="this.src='/img/phone-placeholder.svg';">
             <span class="news-cat <%= catClass(n.category) %>"><%= n.category %></span>
             <span class="news-feat-badge"><i class="fas fa-star"></i> Destaque</span>
           </div>
@@ -248,7 +248,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
       <% var sc = sizeFor(idx); var nw = isNewNews(n.created_at); var rt = readTimeNews(n.content); %>
       <a href="/noticia/<%= n.slug %>" class="news-card <%= sc %> <%= catClass(n.category) %>" data-tema="<%= n.category %>">
         <div class="news-thumb">
-          <img src="<%= imgFor(n, sc) %>" alt="<%= n.title %>" loading="lazy" onerror="this.style.display='none';">
+          <img src="<%= imgFor(n, sc) %>" alt="<%= n.title %>" loading="lazy" onerror="this.src='/img/phone-placeholder.svg';">
           <span class="news-cat <%= catClass(n.category) %>"><%= n.category %></span>
           <span class="news-badges">
             <% if (nw) { %><span class="news-badge novo">NOVO</span><% } %>
@@ -373,7 +373,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     badges += '<span class="news-badge time"><i class="far fa-clock"></i> ' + readTimeNews(n.content) + ' min</span>';
     return '<a href="/noticia/' + esc(n.slug) + '" class="news-card ' + size + ' ' + cat + '" data-tema="' + esc(n.category) + '">' +
       '<div class="news-thumb">' +
-        '<img src="' + imgFor(n, size) + '" alt="' + esc(n.title) + '" loading="lazy" onerror="this.style.display=\'none\';">' +
+        '<img src="' + imgFor(n, size) + '" alt="' + esc(n.title) + '" loading="lazy" onerror="this.src=\'/img/phone-placeholder.svg\';">' +
         '<span class="news-cat ' + cat + '">' + esc(n.category) + '</span>' +
         '<span class="news-badges">' + badges + '</span>' +
         (n.video ? '<span class="news-play-badge" data-vid="' + ytId(n.video) + '" data-video="' + esc(n.video) + '"><i class="fas fa-play"></i></span>' : '') +
