@@ -486,6 +486,27 @@ app.use('/admin', adminRoutes(upload, dbUpload));
 app.use('/admin', require('./routes/marketing')());
 app.use('/seller', sellerRoutes(upload));
 app.use('/vendedor', sellerProfileRoutes);
+// Home = Notícias
+app.get('/', (req, res) => {
+  try {
+    const { category, search } = req.query;
+    const news = db.getNews({ category, search, limit: 50 }) || [];
+    const categories = db.getNewsCategories() || [];
+    const featured = db.getFeaturedNews(3) || [];
+    res.render('news', {
+      title: 'Notícias - Games & Hacking',
+      news,
+      categories,
+      featured,
+      selectedCategory: category || '',
+      search: search || ''
+    });
+  } catch (e) {
+    console.error('Home news error:', e);
+    res.render('news', { title: 'Notícias', news: [], categories: [], featured: [], selectedCategory: '', search: '' });
+  }
+});
+
 app.use('/', productRoutes);
 app.use('/', notificationRoutes);
 app.use('/', purchaseRoutes);

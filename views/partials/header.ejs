@@ -41,7 +41,7 @@
       </a>
     </div>
     <div class="header-center" id="searchContainer">
-      <form action="/" method="GET" class="search-form">
+      <form action="/comprar" method="GET" class="search-form">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar HD, SSD, notebook..." value="<%= typeof search !== 'undefined' ? search : '' %>">
         <button type="submit">Buscar</button>
@@ -51,21 +51,21 @@
       <button class="theme-toggle-btn" id="themeToggle" onclick="toggleHackerTheme()" title="Alternar tema" aria-label="Alternar tema claro/hacker">
         <i class="fas fa-terminal"></i>
       </button>
-      <a href="/comprar" class="btn-admin-header" style="margin-right:4px;">
-        <i class="fas fa-shopping-cart"></i>
-        <span>Comprar</span>
-      </a>
-      <a href="/rastreio" class="btn-admin-header" style="margin-right:4px;">
-        <i class="fas fa-truck"></i>
-        <span>Rastrear</span>
-      </a>
       <a href="/noticias" class="btn-admin-header" style="margin-right:4px;">
         <i class="fas fa-newspaper"></i>
         <span>Notícias</span>
       </a>
+      <a href="/comprar" class="btn-admin-header" style="margin-right:4px;">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Comprar</span>
+      </a>
       <a href="/logins" class="btn-admin-header" style="margin-right:4px;">
         <i class="fas fa-key"></i>
         <span>Logins</span>
+      </a>
+      <a href="/rastreio" class="btn-admin-header" style="margin-right:4px;">
+        <i class="fas fa-truck"></i>
+        <span>Rastrear</span>
       </a>
       <div class="notif-bell" id="notifBell" onclick="window.location.href='/notificacoes'">
         <i class="fas fa-bell"></i>
@@ -110,26 +110,25 @@
     <button class="mobile-close" id="mobileClose">&times;</button>
   </div>
   <div class="mobile-menu-body">
-    <form action="/" method="GET" class="mobile-search-form">
+    <form action="/comprar" method="GET" class="mobile-search-form">
       <input type="text" name="search" placeholder="Buscar produtos..." value="<%= typeof search !== 'undefined' ? search : '' %>">
       <button type="submit"><i class="fas fa-search"></i></button>
     </form>
     <div class="mobile-nav-links">
-      <a href="/"><i class="fas fa-home"></i> Início</a>
-      <a href="#" onclick="toggleHackerTheme();return false;"><i class="fas fa-terminal"></i> Tema Hacker</a>
-      <a href="/comprar"><i class="fas fa-shopping-cart"></i> Compra Online</a>
-      <a href="/rastreio"><i class="fas fa-truck"></i> Rastrear Pedido</a>
       <a href="/noticias"><i class="fas fa-newspaper"></i> Notícias & Hacking</a>
+      <a href="/comprar"><i class="fas fa-shopping-cart"></i> Compra Online</a>
       <a href="/logins"><i class="fas fa-key"></i> Logins & Contas</a>
+      <a href="/rastreio"><i class="fas fa-truck"></i> Rastrear Pedido</a>
+      <a href="#" onclick="toggleHackerTheme();return false;"><i class="fas fa-terminal"></i> Tema Hacker</a>
       <a href="#" class="mobile-sub-toggle" id="catToggle"><i class="fas fa-th-large"></i> Categorias <i class="fas fa-chevron-down"></i></a>
       <div class="mobile-submenu" id="catSubmenu">
-        <a href="/">Todas</a>
-        <a href="/?category=ssds">⚡ SSDs</a>
-        <a href="/?category=hds-armazenamento">💾 HDs</a>
-        <a href="/?category=memoria-ram">🧠 Memória RAM</a>
-        <a href="/?category=processadores">🔲 Processadores</a>
-        <a href="/?category=placas-video">🎮 Placas de Vídeo</a>
-        <a href="/?category=placas-mae">🔧 Placas-mãe</a>
+        <a href="/comprar">Todas</a>
+        <a href="/comprar?category=ssds">⚡ SSDs</a>
+        <a href="/comprar?category=hds-armazenamento">💾 HDs</a>
+        <a href="/comprar?category=memoria-ram">🧠 Memória RAM</a>
+        <a href="/comprar?category=processadores">🔲 Processadores</a>
+        <a href="/comprar?category=placas-video">🎮 Placas de Vídeo</a>
+        <a href="/comprar?category=placas-mae">🔧 Placas-mãe</a>
       </div>
       <% if (admin) { %>
         <a href="/admin/dashboard"><i class="fas fa-cog"></i> Painel Admin</a>
