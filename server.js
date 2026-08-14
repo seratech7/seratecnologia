@@ -491,19 +491,29 @@ app.get('/', (req, res) => {
   try {
     const { category, search } = req.query;
     const news = db.getNews({ category, search, limit: 50 }) || [];
-    const categories = db.getNewsCategories() || [];
+    const cats = db.getNewsCategories() || [];
+    const categoryCounts = {};
+    cats.forEach(c => { categoryCounts[c.category] = db.getNewsCount({ category: c.category }); });
     const featured = db.getFeaturedNews(3) || [];
+    const videos = db.getNews({ video: true, limit: 4 }) || [];
+    const total = db.getNewsCount({ category, search });
+    const hasMore = news.length < total;
     res.render('news', {
       title: 'Notícias - Games & Hacking',
       news,
-      categories,
+      categories: cats,
+      categoryCounts,
       featured,
+      videos,
       selectedCategory: category || '',
-      search: search || ''
+      search: search || '',
+      initialLimit: 50,
+      hasMore,
+      total
     });
   } catch (e) {
     console.error('Home news error:', e);
-    res.render('news', { title: 'Notícias', news: [], categories: [], featured: [], selectedCategory: '', search: '' });
+    res.render('news', { title: 'Notícias', news: [], categories: [], categoryCounts: {}, featured: [], videos: [], selectedCategory: '', search: '', initialLimit: 9, hasMore: false, total: 0 });
   }
 });
 
