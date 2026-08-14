@@ -275,15 +275,6 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
 </div>
 
-<div class="news-modal" id="news-modal">
-  <div class="news-modal-box">
-    <button class="news-modal-close" id="news-modal-close"><i class="fas fa-times"></i></button>
-    <div class="news-modal-frame"><iframe id="news-modal-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
-    <h3 id="news-modal-title"></h3>
-    <a id="news-modal-yt" class="news-modal-yt" href="#" target="_blank" rel="noopener">Assistir no YouTube <i class="fab fa-youtube"></i></a>
-  </div>
-</div>
-
 <script>
 (function () {
   var grid = document.getElementById('news-grid');
@@ -302,29 +293,9 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     hasMore: <%- hasMore ? 'true' : 'false' %>
   };
 
-  var modal = document.getElementById('news-modal');
-  var modalIframe = document.getElementById('news-modal-iframe');
-  var modalTitle = document.getElementById('news-modal-title');
-  var modalYt = document.getElementById('news-modal-yt');
   function openVideo(vid, title) {
-    if (!modal || !vid) return;
-    modalIframe.src = 'https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0';
-    if (modalTitle) modalTitle.textContent = title || '';
-    if (modalYt) modalYt.href = 'https://www.youtube.com/watch?v=' + vid;
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeVideo() {
-    if (!modal) return;
-    modal.classList.remove('open');
-    modalIframe.src = '';
-    document.body.style.overflow = '';
-  }
-  if (modal) {
-    modal.addEventListener('click', function (e) { if (e.target === modal) closeVideo(); });
-    var mc = document.getElementById('news-modal-close');
-    if (mc) mc.addEventListener('click', closeVideo);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeVideo(); });
+    if (!vid) return;
+    window.open('https://www.youtube.com/watch?v=' + vid, '_blank', 'noopener');
   }
   document.addEventListener('click', function (e) {
     var pb = e.target.closest ? e.target.closest('.news-play-badge, .news-video-thumb .news-play') : null;

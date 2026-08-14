@@ -40,10 +40,10 @@ body.hacker-theme .news-detail-page {
   background: linear-gradient(135deg, #1e3a8a, #0ea5e9);
 }
 .nd-cover img { width: 100%; height: 100%; object-fit: cover; }
-.nd-cover .nd-video { position:absolute; inset:0; width:100%; height:100%; }
-.nd-cover .nd-video iframe { width:100%; height:100%; border:0; }
-.nd-cover .nd-video-yt { position:absolute; bottom:16px; right:16px; z-index:4; display:inline-flex; align-items:center; gap:8px; background:rgba(255,0,0,0.9); color:#fff; text-decoration:none; padding:9px 16px; border-radius:22px; font-size:13px; font-weight:700; box-shadow:0 4px 14px rgba(0,0,0,.35); }
-.nd-cover .nd-video-yt:hover { background:#ff0000; }
+.nd-cover .nd-video { position:absolute; inset:0; width:100%; height:100%; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
+.nd-cover .nd-video.nd-video-link { cursor:pointer; }
+.nd-cover .nd-play { width:74px; height:74px; border-radius:50%; background:rgba(255,0,0,0.92); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 6px 22px rgba(0,0,0,.45); transition:transform .2s; }
+.nd-cover .nd-video-link:hover .nd-play { transform:scale(1.08); }
 .nd-cover .nd-cat {
   position: absolute; top: 16px; left: 16px;
   background: rgba(0,102,255,0.92); color: #fff;
@@ -155,8 +155,10 @@ body.hacker-theme .news-detail-page {
        <div class="nd-cover">
         <% var dimg = article.image || ('https://picsum.photos/seed/' + encodeURIComponent(article.slug) + '/1000/600'); %>
         <% if (article.video && ytId(article.video)) { %>
-          <div class="nd-video"><iframe src="https://www.youtube-nocookie.com/embed/<%= ytId(article.video) %>?rel=0" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
-          <a class="nd-video-yt" href="https://www.youtube.com/watch?v=<%= ytId(article.video) %>" target="_blank" rel="noopener">Assistir no YouTube <i class="fab fa-youtube"></i></a>
+          <% var ytIdVal = ytId(article.video); %>
+          <a class="nd-video nd-video-link" href="https://www.youtube.com/watch?v=<%= ytIdVal %>" target="_blank" rel="noopener" style="background-image:url('https://img.youtube.com/vi/<%= ytIdVal %>/maxresdefault.jpg')">
+            <span class="nd-play"><i class="fas fa-play"></i></span>
+          </a>
         <% } else { %>
           <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.style.display='none';">
         <% } %>
