@@ -1,0 +1,235 @@
+<%- include('../partials/admin-header') %>
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-newspaper"></i> Gerenciar Notícias</h1>
+    <a href="/admin/noticias/novo" class="btn-secondary"><i class="fas fa-plus"></i> Nova Notícia</a>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+  <% if (err) { %><div class="alert alert-error"><%= err %></div><% } %>
+
+  <input type="hidden" id="csrf-token" value="<%= csrfToken %>">
+
+  <!-- ============ ASSISTENTE DE IA ============ -->
+  <div class="card agent-card">
+    <div class="card-head">
+      <h2><i class="fas fa-robot"></i> Assistente de IA</h2>
+      <span class="badge badge-info">Modo rascunho — você aprova antes de publicar</span>
+    </div>
+    <div class="card-body">
+      <div class="agent-grid">
+        <div class="form-group" style="grid-column:1 / -1;">
+          <label>Briefing (opcional)</label>
+          <textarea id="ia-briefing" rows="3" placeholder="Ex: Foque em vulnerabilidades recentes de roteadores e notícias quentes de e-sports desta semana."><%= agent.briefing %></textarea>
+        </div>
+        <div class="form-group">
+          <label>Temas</label>
+          <input type="text" id="ia-theme" value="Hacking,Games" placeholder="Hacking,Games">
+        </div>
+        <div class="form-group">
+          <label>Quantidade</label>
+          <input type="number" id="ia-count" value="3" min="1" max="20">
+        </div>
+        <div class="form-group" style="display:flex; align-items:flex-end;">
+          <label class="checkbox"><input type="checkbox" id="ia-video"> Incluir vídeo demo em alguns</label>
+        </div>
+      </div>
+      <button id="ia-btn" class="btn-primary"><i class="fas fa-magic"></i> Gerar rascunhos com IA</button>
+      <div id="ia-result" class="agent-result"></div>
+    </div>
+  </div>
+
+  <!-- ============ CONFIG DO AGENTE AUTÔNOMO ============ -->
+  <div class="card">
+    <div class="card-head"><h2><i class="fas fa-cogs"></i> Agente Autônomo (opera na sua ausência)</h2></div>
+    <div class="card-body">
+      <form action="/admin/noticias/agente-salvar" method="POST" class="admin-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="agent-grid">
+          <div class="form-group">
+            <label class="checkbox"><input type="checkbox" name="enabled" value="1" <%= agent.enabled ? 'checked' : '' %>> Ativar execução automática</label>
+          </div>
+          <div class="form-group">
+            <label>Intervalo (horas)</label>
+            <input type="number" name="interval" value="<%= agent.interval %>" min="1" max="72">
+          </div>
+          <div class="form-group">
+            <label>Notícias por execução</label>
+            <input type="number" name="per_run" value="<%= agent.perRun %>" min="1" max="20">
+          </div>
+          <div class="form-group">
+            <label>Temas</label>
+            <input type="text" name="themes" value="<%= agent.themes %>" placeholder="Hacking,Games">
+          </div>
+          <div class="form-group" style="display:flex; align-items:flex-end;">
+            <label class="checkbox"><input type="checkbox" name="video" value="1" <%= agent.video ? 'checked' : '' %>> Anexar vídeo demo a alguns</label>
+          </div>
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label>Briefing padrão do agente</label>
+            <textarea name="briefing" rows="2" placeholder="Instruções padrão para o agente"><%= agent.briefing %></textarea>
+          </div>
+        </div>
+        <div class="agent-actions">
+          <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar configurações</button>
+          <form action="/admin/noticias/agente-executar" method="POST" style="display:inline;">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn-secondary"><i class="fas fa-play"></i> Executar agora</button>
+          </form>
+        </div>
+        <p class="agent-meta">
+          <% if (agent.lastRun) { %>Última execução: <%= new Date(agent.lastRun).toLocaleString('pt-BR') %><% } else { %>Nunca executado<% } %>
+          <% if (agent.lastResult && agent.lastResult.created !== undefined) { %> · Último resultado: <%= agent.lastResult.created %> rascunho(s) criado(s)<% } %>
+          <% if (agent.lastResult && agent.lastResult.errors && agent.lastResult.errors.length) { %> · <%= agent.lastResult.errors.length %> erro(s)<% } %>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ FILTROS ============ -->
+  <div class="card">
+    <div class="card-head"><h2><i class="fas fa-list"></i> Notícias <span class="badge"><%= news.length %></span> <span class="badge badge-warn"><%= draftsCount %> rascunho(s)</span></h2></div>
+    <div class="card-body">
+      <form action="/admin/noticias" method="GET" class="filter-bar">
+        <select name="status" onchange="this.form.submit()">
+          <option value="" <%= status === '' ? 'selected' : '' %>>Todos</option>
+          <option value="published" <%= status === 'published' ? 'selected' : '' %>>Publicados</option>
+          <option value="draft" <%= status === 'draft' ? 'selected' : '' %>>Rascunhos</option>
+        </select>
+        <input type="text" name="q" value="<%= q %>" placeholder="Buscar título/conteúdo...">
+        <button type="submit" class="btn-secondary"><i class="fas fa-search"></i></button>
+      </form>
+
+      <table class="admin-table news-table">
+        <thead>
+          <tr>
+            <th>Capa</th><th>Título</th><th>Categoria</th><th>Status</th><th>Destaque</th><th>Views</th><th>Data</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% news.forEach(function(n) { %>
+          <tr>
+            <td>
+              <% if (n.image) { %><img src="<%= n.image %>" class="thumb" alt=""><% } else { %><div class="thumb thumb-empty"><i class="fas fa-image"></i></div><% } %>
+            </td>
+            <td>
+              <a href="/noticia/<%= n.slug %>" target="_blank" class="news-link"><%= n.title %></a>
+              <% if (n.video) { %><span class="badge badge-video"><i class="fab fa-youtube"></i> Vídeo</span><% } %>
+            </td>
+            <td><span class="cat-tag cat-<%= (n.category||'').replace(/[^a-z0-9]/gi,'') %>"><%= n.category %></span></td>
+            <td>
+              <% if (n.published) { %><span class="badge badge-ok">Publicado</span><% } else { %><span class="badge badge-warn">Rascunho</span><% } %>
+            </td>
+            <td><% if (n.featured) { %><i class="fas fa-star star-on"></i><% } else { %><i class="far fa-star"></i><% } %></td>
+            <td><%= n.views || 0 %></td>
+            <td><%= new Date(n.created_at).toLocaleDateString('pt-BR') %></td>
+            <td class="row-actions">
+              <a href="/admin/noticias/editar/<%= n.id %>" class="act act-edit" title="Editar"><i class="fas fa-edit"></i></a>
+              <% if (!n.published) { %>
+                <form action="/admin/noticias/publicar/<%= n.id %>" method="POST" style="display:inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="act act-publish" title="Publicar"><i class="fas fa-check"></i></button>
+                </form>
+              <% } else { %>
+                <form action="/admin/noticias/rascunho/<%= n.id %>" method="POST" style="display:inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="act act-draft" title="Mover p/ rascunho"><i class="fas fa-undo"></i></button>
+                </form>
+              <% } %>
+              <form action="/admin/noticias/destaque/<%= n.id %>" method="POST" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="act act-star" title="Destacar"><i class="fas fa-star"></i></button>
+              </form>
+              <form action="/admin/noticias/excluir/<%= n.id %>" method="POST" style="display:inline;" onsubmit="return confirm('Excluir esta notícia?');">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="act act-del" title="Excluir"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (news.length === 0) { %><tr><td colspan="8" style="text-align:center;padding:24px;color:#888;">Nenhuma notícia encontrada.</td></tr><% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.agent-card { border-left:4px solid var(--primary); }
+.card { background:#fff; border:1px solid #e6e9ef; border-radius:12px; margin-bottom:22px; box-shadow:0 2px 10px rgba(13,27,42,.05); }
+body.dark-theme .card, body.hacker-theme .card { background:#0c1322; border-color:#1c2a3f; }
+.card-head { padding:16px 20px; border-bottom:1px solid #eef1f6; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.card-head h2 { margin:0; font-size:16px; }
+.card-body { padding:20px; }
+.agent-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px; margin-bottom:14px; }
+.agent-result { margin-top:14px; }
+.agent-result .ok { color:#16a34a; font-weight:600; }
+.agent-result .err { color:#dc2626; }
+.agent-result ul { margin:8px 0 0; padding-left:18px; }
+.agent-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.agent-meta { margin:12px 0 0; font-size:12.5px; color:#6b7280; }
+.filter-bar { display:flex; gap:10px; margin-bottom:16px; }
+.filter-bar input, .filter-bar select { padding:9px 12px; border:1px solid #cfd6e4; border-radius:8px; }
+.admin-table { width:100%; border-collapse:collapse; }
+.admin-table th, .admin-table td { padding:10px 12px; text-align:left; border-bottom:1px solid #eef1f6; font-size:13.5px; vertical-align:middle; }
+.admin-table th { background:#f7f9fc; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#6b7280; }
+body.dark-theme .admin-table th, body.hacker-theme .admin-table th { background:#0a1120; }
+.thumb { width:54px; height:38px; object-fit:cover; border-radius:6px; background:#eee; }
+.thumb-empty { display:flex; align-items:center; justify-content:center; color:#9aa5b5; background:#f0f2f7; }
+.news-link { font-weight:600; color:var(--primary); text-decoration:none; }
+.cat-tag { display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700; background:#eef2ff; color:#2a3b55; }
+.cat-tag.cat-Hacking { background:#ffe1e1; color:#c0392b; }
+.cat-tag.cat-Games { background:#ece3ff; color:#6b21a8; }
+.badge { display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; background:#eef2ff; color:#2a3b55; }
+.badge-ok { background:#dcfce7; color:#15803d; }
+.badge-warn { background:#fef3c7; color:#b45309; }
+.badge-info { background:#dbeafe; color:#1d4ed8; }
+.badge-video { background:#fee2e2; color:#dc2626; margin-left:6px; }
+.star-on { color:#f59e0b; }
+.row-actions { display:flex; gap:6px; }
+.act { border:1px solid #cfd6e4; background:#fff; width:32px; height:32px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; color:#475569; transition:all .15s; }
+.act:hover { transform:translateY(-1px); }
+.act-edit:hover { color:#1d4ed8; border-color:#1d4ed8; }
+.act-publish:hover { color:#15803d; border-color:#15803d; }
+.act-draft:hover { color:#b45309; border-color:#b45309; }
+.act-star:hover { color:#f59e0b; border-color:#f59e0b; }
+.act-del:hover { color:#dc2626; border-color:#dc2626; }
+.checkbox { display:flex; align-items:center; gap:7px; font-size:13.5px; cursor:pointer; }
+</style>
+
+<script>
+(function () {
+  var btn = document.getElementById('ia-btn');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    var token = document.getElementById('csrf-token').value;
+    var body = 'briefing=' + encodeURIComponent(document.getElementById('ia-briefing').value) +
+      '&theme=' + encodeURIComponent(document.getElementById('ia-theme').value) +
+      '&count=' + encodeURIComponent(document.getElementById('ia-count').value);
+    var fd = new URLSearchParams();
+    fd.append('_csrf', token);
+    fd.append('briefing', document.getElementById('ia-briefing').value);
+    fd.append('theme', document.getElementById('ia-theme').value);
+    fd.append('count', document.getElementById('ia-count').value);
+    fd.append('video', document.getElementById('ia-video').checked ? '1' : '0');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
+    fetch('/admin/noticias/ia-gerar', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: fd.toString() })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var box = document.getElementById('ia-result');
+        if (!data.ok) { box.innerHTML = '<p class="err">Erro: ' + (data.error || 'desconhecido') + '</p>'; return; }
+        var html = '<p class="ok"><i class="fas fa-check"></i> ' + (data.total || 0) + ' rascunho(s) criado(s):</p><ul>';
+        (data.created || []).forEach(function (c) {
+          html += '<li>[' + c.theme + ']' + (c.video ? ' <i class="fab fa-youtube"></i>' : '') + ' ' + c.title + ' <a href="/admin/noticias/editar/' + c.id + '">(editar)</a></li>';
+        });
+        html += '</ul>';
+        if (data.errors && data.errors.length) html += '<p class="err">Erros: ' + data.errors.join('; ') + '</p>';
+        box.innerHTML = html;
+      })
+      .catch(function (e) { document.getElementById('ia-result').innerHTML = '<p class="err">Falha: ' + e.message + '</p>'; })
+      .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic"></i> Gerar rascunhos com IA'; });
+  });
+})();
+</script>
+
+<%- include('../partials/admin-footer') %>

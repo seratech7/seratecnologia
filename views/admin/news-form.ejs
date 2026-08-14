@@ -1,0 +1,66 @@
+<%- include('../partials/admin-header') %>
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-<%= article ? 'edit' : 'plus' %>"></i> <%= article ? 'Editar' : 'Nova' %> Notícia</h1>
+    <a href="/admin/noticias" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+  <% if (err) { %><div class="alert alert-error"><%= err %></div><% } %>
+
+  <div class="form-card">
+    <form action="/admin/noticias/<%= article ? 'editar/' + article.id : 'novo' %>" method="POST" class="admin-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label for="title">Título *</label>
+          <input type="text" id="title" name="title" value="<%= article ? article.title : '' %>" placeholder="Título da notícia" required>
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label for="slug">Slug (deixe vazio p/ automático)</label>
+          <input type="text" id="slug" name="slug" value="<%= article ? article.slug : '' %>" placeholder="slug-automatico">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="category">Categoria</label>
+          <input type="text" id="category" name="category" list="cat-list" value="<%= article ? article.category : 'Hacking' %>" placeholder="Hacking / Games">
+          <datalist id="cat-list">
+            <% (categories || []).forEach(function(c){ %><option value="<%= c.category %>"><% }); %>
+            <option value="Hacking"><option value="Games">
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="author">Autor</label>
+          <input type="text" id="author" name="author" value="<%= article ? (article.author || 'Redação') : 'Redação' %>">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:1;">
+          <label for="image">Imagem (URL)</label>
+          <input type="text" id="image" name="image" value="<%= article ? (article.image || '') : '' %>" placeholder="https://... (vazio usa fallback)">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label for="video">Vídeo (URL YouTube)</label>
+          <input type="text" id="video" name="video" value="<%= article ? (article.video || '') : '' %>" placeholder="https://youtube.com/watch?v=...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="excerpt">Resumo (excerpt)</label>
+        <textarea id="excerpt" name="excerpt" rows="2" placeholder="Resumo curto exibido nos cards"><%= article ? (article.excerpt || '') : '' %></textarea>
+      </div>
+      <div class="form-group">
+        <label for="content">Conteúdo</label>
+        <textarea id="content" name="content" rows="12" placeholder="Texto da matéria. Use quebras de linha para parágrafos."><%= article ? (article.content || '') : '' %></textarea>
+      </div>
+      <div class="form-row" style="align-items:center;">
+        <label class="checkbox"><input type="checkbox" name="featured" value="1" <%= (article && article.featured) ? 'checked' : '' %>> Destaque</label>
+        <label class="checkbox"><input type="checkbox" name="published" value="1" <%= (!article || article.published) ? 'checked' : '' %>> Publicado (desmarque para salvar como rascunho)</label>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Salvar</button>
+        <a href="/admin/noticias" class="btn-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+<%- include('../partials/admin-footer') %>

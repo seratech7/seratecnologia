@@ -6,6 +6,7 @@ const db = require('../database/db');
 const { backupDatabase, getBackups, restoreBackup, restoreFromFile } = require('../backup-db');
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 const { encryptField, decryptField, decryptSale } = require('../utils/crypto');
+const newsAgent = require('../utils/news-agent');
 
 module.exports = function(upload, dbUpload) {
 const router = express.Router();
@@ -1851,6 +1852,146 @@ router.post('/super/admin-role', requireSuperAdmin, (req, res) => {
     db.logActivity('admin', req.session.adminId, req.session.adminName, 'super_admin_role', 'Alterou role do admin #' + admin_id + ' para ' + role);
   }
   res.redirect('/admin/super');
+});
+
+// ===================== NOTÍCIAS (portal Games & Hacking) =====================
+function setCfg(key, value) {
+  try { db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key, String(value)]); } catch (e) {}
+}
+
+router.get('/noticias', (req, res) => {
+  try {
+    var status = req.query.status || '';
+    var q = req.query.q || '';
+    var sql = "SELECT * FROM news WHERE 1=1";
+    var params = [];
+    if (status === 'draft') { sql += " AND published = 0"; }
+    else if (status === 'published') { sql += " AND published = 1"; }
+    if (q) { sql += " AND (title LIKE ? OR excerpt LIKE ? OR content LIKE ?)"; params.push('%' + q + '%', '%' + q + '%', '%' + q + '%'); }
+    sql += " ORDER BY created_at DESC LIMIT 300";
+    var news = db.query(sql, params) || [];
+    var drafts = db.get("SELECT COUNT(*) as c FROM news WHERE published = 0") || { c: 0 };
+    var categories = db.getNewsCategories() || [];
+    res.render('admin/news', {
+      title: 'Gerenciar Notícias',
+      news: news,
+      draftsCount: drafts.c,
+      categories: categories,
+      agent: newsAgent.getAgentConfig(),
+      msg: req.query.msg || '',
+      err: req.query.err || '',
+      status: status,
+      q: q
+    });
+  } catch (e) {
+    console.error('Admin news list error:', e);
+    res.render('admin/news', { title: 'Gerenciar Notícias', news: [], draftsCount: 0, categories: [], agent: newsAgent.getAgentConfig(), msg: '', err: 'Erro ao carregar', status: '', q: '' });
+  }
+});
+
+router.get('/noticias/novo', (req, res) => {
+  res.render('admin/news-form', { title: 'Nova Notícia', article: null, categories: db.getNewsCategories() || [], err: '' });
+});
+
+router.post('/noticias/novo', (req, res) => {
+  try {
+    var b = req.body;
+    db.saveNews({
+      title: b.title, slug: b.slug || '', excerpt: b.excerpt || '', content: b.content || '',
+      category: b.category || 'Hacking', image: b.image || '', author: b.author || 'Redação',
+      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: b.video || ''
+    });
+    db.saveDb();
+    res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia criada.'));
+  } catch (e) {
+    console.error('Admin news create error:', e);
+    res.render('admin/news-form', { title: 'Nova Notícia', article: req.body, categories: db.getNewsCategories() || [], err: e.message });
+  }
+});
+
+router.get('/noticias/editar/:id', (req, res) => {
+  var a = db.get("SELECT * FROM news WHERE id = ?", [req.params.id]);
+  if (!a) return res.redirect('/admin/noticias?err=' + encodeURIComponent('Notícia não encontrada'));
+  res.render('admin/news-form', { title: 'Editar Notícia', article: a, categories: db.getNewsCategories() || [], err: '' });
+});
+
+router.post('/noticias/editar/:id', (req, res) => {
+  try {
+    var b = req.body;
+    db.saveNews({
+      title: b.title, slug: b.slug || '', excerpt: b.excerpt || '', content: b.content || '',
+      category: b.category || 'Hacking', image: b.image || '', author: b.author || 'Redação',
+      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: b.video || ''
+    }, parseInt(req.params.id, 10));
+    db.saveDb();
+    res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia atualizada.'));
+  } catch (e) {
+    console.error('Admin news edit error:', e);
+    res.render('admin/news-form', { title: 'Editar Notícia', article: req.body, categories: db.getNewsCategories() || [], err: e.message });
+  }
+});
+
+router.post('/noticias/excluir/:id', (req, res) => {
+  try { db.deleteNews(parseInt(req.params.id, 10)); db.saveDb(); } catch (e) {}
+  res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia excluída.'));
+});
+
+router.post('/noticias/publicar/:id', (req, res) => {
+  try { db.run("UPDATE news SET published = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [parseInt(req.params.id, 10)]); db.saveDb(); } catch (e) {}
+  if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') >= 0)) return res.json({ ok: true });
+  res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia publicada.'));
+});
+
+router.post('/noticias/rascunho/:id', (req, res) => {
+  try { db.run("UPDATE news SET published = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [parseInt(req.params.id, 10)]); db.saveDb(); } catch (e) {}
+  res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia movida para rascunho.'));
+});
+
+router.post('/noticias/destaque/:id', (req, res) => {
+  try { db.toggleNewsFeatured(parseInt(req.params.id, 10)); db.saveDb(); } catch (e) {}
+  res.redirect('/admin/noticias');
+});
+
+// Assistente de IA: gera rascunhos (resposta JSON para o painel)
+router.post('/noticias/ia-gerar', async (req, res) => {
+  try {
+    var b = req.body || {};
+    var themes = b.theme || 'Hacking,Games';
+    var count = parseInt(b.count || '3', 10);
+    var briefing = b.briefing || '';
+    var result = await newsAgent.runAgent({ themes: themes, count: count, briefing: briefing, video: b.video === '1', force: true });
+    res.json({ ok: true, created: result.created, errors: result.errors, total: result.total });
+  } catch (e) {
+    console.error('IA gerar erro:', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Salvar configurações do agente autônomo
+router.post('/noticias/agente-salvar', (req, res) => {
+  try {
+    var b = req.body;
+    setCfg('news_agent_enabled', b.enabled === '1' ? '1' : '0');
+    setCfg('news_agent_interval', parseInt(b.interval || '6', 10) || 6);
+    setCfg('news_agent_themes', (b.themes || 'Hacking,Games').toString().slice(0, 200));
+    setCfg('news_agent_per_run', parseInt(b.per_run || '3', 10) || 3);
+    setCfg('news_agent_video', b.video === '1' ? '1' : '0');
+    setCfg('news_agent_briefing', (b.briefing || '').toString().slice(0, 1000));
+    db.saveDb();
+    res.redirect('/admin/noticias?msg=' + encodeURIComponent('Configurações do assistente salvas.'));
+  } catch (e) {
+    res.redirect('/admin/noticias?err=' + encodeURIComponent('Erro ao salvar: ' + e.message));
+  }
+});
+
+// Executar o agente agora (manual)
+router.post('/noticias/agente-executar', async (req, res) => {
+  try {
+    var result = await newsAgent.runAgent({ force: true });
+    res.redirect('/admin/noticias?msg=' + encodeURIComponent('Assistente gerou ' + result.created.length + ' rascunho(s).'));
+  } catch (e) {
+    res.redirect('/admin/noticias?err=' + encodeURIComponent('Erro: ' + e.message));
+  }
 });
 
 return router;

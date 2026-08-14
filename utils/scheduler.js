@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../database/db');
 const automation = require('./automation');
+const newsAgent = require('./news-agent');
 
 const STATE_FILE = path.join(__dirname, '..', 'automation-state.json');
 const PING_INTERVAL = process.env.AUTO_PING_INTERVAL || 6; // horas
@@ -137,8 +138,33 @@ function startScheduler() {
   setInterval(() => { autoPushNewProducts().catch(() => {}); }, 6 * 3600 * 1000);
   setTimeout(() => { autoPushNewProducts().catch(() => {}); }, 90000);
 
-  // 5) Atualização da DB periodicamente (backup já é feito no server)
-  console.log('[auto] Agendador iniciado (ping a cada ' + PING_INTERVAL + 'h, promoção diária às ' + PROMOTE_HOUR + ':00, anúncio às ' + ANN_HOUR + ':00)');
+  // 5) Assistente de notícias (agente autônomo) — verifica a cada 1h se deve rodar
+  setInterval(() => { autoNewsAgent().catch(() => {}); }, 60 * 60 * 1000);
+  setTimeout(() => { autoNewsAgent().catch(() => {}); }, 120000);
+
+  // 6) Atualização da DB periodicamente (backup já é feito no server)
+  console.log('[auto] Agendador iniciado (ping a cada ' + PING_INTERVAL + 'h, promoção diária às ' + PROMOTE_HOUR + ':00, anúncio às ' + ANN_HOUR + ':00, agente de notícias a cada 1h)');
 }
 
-module.exports = { startScheduler, autoIndexNewProducts, autoPromoteDaily, autoGiveaway, autoPushNewProducts, announceNewProduct: automation.announceNewProduct };
+// Agente autônomo de notícias: roda conforme config (news_agent_enabled / interval)
+async function autoNewsAgent() {
+  try {
+    const enabled = (db.get("SELECT value FROM config WHERE key='news_agent_enabled'") || {}).value === '1';
+    if (!enabled) return { skipped: true, reason: 'desativado' };
+    const intervalH = parseInt((db.get("SELECT value FROM config WHERE key='news_agent_interval'") || {}).value || '6', 10) || 6;
+    const last = (db.get("SELECT value FROM config WHERE key='news_agent_last_run'") || {}).value;
+    const now = Date.now();
+    if (last) {
+      const diff = now - new Date(last).getTime();
+      if (diff < intervalH * 3600 * 1000) return { skipped: true, reason: 'aguardando intervalo', faltamMin: Math.round((intervalH * 3600 * 1000 - diff) / 60000) };
+    }
+    const result = await newsAgent.runAgent({ force: true });
+    console.log('[auto] Agente de notícias gerou ' + result.created.length + ' rascunho(s).');
+    return result;
+  } catch (e) {
+    console.error('[auto] Erro no agente de notícias:', e.message);
+    return { error: e.message };
+  }
+}
+
+module.exports = { startScheduler, autoIndexNewProducts, autoPromoteDaily, autoGiveaway, autoPushNewProducts, autoNewsAgent, announceNewProduct: automation.announceNewProduct };
