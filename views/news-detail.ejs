@@ -95,6 +95,31 @@ body.hacker-theme .news-detail-page {
 .nd-rel-body { padding: 13px 14px; }
 .nd-rel-body h4 { margin: 0 0 6px; font-size: 14.5px; line-height: 1.35; font-weight: 700; }
 .nd-rel-body span { font-size: 12px; color: var(--ndim); }
+
+.nd-reactions {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--nborder);
+}
+.nd-reactions-label { font-size: 13px; color: var(--ndim); margin-right: 4px; font-weight: 600; }
+.nd-react {
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid var(--nborder); background: var(--ncard); color: var(--ntext);
+  padding: 8px 14px; border-radius: 24px; cursor: pointer; font-size: 14px;
+  transition: all .15s; user-select: none;
+}
+.nd-react:hover { border-color: var(--primary); transform: translateY(-2px); }
+.nd-react .nd-emoji { font-size: 17px; line-height: 1; }
+.nd-react .nd-count { font-weight: 700; font-size: 13px; min-width: 10px; }
+.nd-react.active {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0,102,255,0.35);
+}
+.nd-react.active .nd-count { color: #fff; }
+.nd-views-badge {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--ndim); background: var(--nchip, #eef2ff);
+  padding: 8px 14px; border-radius: 24px;
+}
 </style>
 
 <div class="news-detail-page">
@@ -115,6 +140,17 @@ body.hacker-theme .news-detail-page {
           <% if (article.author) { %><span class="nd-author"><i class="far fa-user"></i> <%= article.author %></span><% } %>
         </div>
         <div class="nd-prose"><%- article.content %></div>
+
+        <div class="nd-reactions" id="nd-reactions">
+          <span class="nd-reactions-label">Esta notícia foi útil?</span>
+          <button class="nd-react" data-type="like"><span class="nd-emoji">👍</span><span class="nd-count">0</span></button>
+          <button class="nd-react" data-type="love"><span class="nd-emoji">❤️</span><span class="nd-count">0</span></button>
+          <button class="nd-react" data-type="haha"><span class="nd-emoji">😂</span><span class="nd-count">0</span></button>
+          <button class="nd-react" data-type="wow"><span class="nd-emoji">😮</span><span class="nd-count">0</span></button>
+          <button class="nd-react" data-type="sad"><span class="nd-emoji">😢</span><span class="nd-count">0</span></button>
+          <button class="nd-react" data-type="angry"><span class="nd-emoji">😡</span><span class="nd-count">0</span></button>
+          <span class="nd-views-badge"><i class="far fa-eye"></i> <%= article.views || 0 %> visualizações</span>
+        </div>
       </div>
     </article>
 
@@ -139,5 +175,47 @@ body.hacker-theme .news-detail-page {
     <% } %>
   </div>
 </div>
+
+<script>
+(function () {
+  var box = document.getElementById('nd-reactions');
+  if (!box) return;
+  var initial = <%- JSON.stringify(reactions || {}) %>;
+  var userReact = <%- (userReaction ? JSON.stringify(userReaction) : 'null') %>;
+  var btns = box.querySelectorAll('.nd-react');
+  function paint(counts, active) {
+    btns.forEach(function (b) {
+      var t = b.getAttribute('data-type');
+      var c = (counts && counts[t]) ? counts[t] : 0;
+      b.querySelector('.nd-count').textContent = c;
+      if (active && t === active) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+  }
+  paint(initial, userReact);
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var type = b.getAttribute('data-type');
+      var isActive = b.classList.contains('active');
+      var action = isActive ? 'remove' : 'add';
+      var url = window.location.pathname.replace(/\/$/, '') + '/react';
+      var body = 'type=' + encodeURIComponent(type) + '&action=' + action;
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      var headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      if (csrfMeta) headers['x-csrf-token'] = csrfMeta.content;
+      fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: body
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && data.reactions) paint(data.reactions, isActive ? null : type);
+      })
+      .catch(function () {});
+    });
+  });
+})();
+</script>
 
 <%- include('partials/footer') %>

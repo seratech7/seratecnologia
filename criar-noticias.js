@@ -5,9 +5,9 @@ function getConfig(key, def) {
   return r ? r.value : def;
 }
 
-async function gerarComIA(theme, apiKey, baseUrl, model) {
+async function gerarComIA(theme, apiKey, baseUrl, model, hint) {
   var system = 'Você é um redator de um site brasileiro de Games & Hacking. Escreva uma notícia original, atual e realista sobre o tema informado. Responda SOMENTE com um JSON válido em UMA ÚNICA LINHA, sem explicações e sem blocos de código, no formato: {"title":"...","excerpt":"...","content":"..."}. O excerpt deve ter no máximo 160 caracteres. O content deve ser 2 a 4 parágrafos em português do Brasil, usando \\n para separar parágrafos (nunca quebras de linha reais).';
-  var user = 'Tema da notícia: ' + theme;
+  var user = 'Tema da notícia: ' + theme + (hint ? '. Ângulo/sugoesto para variar: ' + hint : '');
   var controller = new AbortController();
   var timer = setTimeout(function () { controller.abort(); }, 45000);
   var resp = await fetch(baseUrl + '/chat/completions', {
@@ -52,13 +52,13 @@ function gerarLocal(theme, i) {
   return { title: title, excerpt: excerpt, content: content };
 }
 
-async function criar(theme, usarIA) {
+async function criar(theme, usarIA, hint) {
   var art;
   if (usarIA) {
     var apiKey = getConfig('ai_api_key', '') || process.env.AI_API_KEY || process.env.GROQ_API_KEY || '';
     var baseUrl = (getConfig('ai_base_url', '') || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/+$/, '');
     var model = getConfig('ai_model', '') || process.env.AI_MODEL || 'llama-3.3-70b-versatile';
-    art = await gerarComIA(theme, apiKey, baseUrl, model);
+    art = await gerarComIA(theme, apiKey, baseUrl, model, hint);
   } else {
     art = gerarLocal(theme, 0);
   }
@@ -80,20 +80,31 @@ async function criar(theme, usarIA) {
 (async () => {
   try { await db.initDb(); } catch (e) { console.log('init err', e.message); }
   var temas = (process.argv[2] || 'Hacking,Games').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+  var count = parseInt(process.argv[3] || '1', 10);
+  if (isNaN(count) || count < 1) count = 1;
   var usarIA = !!(getConfig('ai_api_key', '') || process.env.AI_API_KEY || process.env.GROQ_API_KEY);
   console.log('Modo IA:', usarIA ? 'ligado' : 'fallback local (sem chave de API)');
+  console.log('Gerando', count, 'por tema:', temas.join(', '));
+  var existentes = db.query('SELECT id FROM news') || [];
+  existentes.forEach(function (x) { try { db.deleteNews(x.id); } catch (e) {} });
+  console.log('Notícias anteriores removidas:', existentes.length);
   var criados = [];
+  var angulos = ['lançamento de produto', 'vazamento/leak', 'vulnerabilidade de segurança', 'torneio/competição', 'análise/tutorial', 'movimento da comunidade', 'atualização de software', 'novo dispositivo', 'polêmica/contrato', 'pesquisa/estudo'];
   for (var i = 0; i < temas.length; i++) {
-    try {
-      var id = await criar(temas[i], usarIA);
-      criados.push(temas[i] + ' (id ' + id + ')');
-      console.log('Criada notícia para tema:', temas[i]);
-    } catch (e) {
-      console.log('Falha no tema', temas[i], '-', e.message, '| usando fallback local');
+    for (var j = 0; j < count; j++) {
+      var hint = angulos[j % angulos.length];
       try {
-        var id2 = await criar(temas[i], false);
-        criados.push(temas[i] + ' (id ' + id2 + ', local)');
-      } catch (e2) { console.log('Fallback também falhou:', e2.message); }
+        var id = await criar(temas[i], usarIA, hint);
+        criados.push(temas[i] + ' (id ' + id + ')');
+        console.log('Criada notícia', (j + 1) + '/' + count, 'tema:', temas[i]);
+      } catch (e) {
+        console.log('Falha no tema', temas[i], '-', e.message, '| usando fallback local');
+        try {
+          var id2 = await criar(temas[i], false);
+          criados.push(temas[i] + ' (id ' + id2 + ', local)');
+        } catch (e2) { console.log('Fallback também falhou:', e2.message); }
+      }
+      await new Promise(function (r) { setTimeout(r, 700); });
     }
   }
   try { db.saveDb(); } catch (e) { console.log('saveDb err', e.message); }

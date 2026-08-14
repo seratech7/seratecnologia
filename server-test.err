@@ -10,3 +10,39 @@ Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the cli
     at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
     at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)
     at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:67:12)
+Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.355227207' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json' Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.355227207' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json'
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:647:11)
+    at ServerResponse.header (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:794:10)
+    at ServerResponse.contentType (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:624:15)
+    at ServerResponse.send (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:149:14)
+    at C:\Users\ggdra\Documents\Default Project\server.js:602:19
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:71:5)
+    at trim_prefix (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:326:13)
+    at C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)
+Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.1459092485' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json' Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.1459092485' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json'
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:647:11)
+    at ServerResponse.header (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:794:10)
+    at ServerResponse.contentType (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:624:15)
+    at ServerResponse.send (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:149:14)
+    at C:\Users\ggdra\Documents\Default Project\server.js:602:19
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:71:5)
+    at trim_prefix (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:326:13)
+    at C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)
+Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.683914381' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json' Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json.683914381' -> 'C:\Users\ggdra\Documents\Default Project\sessions\FLKMDFHKa6xqpDWcjJVhgyIRScKqSBi4.json'
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:647:11)
+    at ServerResponse.header (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:794:10)
+    at ServerResponse.contentType (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:624:15)
+    at ServerResponse.send (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:149:14)
+    at C:\Users\ggdra\Documents\Default Project\server.js:602:19
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:71:5)
+    at trim_prefix (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:326:13)
+    at C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)

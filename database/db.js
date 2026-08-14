@@ -969,6 +969,17 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS news_reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      news_id INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      ip TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(news_id, type, ip)
+    )
+  `);
+
   // === PRODUTOS DIGITAIS (venda de logins com entrega automática) ===
   db.run(`
     CREATE TABLE IF NOT EXISTS digital_products (
@@ -1954,6 +1965,24 @@ function deleteNews(id) { run("DELETE FROM news WHERE id = ?", [id]); }
 function toggleNewsPublish(id) { run("UPDATE news SET published = CASE WHEN published = 1 THEN 0 ELSE 1 END WHERE id = ?", [id]); }
 function toggleNewsFeatured(id) { run("UPDATE news SET featured = CASE WHEN featured = 1 THEN 0 ELSE 1 END WHERE id = ?", [id]); }
 function incrementNewsViews(id) { run("UPDATE news SET views = COALESCE(views,0) + 1 WHERE id = ?", [id]); }
+function addNewsReaction(newsId, type, ip) {
+  try {
+    run("INSERT INTO news_reactions (news_id, type, ip, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)", [newsId, type, ip || '']);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+function getNewsReactionCounts(newsId) {
+  return query("SELECT type, COUNT(*) as c FROM news_reactions WHERE news_id = ? GROUP BY type", [newsId]) || [];
+}
+function getUserNewsReaction(newsId, ip) {
+  var r = get("SELECT type FROM news_reactions WHERE news_id = ? AND ip = ?", [newsId, ip || '']);
+  return r ? r.type : null;
+}
+function removeNewsReaction(newsId, type, ip) {
+  run("DELETE FROM news_reactions WHERE news_id = ? AND type = ? AND ip = ?", [newsId, type, ip || '']);
+}
 
 // === PRODUTOS DIGITAIS / LOGINS ===
 function getDigitalProducts(opts) {
@@ -2022,4 +2051,4 @@ function getDigitalSales(limit) {
 function getDigitalStockBySaleId(saleId) { return get("SELECT * FROM digital_stock WHERE sale_id = ?", [saleId]); }
 function incrementDigitalSold(productId) { run("UPDATE digital_products SET sold_count = COALESCE(sold_count,0) + 1 WHERE id = ?", [productId]); }
 
-module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus, saveFileToStore, getFileFromStore, deleteFileFromStore, fileExistsInStore, backfillFileStore, getNews, getNewsById, getNewsBySlug, getNewsCategories, getFeaturedNews, saveNews, deleteNews, toggleNewsPublish, toggleNewsFeatured, incrementNewsViews, getDigitalProducts, getDigitalProductById, getDigitalProductBySlug, saveDigitalProduct, deleteDigitalProduct, toggleDigitalProduct, getDigitalStock, getDigitalStockById, getAvailableDigitalStock, getDigitalAvailableCount, addDigitalStock, deleteDigitalStock, markDigitalStockSold, createDigitalSale, getDigitalSaleByDeliveryCode, getDigitalSales, getDigitalStockBySaleId, incrementDigitalSold };
+module.exports = { initDb, getDb, query, get, run, saveDb, reloadFromDisk, addNotification, getUnreadNotifications, getNotifications, markNotificationRead, markAllNotificationsRead, getNotificationCount, getPasswordPolicy, validatePassword, addTransaction, getWalletBalance, getWalletTransactions, getAllTransactions, getCommissionPct, gerarCodigoRastreio, createTrackingHistory, getTrackingHistory, getSaleByTrackingCode, getPayouts, getPayoutCount, getPendingPayoutsCount, createPayout, refundSale, getTransactionsByPeriod, getFinanceSummary, getFinanceChart, addSaleProof, getSaleProofs, getPage, getAllPages, savePage, deletePage, getCoupon, getAllCoupons, saveCoupon, deleteCoupon, updateCoupon, toggleCoupon, resetCouponUses, getCouponById, incrementCoupon, getActiveBanners, getBannersByPosition, getAllBanners, saveBanner, deleteBanner, incrementBannerClicks, logActivity, getActivityLog, getActivityLogCount, isIpBlocked, getBlockedIps, blockIp, unblockIp, logLoginAttempt, getLoginAttempts, getToggle, setToggle, getAllToggles, getFlashSales, setFlashSale, removeFlashSale, cleanupOldData, notifyAllSellers, getSellerSalesSummary, getSellerChartData, getSellerTopProducts, getSellerProductViews, getProductQuestions, getSellerQuestions, askQuestion, answerQuestion, cloneProduct, getActiveGoal, getSellerGoalProgress, getGoalLeaderboard, getAllGoals, saveGoal, toggleGoal, markGoalWinner, deleteGoal, getSellerSalesCsv, getMarketingTemplates, getMarketingTemplate, saveMarketingTemplate, deleteMarketingTemplate, getMarketingCampaigns, getMarketingCampaign, getMarketingCampaignResults, createMarketingCampaign, addMarketingCampaignResult, updateMarketingCampaignStats, getMarketingStats, getMarketingLists, getMarketingList, createMarketingList, deleteMarketingList, getMarketingListMembers, addMarketingListMember, deleteMarketingListMember, getAutoReplies, getAutoReply, saveAutoReply, updateAutoReply, deleteAutoReply, toggleAutoReply, getMarketingSchedules, getPendingMarketingSchedules, createMarketingSchedule, markMarketingScheduleDone, deleteMarketingSchedule, getMarketingFullStats, getSellerConversations, getConversationParticipants, getConversationMessages, sendMessage, createConversation, getOrCreateConversation, getUnreadMessageCount, searchSellers, updateSellerNotifPrefs, createUserAuth, getUserAuth, getUserAuthByTypeAndId, updateUserAuthHash, updateUserAuthMFA, updateUserAuthPasskey, createAuthSession, getAuthSession, updateAuthSessionLastSeen, updateAuthSessionBinding, deleteAuthSession, deleteAllUserSessions, getUserSessions, logAuthEvent, getAuthEvents, createAuthDevice, getAuthDevices, revokeAuthDevice, updateAuthDeviceLabel, cleanupExpiredSessions, getCustomerByEmail, getCustomerById, createCustomer, updateCustomer, updateCustomerPassword, getCustomerAddresses, getCustomerAddress, createCustomerAddress, updateCustomerAddress, deleteCustomerAddress, getCustomerOrders, getAuditFindingStatuses, getAuditFindingStatus, setAuditFindingStatus, saveFileToStore, getFileFromStore, deleteFileFromStore, fileExistsInStore, backfillFileStore, getNews, getNewsById, getNewsBySlug, getNewsCategories, getFeaturedNews, saveNews, deleteNews, toggleNewsPublish, toggleNewsFeatured, incrementNewsViews, addNewsReaction, getNewsReactionCounts, getUserNewsReaction, removeNewsReaction, getDigitalProducts, getDigitalProductById, getDigitalProductBySlug, saveDigitalProduct, deleteDigitalProduct, toggleDigitalProduct, getDigitalStock, getDigitalStockById, getAvailableDigitalStock, getDigitalAvailableCount, addDigitalStock, deleteDigitalStock, markDigitalStockSold, createDigitalSale, getDigitalSaleByDeliveryCode, getDigitalSales, getDigitalStockBySaleId, incrementDigitalSold };
