@@ -41,9 +41,11 @@ body.hacker-theme .news-detail-page {
 }
 .nd-cover img { width: 100%; height: 100%; object-fit: cover; }
 .nd-cover .nd-video { position:absolute; inset:0; width:100%; height:100%; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
-.nd-cover .nd-video.nd-video-link { cursor:pointer; }
+.nd-cover .nd-video-player { position:absolute; inset:0; width:100%; height:100%; cursor:pointer; }
+.nd-cover .nd-video-poster { width:100%; height:100%; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
+.nd-cover .nd-video-player iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .nd-cover .nd-play { width:74px; height:74px; border-radius:50%; background:rgba(255,0,0,0.92); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 6px 22px rgba(0,0,0,.45); transition:transform .2s; }
-.nd-cover .nd-video-link:hover .nd-play { transform:scale(1.08); }
+.nd-cover .nd-video-player:hover .nd-play { transform:scale(1.08); }
 .nd-cover .nd-cat {
   position: absolute; top: 16px; left: 16px;
   background: rgba(0,102,255,0.92); color: #fff;
@@ -156,9 +158,11 @@ body.hacker-theme .news-detail-page {
         <% var dimg = article.image || ('https://picsum.photos/seed/' + encodeURIComponent(article.slug) + '/1000/600'); %>
         <% if (article.video && ytId(article.video)) { %>
           <% var ytIdVal = ytId(article.video); %>
-          <a class="nd-video nd-video-link" href="https://www.youtube.com/watch?v=<%= ytIdVal %>" target="_blank" rel="noopener" style="background-image:url('https://img.youtube.com/vi/<%= ytIdVal %>/maxresdefault.jpg')">
-            <span class="nd-play"><i class="fas fa-play"></i></span>
-          </a>
+          <div class="nd-video nd-video-player" id="ndVideoPlayer" data-vid="<%= ytIdVal %>">
+            <div class="nd-video-poster" style="background-image:url('https://img.youtube.com/vi/<%= ytIdVal %>/maxresdefault.jpg')">
+              <span class="nd-play"><i class="fas fa-play"></i></span>
+            </div>
+          </div>
         <% } else { %>
           <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.style.display='none';">
         <% } %>
@@ -241,6 +245,16 @@ body.hacker-theme .news-detail-page {
         var t = document.createElement('textarea'); t.value = shareUrl; document.body.appendChild(t); t.select();
         try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(t); done();
       }
+    });
+  }
+
+  var vp = document.getElementById('ndVideoPlayer');
+  if (vp) {
+    vp.addEventListener('click', function () {
+      var vid = vp.getAttribute('data-vid');
+      if (!vid || vp.getAttribute('data-loaded')) return;
+      vp.setAttribute('data-loaded', '1');
+      vp.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
     });
   }
 
