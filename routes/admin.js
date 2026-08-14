@@ -7,6 +7,23 @@ const { backupDatabase, getBackups, restoreBackup, restoreFromFile } = require('
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
 const { encryptField, decryptField, decryptSale } = require('../utils/crypto');
 const newsAgent = require('../utils/news-agent');
+const multer = require('multer');
+
+const videoStorage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, path.join(__dirname, '..', 'public', 'videos')); },
+  filename: function (req, file, cb) {
+    var ext = path.extname(file.originalname) || '.mp4';
+    cb(null, 'vid-' + Date.now() + '-' + Math.floor(Math.random() * 1e6) + ext);
+  }
+});
+const videoUpload = multer({
+  storage: videoStorage,
+  limits: { fileSize: 300 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    if (/video\//.test(file.mimetype) || /\.(mp4|webm|ogg|mov|m4v)$/i.test(file.originalname)) cb(null, true);
+    else cb(null, false);
+  }
+});
 
 module.exports = function(upload, dbUpload) {
 const router = express.Router();
@@ -1893,13 +1910,15 @@ router.get('/noticias/novo', (req, res) => {
   res.render('admin/news-form', { title: 'Nova Notícia', article: null, categories: db.getNewsCategories() || [], err: '' });
 });
 
-router.post('/noticias/novo', (req, res) => {
+router.post('/noticias/novo', videoUpload.single('videoFile'), (req, res) => {
   try {
     var b = req.body;
+    var videoVal = b.video || '';
+    if (req.file) videoVal = '/videos/' + req.file.filename;
     db.saveNews({
       title: b.title, slug: b.slug || '', excerpt: b.excerpt || '', content: b.content || '',
       category: b.category || 'Hacking', image: b.image || '', author: b.author || 'Redação',
-      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: b.video || ''
+      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: videoVal
     });
     db.saveDb();
     res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia criada.'));
@@ -1915,13 +1934,16 @@ router.get('/noticias/editar/:id', (req, res) => {
   res.render('admin/news-form', { title: 'Editar Notícia', article: a, categories: db.getNewsCategories() || [], err: '' });
 });
 
-router.post('/noticias/editar/:id', (req, res) => {
+router.post('/noticias/editar/:id', videoUpload.single('videoFile'), (req, res) => {
   try {
     var b = req.body;
+    var videoVal = (b.video || '').trim();
+    if (req.file) videoVal = '/videos/' + req.file.filename;
+    else if (b.video_clear) videoVal = '';
     db.saveNews({
       title: b.title, slug: b.slug || '', excerpt: b.excerpt || '', content: b.content || '',
       category: b.category || 'Hacking', image: b.image || '', author: b.author || 'Redação',
-      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: b.video || ''
+      featured: b.featured ? 1 : 0, published: b.published ? 1 : 0, video: videoVal
     }, parseInt(req.params.id, 10));
     db.saveDb();
     res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia atualizada.'));

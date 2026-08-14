@@ -193,7 +193,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     <h2 class="news-section-title"><i class="fab fa-youtube"></i> Galeria de Vídeos</h2>
     <div class="news-video-grid">
       <% galleryVideos.forEach(function(v) { var vid = ytId(v.video); %>
-        <div class="news-video-card" data-vid="<%= vid %>" data-title="<%= v.title %>">
+        <div class="news-video-card" data-vid="<%= vid %>" data-video="<%= v.video %>" data-title="<%= v.title %>">
           <a href="/noticia/<%= v.slug %>" class="news-video-thumb">
             <img src="https://img.youtube.com/vi/<%= vid %>/hqdefault.jpg" alt="<%= v.title %>" loading="lazy" onerror="this.src='/img/video-fallback.jpg';">
             <span class="news-play"><i class="fas fa-play"></i></span>
@@ -276,7 +276,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 <div class="news-modal" id="news-modal">
   <div class="news-modal-box">
     <button class="news-modal-close" id="news-modal-close"><i class="fas fa-times"></i></button>
-    <div class="news-modal-frame"><iframe id="news-modal-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+    <div class="news-modal-frame" id="news-modal-frame"><iframe id="news-modal-iframe" src="" frameborder="0" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
     <h3 id="news-modal-title"></h3>
   </div>
 </div>
@@ -302,9 +302,22 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     hasMore: <%- hasMore ? 'true' : 'false' %>
   };
 
-  function openVideo(vid, title) {
-    if (!modal || !vid) return;
-    modalIframe.src = 'https://www.youtube-nocookie.com/embed/' + vid + '?autoplay=1&rel=0';
+  function openVideo(raw, title) {
+    if (!modal || !raw) return;
+    var yt = ytId(raw);
+    var frame = document.getElementById('news-modal-frame');
+    var existing = frame.querySelector('video');
+    if (existing) existing.remove();
+    modalIframe.style.display = '';
+    if (yt) {
+      modalIframe.src = 'https://www.youtube-nocookie.com/embed/' + yt + '?autoplay=1&rel=0';
+    } else {
+      modalIframe.style.display = 'none';
+      var v = document.createElement('video');
+      v.src = raw; v.controls = true; v.autoplay = true;
+      v.style.cssText = 'width:100%;height:100%;background:#000;';
+      frame.appendChild(v);
+    }
     if (modalTitle) modalTitle.textContent = title || '';
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -313,6 +326,10 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     if (!modal) return;
     modal.classList.remove('open');
     modalIframe.src = '';
+    modalIframe.style.display = '';
+    var frame = document.getElementById('news-modal-frame');
+    var v = frame.querySelector('video');
+    if (v) v.remove();
     document.body.style.overflow = '';
   }
   if (modal) {
@@ -325,10 +342,10 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     var pb = e.target.closest ? e.target.closest('.news-play-badge, .news-video-thumb .news-play') : null;
     if (pb) {
       e.preventDefault();
-      var card = pb.closest('[data-vid]');
-      var vid = card ? card.getAttribute('data-vid') : (pb.getAttribute('data-vid') || '');
+      var card = pb.closest('[data-video]') || pb.closest('[data-vid]');
+      var raw = card ? (card.getAttribute('data-video') || card.getAttribute('data-vid') || '') : (pb.getAttribute('data-video') || pb.getAttribute('data-vid') || '');
       var title = card ? (card.getAttribute('data-title') || '') : '';
-      openVideo(vid, title);
+      openVideo(raw, title);
     }
   });
 
@@ -353,7 +370,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
         '<img src="' + imgFor(n, size) + '" alt="' + esc(n.title) + '" loading="lazy" onerror="this.style.display=\'none\';">' +
         '<span class="news-cat ' + cat + '">' + esc(n.category) + '</span>' +
         '<span class="news-badges">' + badges + '</span>' +
-        (n.video ? '<span class="news-play-badge" data-vid="' + ytId(n.video) + '"><i class="fas fa-play"></i></span>' : '') +
+        (n.video ? '<span class="news-play-badge" data-vid="' + ytId(n.video) + '" data-video="' + esc(n.video) + '"><i class="fas fa-play"></i></span>' : '') +
       '</div>' +
       '<div class="news-body2">' +
         '<h3 class="news-title">' + esc(n.title) + '</h3>' +

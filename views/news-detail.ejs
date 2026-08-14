@@ -44,6 +44,8 @@ body.hacker-theme .news-detail-page {
 .nd-cover .nd-video-player { position:absolute; inset:0; width:100%; height:100%; cursor:pointer; }
 .nd-cover .nd-video-poster { width:100%; height:100%; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
 .nd-cover .nd-video-player iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+.nd-cover .nd-video-local { position:absolute; inset:0; width:100%; height:100%; background:#000; }
+.nd-cover .nd-video-local video { width:100%; height:100%; object-fit:cover; background:#000; }
 .nd-cover .nd-play { width:74px; height:74px; border-radius:50%; background:rgba(255,0,0,0.92); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 6px 22px rgba(0,0,0,.45); transition:transform .2s; }
 .nd-cover .nd-video-player:hover .nd-play { transform:scale(1.08); }
 .nd-cover .nd-cat {
@@ -156,13 +158,19 @@ body.hacker-theme .news-detail-page {
     <article class="nd-article">
        <div class="nd-cover">
         <% var dimg = article.image || ('https://picsum.photos/seed/' + encodeURIComponent(article.slug) + '/1000/600'); %>
-        <% if (article.video && ytId(article.video)) { %>
+        <% if (article.video) { %>
           <% var ytIdVal = ytId(article.video); %>
+          <% if (ytIdVal) { %>
           <div class="nd-video nd-video-player" id="ndVideoPlayer" data-vid="<%= ytIdVal %>">
             <div class="nd-video-poster" style="background-image:url('https://img.youtube.com/vi/<%= ytIdVal %>/maxresdefault.jpg')">
               <span class="nd-play"><i class="fas fa-play"></i></span>
             </div>
           </div>
+          <% } else { %>
+          <div class="nd-video nd-video-local">
+            <video controls preload="metadata" src="<%= article.video %>"></video>
+          </div>
+          <% } %>
         <% } else { %>
           <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.style.display='none';">
         <% } %>

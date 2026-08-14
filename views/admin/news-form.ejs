@@ -8,7 +8,7 @@
   <% if (err) { %><div class="alert alert-error"><%= err %></div><% } %>
 
   <div class="form-card">
-    <form action="/admin/noticias/<%= article ? 'editar/' + article.id : 'novo' %>" method="POST" class="admin-form">
+    <form action="/admin/noticias/<%= article ? 'editar/' + article.id : 'novo' %>" method="POST" enctype="multipart/form-data" class="admin-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-row">
         <div class="form-group" style="flex:2;">
@@ -40,8 +40,15 @@
           <input type="text" id="image" name="image" value="<%= article ? (article.image || '') : '' %>" placeholder="https://... (vazio usa fallback)">
         </div>
         <div class="form-group" style="flex:1;">
-          <label for="video">Vídeo (URL YouTube)</label>
-          <input type="text" id="video" name="video" value="<%= article ? (article.video || '') : '' %>" placeholder="https://youtube.com/watch?v=...">
+          <label for="video">Vídeo — envie um arquivo (MP4/WebM) ou cole uma URL</label>
+          <input type="text" id="video" name="video" value="<%= article ? (article.video || '') : '' %>" placeholder="https://youtube.com/watch?v=... ou /videos/arquivo.mp4">
+          <input type="file" id="videoFile" name="videoFile" accept="video/*" style="margin-top:8px;">
+          <% if (article && article.video) { %>
+            <div class="form-hint" style="margin-top:6px;">
+              Atual: <a href="<%= article.video %>" target="_blank" rel="noopener"><%= article.video %></a>
+              <label class="checkbox" style="margin-left:10px;"><input type="checkbox" name="video_clear" value="1"> Remover vídeo</label>
+            </div>
+          <% } %>
         </div>
       </div>
       <div class="form-group">
