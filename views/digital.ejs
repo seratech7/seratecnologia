@@ -1,48 +1,231 @@
 <%- include('partials/header') %>
 
-<div class="marketplace-container" style="padding:24px 16px;max-width:1100px;margin:0 auto;">
-  <div class="admin-header-bar" style="margin-bottom:20px;">
-    <h1 style="font-size:26px;display:flex;align-items:center;gap:10px;">
-      <i class="fas fa-key" style="color:var(--primary);"></i> Logins & Contas
-    </h1>
-    <span style="font-size:13px;color:var(--hack-dim);">Entrega automática após a compra</span>
+<style>
+.dfg-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 50px; }
+.dfg-site { color: var(--text); }
+
+/* HERO ENTREGA AUTOMÁTICA */
+.dfg-hero {
+  background: linear-gradient(135deg, #0b0b12 0%, #1a0306 60%, #2a0608 100%);
+  border-radius: 16px;
+  margin: 18px 0;
+  padding: 38px 28px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,60,60,.25);
+}
+.dfg-hero::after {
+  content: ""; position: absolute; right: -60px; top: -60px;
+  width: 260px; height: 260px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(229,9,20,.35), transparent 70%);
+}
+.dfg-hero h1 {
+  margin: 0; font-size: 40px; line-height: 1.05; font-weight: 900; letter-spacing: .5px;
+  background: linear-gradient(90deg, #ff4d4d, #ff8a3d); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.dfg-hero h1 small { display:block; font-size: 18px; color:#ffd2c2; -webkit-text-fill-color: #ffd2c2; margin-top:6px; font-weight:700; letter-spacing:2px; }
+.dfg-hero p.sub { color: #ffd9cf; margin: 14px 0 0; font-size: 15px; max-width: 560px; }
+.dfg-feats { display:flex; gap:14px; flex-wrap:wrap; margin-top:22px; }
+.dfg-feat {
+  background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+  border-radius: 12px; padding: 12px 16px; display:flex; align-items:center; gap:10px; color:#fff; font-size:13px; font-weight:600;
+}
+.dfg-feat i { color:#ff5b5b; font-size:18px; }
+.dfg-ver-btn {
+  display:inline-flex; align-items:center; gap:8px; margin-top:24px;
+  background: linear-gradient(90deg,#e50914,#ff5b3a); color:#fff; font-weight:800;
+  padding:13px 26px; border-radius:30px; text-decoration:none; font-size:15px;
+  box-shadow: 0 8px 24px rgba(229,9,20,.35);
+}
+.dfg-ver-btn:hover { transform: translateY(-1px); }
+
+/* BANNER STREAMING + BUSCA */
+.dfg-stream {
+  background: linear-gradient(120deg,#101018,#1c0a14);
+  border:1px solid var(--hack-border); border-radius:14px; padding:22px;
+  display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+  margin-bottom: 18px;
+}
+.dfg-stream .stxt { color:#fff; }
+.dfg-stream .stxt .big { font-size:22px; font-weight:900; letter-spacing:1px; }
+.dfg-stream .stxt .big b { color:#ff5b5b; }
+.dfg-stream .stxt .small { font-size:13px; color:#cfcfe0; margin-top:4px; letter-spacing:2px; }
+.dfg-search { display:flex; background:#fff; border-radius:30px; overflow:hidden; min-width:300px; flex:1; max-width:460px; }
+.dfg-search input { flex:1; border:0; outline:0; padding:13px 18px; font-size:14px; }
+.dfg-search button { border:0; background:#e50914; color:#fff; padding:0 22px; cursor:pointer; font-weight:700; }
+
+/* HIGHLIGHTS */
+.dfg-highlights { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px; }
+.dfg-hl {
+  flex:1; min-width:150px; background:var(--card-bg); border:1px solid var(--hack-border);
+  border-radius:12px; padding:16px; text-align:center;
+}
+.dfg-hl i { font-size:22px; color:var(--primary); display:block; margin-bottom:8px; }
+.dfg-hl span { font-size:13px; font-weight:700; color:var(--text); }
+
+/* SEÇÕES */
+.dfg-section-title { display:flex; align-items:center; gap:12px; margin: 10px 0 18px; }
+.dfg-section-title h2 { margin:0; font-size:24px; font-weight:900; color:var(--text); text-transform:uppercase; letter-spacing:.5px; }
+.dfg-badge-dest { background:linear-gradient(90deg,#e50914,#ff5b3a); color:#fff; font-size:11px; font-weight:800; padding:4px 10px; border-radius:4px; letter-spacing:1px; }
+.dfg-cat-title { font-size:20px; font-weight:900; text-transform:uppercase; margin:30px 0 14px; color:var(--text); border-left:4px solid var(--primary); padding-left:10px; }
+
+/* FILTRO CATEGORIAS */
+.dfg-cats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:22px; }
+.dfg-cats a {
+  text-decoration:none; font-size:13px; font-weight:600; padding:8px 16px; border-radius:30px;
+  background:var(--card-bg); border:1px solid var(--hack-border); color:var(--text);
+}
+.dfg-cats a.active, .dfg-cats a:hover { background:linear-gradient(90deg,#e50914,#ff5b3a); color:#fff; border-color:transparent; }
+
+/* GRADE */
+.dfg-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
+.dfg-card {
+  background:var(--card-bg); border:1px solid var(--hack-border); border-radius:14px; overflow:hidden;
+  display:flex; flex-direction:column; text-decoration:none; color:inherit; transition:transform .15s, box-shadow .15s;
+}
+.dfg-card:hover { transform:translateY(-3px); box-shadow:0 10px 26px rgba(0,0,0,.25); }
+.dfg-card-img { position:relative; height:170px; background:#0e0e16; }
+.dfg-card-img img { width:100%; height:100%; object-fit:cover; }
+.dfg-auto {
+  position:absolute; top:8px; left:8px; background:rgba(229,9,20,.92); color:#fff;
+  font-size:10px; font-weight:800; padding:3px 8px; border-radius:4px; letter-spacing:.5px;
+}
+.dfg-card-body { padding:12px; display:flex; flex-direction:column; flex:1; }
+.dfg-vendor { font-size:11px; color:var(--primary); font-weight:700; }
+.dfg-cat-link { font-size:11px; color:var(--hack-dim); margin-left:6px; }
+.dfg-card-title { font-size:14px; font-weight:700; line-height:1.3; margin:6px 0 6px; color:var(--text); }
+.dfg-stars { color:#ffb400; font-size:12px; }
+.dfg-stars .cnt { color:var(--hack-dim); margin-left:4px; font-size:11px; }
+.dfg-price { font-size:18px; font-weight:900; color:var(--primary); margin:8px 0; }
+.dfg-buy {
+  margin-top:auto; display:block; text-align:center; background:linear-gradient(90deg,#e50914,#ff5b3a);
+  color:#fff; font-weight:800; font-size:13px; padding:10px; border-radius:8px; text-decoration:none;
+}
+.dfg-buy:hover { filter:brightness(1.08); }
+.dfg-empty { text-align:center; padding:50px; color:var(--hack-dim); }
+@media (max-width:600px){ .dfg-hero h1{font-size:30px;} .dfg-stream{flex-direction:column;align-items:stretch;} }
+</style>
+
+<div class="dfg-wrap dfg-site">
+
+  <!-- HERO -->
+  <section class="dfg-hero">
+    <h1>ENTREGA AUTOMÁTICA<small>+ RÁPIDA DO BRASIL</small></h1>
+    <p class="sub">Receba sua chave ou acesso na hora. Compra 100% segura com suporte especializado e humanizado.</p>
+    <div class="dfg-feats">
+      <div class="dfg-feat"><i class="fas fa-bolt"></i> Recebeu, usou!</div>
+      <div class="dfg-feat"><i class="fas fa-shield-alt"></i> Compra 100% segura</div>
+      <div class="dfg-feat"><i class="fas fa-headset"></i> Suporte especializado</div>
+    </div>
+    <a href="#produtos" class="dfg-ver-btn">Ver produtos <i class="fas fa-arrow-right"></i></a>
+  </section>
+
+  <!-- BANNER STREAMING + BUSCA -->
+  <section class="dfg-stream">
+    <div class="stxt">
+      <div class="big">N <b>D+</b> prime STREAMING</div>
+      <div class="small">FILMES • SÉRIES • CANAIS • +</div>
+    </div>
+    <form action="/logins" method="GET" class="dfg-search">
+      <input type="text" name="search" placeholder="Buscar logins, contas, acessos..." value="<%= search %>">
+      <button type="submit"><i class="fas fa-search"></i></button>
+    </form>
+  </section>
+
+  <!-- HIGHLIGHTS -->
+  <section class="dfg-highlights">
+    <div class="dfg-hl"><i class="fas fa-truck-fast"></i><span>Entrega Automática</span></div>
+    <div class="dfg-hl"><i class="fas fa-lock"></i><span>Compra Segura</span></div>
+    <div class="dfg-hl"><i class="fas fa-clock"></i><span>Suporte 24h</span></div>
+    <div class="dfg-hl"><i class="fas fa-tags"></i><span>Melhores Preços</span></div>
+    <div class="dfg-hl"><i class="fas fa-smile"></i><span>Satisfação Garantida</span></div>
+  </section>
+
+  <!-- DESTAQUE -->
+  <% if (featured && featured.length > 0) { %>
+  <div class="dfg-section-title">
+    <span class="dfg-badge-dest">DESTAQUE</span>
+    <h2>Em evidência</h2>
   </div>
-
-  <form action="/logins" method="GET" class="search-form" style="margin-bottom:20px;max-width:480px;">
-    <i class="fas fa-search"></i>
-    <input type="text" name="search" placeholder="Buscar logins..." value="<%= search %>">
-    <button type="submit">Buscar</button>
-  </form>
-
-  <% if (categories.length > 0) { %>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
-    <a href="/logins" class="btn-small <%= !selectedCategory ? 'active' : '' %>">Todos</a>
-    <% categories.forEach(function(c) { %>
-      <a href="/logins?category=<%= encodeURIComponent(c.category) %>" class="btn-small <%= selectedCategory === c.category ? 'active' : '' %>"><%= c.category %></a>
-    <% }) %>
-  </div>
-  <% } %>
-
-  <% if (products.length === 0) { %>
-    <div class="empty-row" style="text-align:center;padding:40px;color:var(--hack-dim);">Nenhum produto disponível no momento.</div>
-  <% } else { %>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
-    <% products.forEach(function(p) { %>
-      <a href="/login/<%= p.slug %>" style="text-decoration:none;color:inherit;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s;">
-        <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" style="width:100%;height:150px;object-fit:cover;"><% } %>
-        <div style="padding:14px;display:flex;flex-direction:column;flex:1;">
-          <% if (p.badge) { %><span class="status-badge active" style="align-self:flex-start;font-size:11px;margin-bottom:6px;"><%= p.badge %></span><% } %>
-          <h3 style="margin:0 0 8px;font-size:16px;line-height:1.3;"><%= p.name %></h3>
-          <p style="color:var(--hack-dim);font-size:13px;margin:0 0 auto;"><%= (p.description || '').slice(0,80) %><%= (p.description || '').length > 80 ? '...' : '' %></p>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-            <strong style="font-size:18px;color:var(--primary);">R$ <%= Number(p.price).toFixed(2) %></strong>
-            <span style="font-size:12px;color:<%= p.stock_count > 0 ? '#4caf50' : '#c62828' %>;"><%= p.stock_count > 0 ? p.stock_count + ' em estoque' : 'Esgotado' %></span>
-          </div>
+  <div class="dfg-grid">
+    <% featured.forEach(function(p){ %>
+      <a href="/logins/<%= p.slug %>" class="dfg-card">
+        <div class="dfg-card-img">
+          <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
+          <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+        </div>
+        <div class="dfg-card-body">
+          <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
+          <div class="dfg-card-title"><%= p.name %></div>
+          <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
+          <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
+          <span class="dfg-buy">Comprar</span>
         </div>
       </a>
     <% }) %>
   </div>
   <% } %>
+
+  <!-- PRODUTOS -->
+  <div id="produtos"></div>
+  <div class="dfg-section-title">
+    <h2>Nossos produtos mais recentes</h2>
+    <span class="dfg-badge-dest">ENTREGA AUTOMÁTICA</span>
+  </div>
+
+  <% if (categories.length > 0) { %>
+  <div class="dfg-cats">
+    <a href="/logins" class="<%= !selectedCategory ? 'active' : '' %>">Todos</a>
+    <% categories.forEach(function(c){ %>
+      <a href="/logins?category=<%= encodeURIComponent(c.category) %>" class="<%= selectedCategory === c.category ? 'active' : '' %>"><%= c.category %></a>
+    <% }) %>
+  </div>
+  <% } %>
+
+  <% if (products.length === 0) { %>
+    <div class="dfg-empty">Nenhum produto disponível no momento.</div>
+  <% } else if (selectedCategory) { %>
+    <div class="dfg-grid">
+      <% products.forEach(function(p){ %>
+        <a href="/logins/<%= p.slug %>" class="dfg-card">
+          <div class="dfg-card-img">
+            <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
+            <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+          </div>
+          <div class="dfg-card-body">
+            <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
+            <div class="dfg-card-title"><%= p.name %></div>
+            <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
+            <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
+            <span class="dfg-buy">Comprar</span>
+          </div>
+        </a>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <% var grouped = {}; products.forEach(function(p){ (grouped[p.category] = grouped[p.category] || []).push(p); }); %>
+    <% Object.keys(grouped).forEach(function(cat){ %>
+      <h3 class="dfg-cat-title"><%= cat.toUpperCase() %></h3>
+      <div class="dfg-grid">
+        <% grouped[cat].forEach(function(p){ %>
+          <a href="/logins/<%= p.slug %>" class="dfg-card">
+            <div class="dfg-card-img">
+              <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
+              <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+            </div>
+            <div class="dfg-card-body">
+              <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
+              <div class="dfg-card-title"><%= p.name %></div>
+              <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
+              <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
+              <span class="dfg-buy">Comprar</span>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% }) %>
+  <% } %>
+
 </div>
 
 <%- include('partials/footer') %>

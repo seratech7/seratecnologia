@@ -8,17 +8,20 @@ router.get('/', (req, res) => {
   try {
     const { category, search } = req.query;
     const products = db.getDigitalProducts({ category, search, active: true }) || [];
+    const all = db.getDigitalProducts({ active: true }) || [];
+    const featured = all.slice(0, 6);
     const categories = db.query('SELECT DISTINCT category FROM digital_products WHERE status = ? ORDER BY category', ['active']) || [];
     res.render('digital', {
       title: 'Logins & Contas - Entrega Automática',
       products,
+      featured,
       categories,
       selectedCategory: category || '',
       search: search || ''
     });
   } catch (e) {
     console.error('Digital list error:', e);
-    res.render('digital', { title: 'Logins & Contas', products: [], categories: [], selectedCategory: '', search: '' });
+    res.render('digital', { title: 'Logins & Contas', products: [], featured: [], categories: [], selectedCategory: '', search: '' });
   }
 });
 
