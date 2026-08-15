@@ -9,12 +9,18 @@ router.get('/', (req, res) => {
     const { category, search } = req.query;
     const products = db.getDigitalProducts({ category, search, active: true }) || [];
     const all = db.getDigitalProducts({ active: true }) || [];
-    const featured = all.slice(0, 6);
+    const destaque = db.getFeaturedDigitalProducts(20) || [];
+    let featured = db.getFeaturedDigitalProducts(5) || [];
+    if (featured.length < 5) {
+      const extra = all.filter(function(p){ return !featured.some(function(f){ return f.id === p.id; }); }).slice(0, 5 - featured.length);
+      featured = featured.concat(extra);
+    }
     const categories = db.query('SELECT DISTINCT category FROM digital_products WHERE status = ? ORDER BY category', ['active']) || [];
     res.render('digital', {
       title: 'Logins & Contas - Entrega Automática',
       products,
       featured,
+      destaque,
       categories,
       selectedCategory: category || '',
       search: search || ''

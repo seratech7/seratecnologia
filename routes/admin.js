@@ -824,6 +824,64 @@ router.post('/ads/delete/:id', (req, res) => {
   res.redirect('/admin/ads');
 });
 
+// ============ DIGITAL PRODUCTS (LOGINS / SERVIÇOS) ============
+router.get('/digital', (req, res) => {
+  const items = db.query(
+    "SELECT dp.*, (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') as stock_count FROM digital_products dp ORDER BY dp.featured DESC, dp.created_at DESC"
+  );
+  res.render('admin/digital', { title: 'Serviços Digitais - Painel Admin', items: items || [], error: null });
+});
+
+router.get('/digital/new', (req, res) => {
+  res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: null });
+});
+
+router.post('/digital/new', (req, res) => {
+  const { name, slug, description, price, category, image, badge, status, featured } = req.body;
+  if (!name) return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: 'Nome é obrigatório' });
+  try {
+    db.saveDigitalProduct({ name, slug, description, price, category, image, badge, status, featured });
+  } catch (e) {
+    return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: 'Erro ao criar serviço' });
+  }
+  res.redirect('/admin/digital');
+});
+
+router.get('/digital/edit/:id', (req, res) => {
+  const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
+  if (!item) return res.redirect('/admin/digital');
+  res.render('admin/digital-form', { title: 'Editar Serviço Digital', item, error: null });
+});
+
+router.post('/digital/edit/:id', (req, res) => {
+    const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
+    if (!item) return res.redirect('/admin/digital');
+    const { name, slug, description, price, category, image, badge, status, featured } = req.body;
+    if (!name) return res.render('admin/digital-form', { title: 'Editar Serviço Digital', item, error: 'Nome é obrigatório' });
+    db.saveDigitalProduct({ name, slug, description, price, category, image, badge, status, featured }, item.id);
+    res.redirect('/admin/digital');
+});
+
+router.post('/digital/featured/:id', (req, res) => {
+  const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
+  if (!item) return res.redirect('/admin/digital');
+  db.run('UPDATE digital_products SET featured = ? WHERE id = ?', [item.featured == 1 ? 0 : 1, req.params.id]);
+  res.redirect('/admin/digital');
+});
+
+router.post('/digital/toggle/:id', (req, res) => {
+  const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
+  if (!item) return res.redirect('/admin/digital');
+  const newStatus = item.status === 'active' ? 'inactive' : 'active';
+  db.run('UPDATE digital_products SET status = ? WHERE id = ?', [newStatus, req.params.id]);
+  res.redirect('/admin/digital');
+});
+
+router.post('/digital/delete/:id', (req, res) => {
+  db.deleteDigitalProduct(req.params.id);
+  res.redirect('/admin/digital');
+});
+
 // ============ REVIEWS ============
 
 router.get('/reviews', (req, res) => {

@@ -1,0 +1,76 @@
+<%- include('../partials/admin-header') %>
+
+<div class="page-header">
+  <h1><i class="fas fa-key"></i> Serviços Digitais (Logins)</h1>
+  <a href="/admin/digital/new" class="btn-primary"><i class="fas fa-plus"></i> Novo Serviço</a>
+</div>
+
+<% if (error) { %><div class="alert alert-error"><i class="fas fa-exclamation-circle"></i> <%= error %></div><% } %>
+
+<div class="admin-section">
+  <div class="section-header">
+    <h2><i class="fas fa-list"></i> Todos os Serviços</h2>
+    <span style="font-size:12px;color:var(--gray-500);">Marque "Destaque" para exibir no carrossel do topo de /logins</span>
+  </div>
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Preço</th>
+          <th>Estoque</th>
+          <th>Badge</th>
+          <th>Destaque</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="9" class="empty-row">Nenhum serviço cadastrado</td></tr>
+        <% } %>
+        <% items.forEach(function(it){ %>
+          <tr>
+            <td><%= it.id %></td>
+            <td>
+              <strong><%= it.name %></strong>
+              <% if (it.image) { %><div style="margin-top:4px;"><img src="<%= it.image %>" alt="" style="max-height:36px;border-radius:4px;"></div><% } %>
+            </td>
+            <td><%= it.category %></td>
+            <td>R$ <%= Number(it.price).toFixed(2) %></td>
+            <td><%= it.stock_count %></td>
+            <td><%= it.badge || '-' %></td>
+            <td>
+              <% if (it.featured == 1) { %><span class="status-badge active"><i class="fas fa-star"></i> Sim</span><% } else { %><span class="status-badge inactive">Não</span><% } %>
+            </td>
+            <td>
+              <span class="status-badge <%= it.status === 'active' ? 'active' : 'inactive' %>">
+                <%= it.status === 'active' ? 'Ativo' : 'Inativo' %>
+              </span>
+            </td>
+            <td class="actions-cell">
+              <a href="/admin/digital/edit/<%= it.id %>" class="btn-icon" title="Editar"><i class="fas fa-edit"></i></a>
+              <form method="POST" action="/admin/digital/featured/<%= it.id %>" class="inline-form">
+                <button type="submit" class="btn-icon" title="<%= it.featured == 1 ? 'Remover destaque' : 'Destacar' %>">
+                  <i class="fas fa-star"></i>
+                </button>
+              </form>
+              <form method="POST" action="/admin/digital/toggle/<%= it.id %>" class="inline-form">
+                <button type="submit" class="btn-icon" title="<%= it.status === 'active' ? 'Desativar' : 'Ativar' %>">
+                  <i class="fas fa-<%= it.status === 'active' ? 'pause' : 'play' %>"></i>
+                </button>
+              </form>
+              <form method="POST" action="/admin/digital/delete/<%= it.id %>" class="inline-form" onsubmit="return confirm('Excluir este serviço?')">
+                <button type="submit" class="btn-icon btn-delete" title="Excluir"><i class="fas fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>

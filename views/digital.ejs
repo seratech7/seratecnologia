@@ -260,13 +260,13 @@ body.hacker-theme .dfg-prod-slide { border-color: rgba(255,212,0,.3); }
   </section>
 
   <!-- DESTAQUE -->
-  <% if (featured && featured.length > 0) { %>
+  <% if (destaque && destaque.length > 0) { %>
   <div class="dfg-section-title">
     <span class="dfg-badge-dest">DESTAQUE</span>
     <h2>Em evidência</h2>
   </div>
   <div class="dfg-grid">
-    <% featured.forEach(function(p){ %>
+    <% destaque.forEach(function(p){ %>
       <a href="/logins/<%= p.slug %>" class="dfg-card">
         <div class="dfg-card-img">
           <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
