@@ -62,7 +62,7 @@ body.hacker-theme::after {
   opacity: 0.35;
 }
 
-body.hacker-theme .main-content { position: relative; z-index: 1; }
+body.hacker-theme .main-content { position: relative; z-index: 1; background: var(--hack-bg); color: var(--hack-text); }
 
 /* =========================================
    HEADER
