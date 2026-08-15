@@ -34,7 +34,7 @@ const puppeteer = require('puppeteer');
   await p.type('textarea[name=observation]', 'observacao livre teste');
   await Promise.all([
     p.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 }),
-    p.click('button[type=submit]')
+    p.click('form[action*="comprar"] button[type=submit]')
   ]);
   const url = p.url();
   const delivery = await p.evaluate(() => ({
