@@ -40,11 +40,18 @@
   </a>
 </div>
 <style>
-.wa-topbar { background:#ffd400; color:#1a1400; font-family:inherit; }
-.wa-topbar-link { display:flex; align-items:center; justify-content:center; gap:8px; padding:7px 14px; font-size:13px; font-weight:700; text-decoration:none; color:#1a1400; text-align:center; line-height:1.2; }
-.wa-topbar-link i { font-size:17px; }
+:root { --wa-bar: 36px; }
+.wa-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1001; background:#ffd400; color:#1a1400; height: var(--wa-bar); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.wa-topbar-link { display:flex; align-items:center; justify-content:center; gap:8px; height:100%; width:100%; padding:0 12px; font-size:13px; font-weight:700; text-decoration:none; color:#1a1400; text-align:center; white-space:nowrap; }
+.wa-topbar-link i { font-size:17px; flex:none; }
 .wa-topbar-link:hover { background:rgba(0,0,0,.07); }
-@media (max-width:600px){ .wa-topbar-link { font-size:11px; padding:6px 8px; } .wa-topbar-link span { white-space:normal; } }
+.main-header { top: var(--wa-bar); }
+.top-ad { top: calc(var(--header-height) + var(--wa-bar)); }
+.main-content { margin-top: calc(var(--header-height) + var(--wa-bar)); min-height: calc(100vh - var(--header-height) - var(--wa-bar)); }
+@media (max-width:600px){
+  :root { --wa-bar: 52px; }
+  .wa-topbar-link { font-size:11px; white-space:normal; }
+}
 </style>
 
 <header class="main-header">
