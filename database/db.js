@@ -1034,6 +1034,9 @@ async function initDb() {
       buyer_name TEXT,
       buyer_email TEXT,
       buyer_phone TEXT,
+      delivery_channel TEXT,
+      delivery_contact TEXT,
+      observation TEXT,
       price REAL NOT NULL DEFAULT 0,
       delivery_code TEXT UNIQUE NOT NULL,
       status TEXT NOT NULL DEFAULT 'confirmed',
@@ -1041,7 +1044,17 @@ async function initDb() {
     )
   `);
 
-  saveDb();
+    try {
+      var _sc = db.exec("PRAGMA table_info(digital_sales)");
+      if (_sc.length > 0) {
+        var _scCols = _sc[0].values.map(function(r){ return r[1]; });
+        if (_scCols.indexOf('delivery_channel') === -1) db.run("ALTER TABLE digital_sales ADD COLUMN delivery_channel TEXT");
+        if (_scCols.indexOf('delivery_contact') === -1) db.run("ALTER TABLE digital_sales ADD COLUMN delivery_contact TEXT");
+        if (_scCols.indexOf('observation') === -1) db.run("ALTER TABLE digital_sales ADD COLUMN observation TEXT");
+      }
+    } catch (e) {}
+
+    saveDb();
 
   return db;
 }
@@ -2091,8 +2104,8 @@ function markDigitalStockSold(stockId, saleId) {
   run("UPDATE digital_stock SET status = 'sold', sale_id = ? WHERE id = ?", [saleId, stockId]);
 }
 function createDigitalSale(data) {
-  run("INSERT INTO digital_sales (product_id, stock_id, buyer_name, buyer_email, buyer_phone, price, delivery_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-    [data.product_id, data.stock_id || null, data.buyer_name || '', data.buyer_email || '', data.buyer_phone || '', data.price || 0, data.delivery_code, data.status || 'confirmed']);
+  run("INSERT INTO digital_sales (product_id, stock_id, buyer_name, buyer_email, buyer_phone, delivery_channel, delivery_contact, observation, price, delivery_code, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [data.product_id, data.stock_id || null, data.buyer_name || '', data.buyer_email || '', data.buyer_phone || '', data.delivery_channel || '', data.delivery_contact || '', data.observation || '', data.price || 0, data.delivery_code, data.status || 'confirmed']);
   var r = get("SELECT MAX(id) as id FROM digital_sales");
   return r ? r.id : null;
 }

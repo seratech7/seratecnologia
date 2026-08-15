@@ -36,6 +36,42 @@
           <label style="font-size:13px;color:var(--hack-dim);">WhatsApp (opcional)</label>
           <input type="text" name="buyer_phone" class="admin-input" placeholder="(11) 99999-9999">
         </div>
+
+        <div class="form-group">
+          <label style="font-size:13px;color:var(--hack-dim);">Receber dados por</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--hack-bg-2);border:1px solid var(--hack-border);padding:8px 12px;border-radius:9px;"><input type="radio" name="delivery_channel" value="email" checked onchange="dfgUpdContact()"> <i class="fas fa-envelope"></i> E-mail</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--hack-bg-2);border:1px solid var(--hack-border);padding:8px 12px;border-radius:9px;"><input type="radio" name="delivery_channel" value="whatsapp" onchange="dfgUpdContact()"> <i class="fab fa-whatsapp"></i> WhatsApp</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--hack-bg-2);border:1px solid var(--hack-border);padding:8px 12px;border-radius:9px;"><input type="radio" name="delivery_channel" value="telegram" onchange="dfgUpdContact()"> <i class="fab fa-telegram"></i> Telegram</label>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:var(--hack-bg-2);border:1px solid var(--hack-border);padding:8px 12px;border-radius:9px;"><input type="radio" name="delivery_channel" value="signal" onchange="dfgUpdContact()"> <i class="fas fa-phone-volume"></i> Signal</label>
+          </div>
+        </div>
+
+        <div class="form-group" id="deliveryContactWrap" style="display:none;">
+          <label style="font-size:13px;color:var(--hack-dim);" id="deliveryContactLabel">Contato para recebimento</label>
+          <input type="text" name="delivery_contact" id="deliveryContactInput" class="admin-input" placeholder="">
+        </div>
+
+        <div class="form-group">
+          <label style="font-size:13px;color:var(--hack-dim);">Observação (opcional)</label>
+          <textarea name="observation" class="admin-input" rows="3" placeholder="Alguma observação? (opcional)" style="resize:vertical;font-family:inherit;"></textarea>
+        </div>
+
+        <script>
+          function dfgUpdContact(){
+            var ch = document.querySelector('input[name=delivery_channel]:checked');
+            var wrap = document.getElementById('deliveryContactWrap');
+            var label = document.getElementById('deliveryContactLabel');
+            var input = document.getElementById('deliveryContactInput');
+            if(!ch){ return; }
+            if(ch.value === 'email'){ wrap.style.display='none'; }
+            else if(ch.value === 'whatsapp'){ wrap.style.display='block'; label.textContent='WhatsApp para receber (número)'; input.placeholder='(11) 99999-9999'; }
+            else if(ch.value === 'telegram'){ wrap.style.display='block'; label.textContent='Seu usuário Telegram (ex: @usuario)'; input.placeholder='@usuario'; }
+            else if(ch.value === 'signal'){ wrap.style.display='block'; label.textContent='Seu número Signal'; input.placeholder='(11) 99999-9999'; }
+          }
+          dfgUpdContact();
+        </script>
+
         <button type="submit" class="btn-primary" style="margin-top:8px;padding:14px;font-size:16px;">
           <i class="fas fa-bolt"></i> Comprar e receber agora
         </button>

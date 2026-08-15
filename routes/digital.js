@@ -58,7 +58,7 @@ router.post('/:slug/comprar', (req, res) => {
     const product = db.getDigitalProductBySlug(req.params.slug);
     if (!product || product.status !== 'active') return res.status(404).render('404', { title: 'Produto não encontrado' });
 
-    const { buyer_name, buyer_email, buyer_phone } = req.body;
+    const { buyer_name, buyer_email, buyer_phone, delivery_channel, delivery_contact, observation } = req.body;
     if (!buyer_email || !buyer_name) {
       const inStock = db.getDigitalAvailableCount(product.id) > 0;
       return res.render('digital-detail', {
@@ -87,6 +87,9 @@ router.post('/:slug/comprar', (req, res) => {
       buyer_name: String(buyer_name).slice(0, 120),
       buyer_email: String(buyer_email).slice(0, 160),
       buyer_phone: String(buyer_phone || '').slice(0, 40),
+      delivery_channel: String(delivery_channel || 'email').slice(0, 20),
+      delivery_contact: String(delivery_contact || '').slice(0, 160),
+      observation: String(observation || '').slice(0, 500),
       price: product.price,
       delivery_code: deliveryCode,
       status: 'confirmed'

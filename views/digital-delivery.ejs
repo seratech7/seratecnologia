@@ -15,7 +15,18 @@
         <% if (sale.password) { %><div style="margin-top:8px;"><span style="color:var(--hack-dim);">Senha:</span> <code style="background:rgba(255,255,255,.08);padding:2px 8px;border-radius:5px;user-select:all;"><%= sale.password %></code></div><% } %>
         <% if (sale.note) { %><div style="margin-top:8px;"><span style="color:var(--hack-dim);">Observações:</span> <%= sale.note %></div><% } %>
       </div>
-    </div>
+      </div>
+
+      <% if (sale.delivery_channel || sale.delivery_contact || sale.observation) { %>
+      <div style="text-align:left;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:12px;padding:16px;margin-bottom:20px;font-size:14px;line-height:1.8;">
+        <h3 style="margin:0 0 8px;font-size:15px;color:var(--primary);"><i class="fas fa-paper-plane"></i> Recebimento</h3>
+        <% if (sale.delivery_channel) { %><div><span style="color:var(--hack-dim);">Canal:</span>
+          <% if (sale.delivery_channel === 'email') { %>E-mail<% } else if (sale.delivery_channel === 'whatsapp') { %>WhatsApp<% } else if (sale.delivery_channel === 'telegram') { %>Telegram<% } else if (sale.delivery_channel === 'signal') { %>Signal<% } else { %><%= sale.delivery_channel %><% } %>
+        </div><% } %>
+        <% if (sale.delivery_contact) { %><div><span style="color:var(--hack-dim);">Contato:</span> <%= sale.delivery_contact %></div><% } %>
+        <% if (sale.observation) { %><div style="margin-top:6px;"><span style="color:var(--hack-dim);">Observação:</span> <%= sale.observation %></div><% } %>
+      </div>
+      <% } %>
 
     <div style="background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.3);border-radius:10px;padding:14px;margin-bottom:20px;">
       <span style="font-size:13px;color:var(--hack-dim);">Código de rastreio da entrega:</span><br>
