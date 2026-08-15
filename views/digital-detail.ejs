@@ -23,7 +23,7 @@
       <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
 
       <% if (inStock) { %>
-      <form method="POST" action="/login/<%= product.slug %>/comprar" style="display:flex;flex-direction:column;gap:12px;">
+      <form method="POST" action="/logins/<%= product.slug %>/comprar" style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group">
           <label style="font-size:13px;color:var(--hack-dim);">Seu nome</label>
           <input type="text" name="buyer_name" class="admin-input" required placeholder="Nome completo">
