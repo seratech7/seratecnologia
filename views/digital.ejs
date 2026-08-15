@@ -77,6 +77,36 @@
 }
 .dfg-cats a.active, .dfg-cats a:hover { background:linear-gradient(90deg,#e50914,#ff5b3a); color:#fff; border-color:transparent; }
 
+/* FILTRO RÁPIDO (abaixo da pesquisa) */
+.dfg-filterbar { margin: 0 0 22px; }
+.dfg-filter-form {
+  display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;
+  background:var(--card-bg); border:1px solid var(--hack-border); border-radius:14px; padding:16px 18px;
+}
+.ffield { display:flex; flex-direction:column; gap:5px; }
+.ffield label { font-size:11px; font-weight:800; color:var(--hack-dim); text-transform:uppercase; letter-spacing:.6px; }
+.ffield select {
+  padding:10px 14px; border-radius:9px; border:1px solid var(--hack-border);
+  background:#fff; color:#111; font-size:14px; min-width:170px; cursor:pointer; outline:none;
+}
+.ffield select:focus { border-color:var(--primary); box-shadow:0 0 0 2px rgba(229,9,20,.12); }
+.ffield.fcheck { justify-content:flex-end; }
+.fcheck-label { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; padding-bottom:10px; }
+.fcheck-label input { width:16px; height:16px; accent-color:var(--primary); cursor:pointer; }
+.fclear {
+  margin-left:auto; align-self:center; font-size:12px; font-weight:700; color:var(--primary);
+  text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:8px 12px;
+  border:1px solid var(--hack-border); border-radius:9px;
+}
+.fclear:hover { background:var(--primary); color:#fff; border-color:transparent; }
+.dfg-result-count {
+  font-size:13px; font-weight:600; color:var(--hack-dim); margin: 4px 0 16px;
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.dfg-result-count i { color:var(--primary); }
+.dfg-result-count span { color:var(--text); font-weight:700; }
+@media (max-width:600px){ .ffield select{ min-width:140px; } .fclear{ margin-left:0; } }
+
 /* GRADE */
 .dfg-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
 .dfg-card {
@@ -165,6 +195,15 @@ body.hacker-theme .dfg-car-arrow:hover { background:#ffd400; color:#1a1400; }
 body.hacker-theme .dfg-dot { background: rgba(255,255,255,.3); }
 body.hacker-theme .dfg-dot.active { background:#ffd400; }
 body.hacker-theme .dfg-prod-slide { border-color: rgba(255,212,0,.3); }
+body.hacker-theme .dfg-filter-form { background: var(--hack-panel); border-color: rgba(255,212,0,.3); }
+body.hacker-theme .ffield label { color: var(--hack-dim); }
+body.hacker-theme .ffield select { background:#0b0f18; color: var(--hack-text); border-color: rgba(255,212,0,.3); }
+body.hacker-theme .ffield select:focus { border-color:#ffd400; box-shadow:0 0 0 2px rgba(255,212,0,.18); }
+body.hacker-theme .fcheck-label { color: var(--hack-text); }
+body.hacker-theme .fclear { color:#ffd400; border-color: rgba(255,212,0,.3); }
+body.hacker-theme .fclear:hover { background:#ffd400; color:#1a1400; border-color:transparent; }
+body.hacker-theme .dfg-result-count { color: var(--hack-dim); }
+body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
 </style>
 
 <div class="dfg-wrap dfg-site">
@@ -250,6 +289,39 @@ body.hacker-theme .dfg-prod-slide { border-color: rgba(255,212,0,.3); }
     </form>
   </section>
 
+  <!-- FILTRO RÁPIDO (abaixo da pesquisa) -->
+  <section class="dfg-filterbar">
+    <form method="GET" action="/logins" class="dfg-filter-form">
+      <input type="hidden" name="search" value="<%= search %>">
+      <div class="ffield">
+        <label>Categoria</label>
+        <select name="category" onchange="this.form.submit()">
+          <option value="">Todas</option>
+          <% (categories || []).forEach(function(c){ %>
+            <option value="<%= c.category %>" <%= selectedCategory === c.category ? 'selected' : '' %>><%= c.category %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="ffield">
+        <label>Ordenar por</label>
+        <select name="sort" onchange="this.form.submit()">
+          <option value="">Mais recentes</option>
+          <option value="price_asc" <%= sort === 'price_asc' ? 'selected' : '' %>>Menor preço</option>
+          <option value="price_desc" <%= sort === 'price_desc' ? 'selected' : '' %>>Maior preço</option>
+          <option value="sold" <%= sort === 'sold' ? 'selected' : '' %>>Mais vendidos</option>
+        </select>
+      </div>
+      <div class="ffield fcheck">
+        <label class="fcheck-label">
+          <input type="checkbox" name="instock" value="1" <%= instock ? 'checked' : '' %> onchange="this.form.submit()"> Com estoque
+        </label>
+      </div>
+      <% if (search || selectedCategory || sort || instock) { %>
+        <a href="/logins" class="fclear" title="Limpar filtros"><i class="fas fa-times"></i> Limpar</a>
+      <% } %>
+    </form>
+  </section>
+
   <!-- HIGHLIGHTS -->
   <section class="dfg-highlights">
     <div class="dfg-hl"><i class="fas fa-truck-fast"></i><span>Entrega Automática</span></div>
@@ -291,14 +363,13 @@ body.hacker-theme .dfg-prod-slide { border-color: rgba(255,212,0,.3); }
     <span class="dfg-badge-dest">ENTREGA AUTOMÁTICA</span>
   </div>
 
-  <% if (categories.length > 0) { %>
-  <div class="dfg-cats">
-    <a href="/logins" class="<%= !selectedCategory ? 'active' : '' %>">Todos</a>
-    <% categories.forEach(function(c){ %>
-      <a href="/logins?category=<%= encodeURIComponent(c.category) %>" class="<%= selectedCategory === c.category ? 'active' : '' %>"><%= c.category %></a>
-    <% }) %>
+  <div class="dfg-result-count">
+    <i class="fas fa-list"></i> <%= products.length %> produto(s)
+    <% if (search) { %> <span>para “<%= search %>”</span><% } %>
+    <% if (selectedCategory) { %> <span>em <%= selectedCategory %></span><% } %>
+    <% if (sort) { %> <span>• <%= sort === 'price_asc' ? 'menor preço' : sort === 'price_desc' ? 'maior preço' : sort === 'sold' ? 'mais vendidos' : '' %></span><% } %>
+    <% if (instock) { %> <span>• com estoque</span><% } %>
   </div>
-  <% } %>
 
   <% if (products.length === 0) { %>
     <div class="dfg-empty">Nenhum produto disponível no momento.</div>

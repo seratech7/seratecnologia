@@ -6,8 +6,9 @@ const db = require('../database/db');
 // Lista de produtos digitais (logins com entrega automática)
 router.get('/', (req, res) => {
   try {
-    const { category, search } = req.query;
-    const products = db.getDigitalProducts({ category, search, active: true }) || [];
+    const { category, search, sort, instock } = req.query;
+    const inStock = instock === '1' || instock === 'on';
+    const products = db.getDigitalProducts({ category, search, sort, instock: inStock, active: true }) || [];
     const all = db.getDigitalProducts({ active: true }) || [];
     const destaque = db.getFeaturedDigitalProducts(20) || [];
     let featured = db.getFeaturedDigitalProducts(5) || [];
@@ -23,11 +24,13 @@ router.get('/', (req, res) => {
       destaque,
       categories,
       selectedCategory: category || '',
-      search: search || ''
+      search: search || '',
+      sort: sort || '',
+      instock: inStock ? '1' : ''
     });
   } catch (e) {
     console.error('Digital list error:', e);
-    res.render('digital', { title: 'Logins & Contas', products: [], featured: [], categories: [], selectedCategory: '', search: '' });
+    res.render('digital', { title: 'Logins & Contas', products: [], featured: [], categories: [], selectedCategory: '', search: '', sort: '', instock: '' });
   }
 });
 

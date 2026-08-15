@@ -2025,9 +2025,19 @@ function getDigitalProducts(opts) {
   var sql = "SELECT dp.*, (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') as stock_count FROM digital_products dp WHERE 1=1";
   var params = [];
   if (opts.category) { sql += " AND dp.category = ?"; params.push(opts.category); }
-  if (opts.search) { sql += " AND (dp.name LIKE ? OR dp.description LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
+  if (opts.search) {
+    var s = '%' + String(opts.search).trim() + '%';
+    sql += " AND (dp.name LIKE ? OR dp.description LIKE ? OR dp.category LIKE ? OR dp.badge LIKE ?)";
+    params.push(s, s, s, s);
+  }
+  if (opts.instock) {
+    sql += " AND (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') > 0";
+  }
   if (opts.active) { sql += " AND dp.status = 'active'"; }
-  sql += " ORDER BY dp.created_at DESC";
+  if (opts.sort === 'price_asc') sql += " ORDER BY dp.price ASC";
+  else if (opts.sort === 'price_desc') sql += " ORDER BY dp.price DESC";
+  else if (opts.sort === 'sold') sql += " ORDER BY dp.sold_count DESC";
+  else sql += " ORDER BY dp.created_at DESC";
   return query(sql, params);
 }
 function getDigitalProductById(id) {
