@@ -3,6 +3,9 @@ const router = express.Router();
 const crypto = require('crypto');
 const db = require('../database/db');
 
+// Link do grupo VIP no WhatsApp exibido no topo de /logins (troque pela URL real do seu grupo)
+const WHATSAPP_GROUP_LINK = process.env.WHATSAPP_GROUP_LINK || 'https://chat.whatsapp.com/SEU-GRUPO-AQUI';
+
 // Lista de produtos digitais (logins com entrega automática)
 router.get('/', (req, res) => {
   try {
@@ -26,11 +29,12 @@ router.get('/', (req, res) => {
       selectedCategory: category || '',
       search: search || '',
       sort: sort || '',
-      instock: inStock ? '1' : ''
+      instock: inStock ? '1' : '',
+      whatsappGroupLink: WHATSAPP_GROUP_LINK
     });
   } catch (e) {
     console.error('Digital list error:', e);
-    res.render('digital', { title: 'Logins & Contas', products: [], featured: [], categories: [], selectedCategory: '', search: '', sort: '', instock: '' });
+    res.render('digital', { title: 'Logins & Contas', products: [], featured: [], categories: [], selectedCategory: '', search: '', sort: '', instock: '', whatsappGroupLink: WHATSAPP_GROUP_LINK });
   }
 });
 
