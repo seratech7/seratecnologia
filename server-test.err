@@ -1,0 +1,24 @@
+Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json.1263262593' -> 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json' Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json.1263262593' -> 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json'
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:647:11)
+    at ServerResponse.header (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:794:10)
+    at ServerResponse.send (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:174:12)
+    at C:\Users\ggdra\Documents\Default Project\server.js:612:19
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:71:5)
+    at trim_prefix (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:326:13)
+    at C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:67:12)
+Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json.3042560054' -> 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json' Error: EPERM: operation not permitted, rename 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json.3042560054' -> 'C:\Users\ggdra\Documents\Default Project\sessions\4FxFwsTIR__mentV49-gncDhgFApiph5.json'
+Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
+    at ServerResponse.setHeader (node:_http_outgoing:647:11)
+    at ServerResponse.header (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:794:10)
+    at ServerResponse.send (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\response.js:174:12)
+    at res.send (C:\Users\ggdra\Documents\Default Project\middleware\csrf.js:38:12)
+    at C:\Users\ggdra\Documents\Default Project\server.js:612:19
+    at Layer.handle_error (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\layer.js:71:5)
+    at trim_prefix (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:326:13)
+    at C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:286:9
+    at router.process_params (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:346:12)
+    at next (C:\Users\ggdra\Documents\Default Project\node_modules\express\lib\router\index.js:280:10)
