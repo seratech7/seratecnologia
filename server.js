@@ -290,6 +290,9 @@ app.use('/uploads', (req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Link do grupo VIP no WhatsApp exibido no banner amarelo do topo (todas as paginas)
+app.locals.whatsappGroupLink = process.env.WHATSAPP_GROUP_LINK || 'https://chat.whatsapp.com/SEU-GRUPO-AQUI';
+
 // Upload error handler
 app.use((err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {

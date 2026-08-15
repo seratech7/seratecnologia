@@ -31,7 +31,21 @@
   if (localStorage.getItem('hacker-theme') === '1') {
     document.body.classList.add('hacker-theme');
   }
-</script>
+  </script>
+
+<div class="wa-topbar">
+  <a href="<%= typeof whatsappGroupLink !== 'undefined' ? whatsappGroupLink : 'https://chat.whatsapp.com/SEU-GRUPO-AQUI' %>" target="_blank" rel="noopener" class="wa-topbar-link">
+    <i class="fab fa-whatsapp"></i>
+    <span>Entre no nosso Grupo VIP no WhatsApp — Clique aqui para entrar no nosso grupo</span>
+  </a>
+</div>
+<style>
+.wa-topbar { background:#ffd400; color:#1a1400; font-family:inherit; }
+.wa-topbar-link { display:flex; align-items:center; justify-content:center; gap:8px; padding:7px 14px; font-size:13px; font-weight:700; text-decoration:none; color:#1a1400; text-align:center; line-height:1.2; }
+.wa-topbar-link i { font-size:17px; }
+.wa-topbar-link:hover { background:rgba(0,0,0,.07); }
+@media (max-width:600px){ .wa-topbar-link { font-size:11px; padding:6px 8px; } .wa-topbar-link span { white-space:normal; } }
+</style>
 
 <header class="main-header">
   <div class="header-container">

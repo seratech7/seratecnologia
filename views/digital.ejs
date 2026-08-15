@@ -135,26 +135,6 @@
 .dfg-empty { text-align:center; padding:50px; color:var(--hack-dim); }
 @media (max-width:600px){ .dfg-hero h1{font-size:30px;} .dfg-stream{flex-direction:column;align-items:stretch;} }
 
-/* CAIXA GRUPO WHATSAPP (topo, abaixo do menu) */
-.dfg-wagroup {
-  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
-  background: linear-gradient(90deg, #0b3d1f, #0f5a2e); border:1px solid rgba(37,211,102,.4);
-  border-radius:14px; padding:14px 18px; margin-bottom:18px;
-}
-.dfg-wagroup .wag-left { display:flex; align-items:center; gap:14px; color:#fff; min-width:0; }
-.dfg-wagroup .wag-left i { font-size:34px; color:#25D366; flex:none; }
-.dfg-wagroup .wag-left strong { display:block; font-size:16px; line-height:1.2; }
-.dfg-wagroup .wag-left span { font-size:12px; color:#cfead9; }
-.dfg-wagroup .wag-btn {
-  display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#fff; font-weight:800;
-  text-decoration:none; padding:11px 20px; border-radius:30px; font-size:14px; white-space:nowrap; flex:none;
-}
-.dfg-wagroup .wag-btn:hover { filter:brightness(1.08); }
-@media (max-width:600px){
-  .dfg-wagroup{ flex-direction:column; align-items:stretch; }
-  .dfg-wagroup .wag-btn{ justify-content:center; }
-}
-
 /* CARROSSEL TOPO (info + 5 destaques) */
 .dfg-carousel { position: relative; margin: 18px 0; border-radius: 16px; overflow: hidden; min-height: 360px; }
 .dfg-carousel-track { position: relative; min-height: 360px; }
@@ -224,25 +204,9 @@ body.hacker-theme .fclear { color:#ffd400; border-color: rgba(255,212,0,.3); }
 body.hacker-theme .fclear:hover { background:#ffd400; color:#1a1400; border-color:transparent; }
 body.hacker-theme .dfg-result-count { color: var(--hack-dim); }
 body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
-body.hacker-theme .dfg-wagroup { background: linear-gradient(90deg, #0a2417, #0d3a22); border-color: rgba(255,212,0,.35); }
-body.hacker-theme .dfg-wagroup .wag-left span { color: var(--hack-dim); }
-body.hacker-theme .dfg-wagroup .wag-btn { background:#ffd400; color:#1a1400; }
-body.hacker-theme .dfg-wagroup .wag-btn:hover { filter:brightness(1.1); }
 </style>
 
 <div class="dfg-wrap dfg-site">
-
-  <!-- CAIXA GRUPO VIP WHATSAPP (topo, entre o menu e o conteudo) -->
-  <section class="dfg-wagroup">
-    <div class="wag-left">
-      <i class="fab fa-whatsapp"></i>
-      <div>
-        <strong>Entre no nosso Grupo VIP no WhatsApp</strong>
-        <span>Receba ofertas, novidades e suporte exclusivo direto no seu celular.</span>
-      </div>
-    </div>
-    <a href="<%= whatsappGroupLink %>" target="_blank" rel="noopener" class="wag-btn"><i class="fab fa-whatsapp"></i> Entrar no grupo</a>
-  </section>
 
   <!-- CARROSSEL TOPO: informacoes + 5 produtos em destaque -->
   <section class="dfg-carousel" id="dfgTopCarousel">
