@@ -105,6 +105,44 @@
 .dfg-empty { text-align:center; padding:50px; color:var(--hack-dim); }
 @media (max-width:600px){ .dfg-hero h1{font-size:30px;} .dfg-stream{flex-direction:column;align-items:stretch;} }
 
+/* CARROSSEL TOPO (info + 5 destaques) */
+.dfg-carousel { position: relative; margin: 18px 0; border-radius: 16px; overflow: hidden; min-height: 360px; }
+.dfg-carousel-track { position: relative; min-height: 360px; }
+.dfg-slide {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 22px; opacity: 0; transform: scale(.98); transition: opacity .6s ease, transform .6s ease;
+  z-index: 1; pointer-events: none;
+}
+.dfg-slide.dfg-active { opacity: 1; transform: scale(1); z-index: 2; pointer-events: auto; }
+.dfg-slide-hero .dfg-hero { margin: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+.dfg-prod-slide {
+  display: flex; gap: 26px; align-items: center; width: 100%; max-width: 920px;
+  background: linear-gradient(135deg, #0b0b12 0%, #1a0306 60%, #2a0608 100%);
+  border: 1px solid rgba(255,60,60,.3); border-radius: 16px; padding: 22px 28px;
+  text-decoration: none; box-shadow: 0 8px 30px rgba(0,0,0,.3);
+}
+.dfg-ps-img { position: relative; width: 240px; height: 200px; flex: 0 0 auto; border-radius: 12px; overflow: hidden; background: #0e0e16; }
+.dfg-ps-img img { width: 100%; height: 100%; object-fit: cover; }
+.dfg-ps-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.dfg-ps-info .dfg-card-title { font-size: 22px; color: #fff; }
+.dfg-ps-info .dfg-price { font-size: 26px; margin: 4px 0 8px; }
+.dfg-car-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+  width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.45); color: #fff; cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center; transition: background .2s;
+}
+.dfg-car-prev { left: 12px; } .dfg-car-next { right: 12px; }
+.dfg-car-arrow:hover { background: rgba(229,9,20,.9); }
+.dfg-car-dots { position: absolute; bottom: 12px; left: 0; right: 0; z-index: 5; display: flex; gap: 8px; justify-content: center; }
+.dfg-dot { width: 10px; height: 10px; border-radius: 50%; border: 0; background: rgba(255,255,255,.4); cursor: pointer; padding: 0; transition: all .25s; }
+.dfg-dot.active { background: #ffd400; width: 22px; border-radius: 6px; }
+@media (max-width: 640px){
+  .dfg-carousel, .dfg-carousel-track { min-height: 440px; }
+  .dfg-prod-slide { flex-direction: column; text-align: center; }
+  .dfg-ps-img { width: 100%; height: 170px; }
+}
+
 /* MODO DARK: destaques amarelos na pagina DFGMAX */
 body.hacker-theme .dfg-badge-dest { background: linear-gradient(90deg,#ffd400,#ffae00); color:#1a1400; }
 body.hacker-theme .dfg-buy { background: linear-gradient(90deg,#ffd400,#ffae00); color:#1a1400; }
@@ -122,21 +160,83 @@ body.hacker-theme .dfg-cats a.active, body.hacker-theme .dfg-cats a:hover { back
 body.hacker-theme .dfg-cat-title { border-left-color:#ffd400; }
 body.hacker-theme .dfg-price { color:#ffd400; }
 body.hacker-theme .dfg-vendor { color:#ffd400; }
+body.hacker-theme .dfg-car-arrow { border-color: rgba(255,212,0,.4); }
+body.hacker-theme .dfg-car-arrow:hover { background:#ffd400; color:#1a1400; }
+body.hacker-theme .dfg-dot { background: rgba(255,255,255,.3); }
+body.hacker-theme .dfg-dot.active { background:#ffd400; }
+body.hacker-theme .dfg-prod-slide { border-color: rgba(255,212,0,.3); }
 </style>
 
 <div class="dfg-wrap dfg-site">
 
-  <!-- HERO -->
-  <section class="dfg-hero">
-    <h1>ENTREGA AUTOMÁTICA<small>+ RÁPIDA DO BRASIL</small></h1>
-    <p class="sub">Receba sua chave ou acesso na hora. Compra 100% segura com suporte especializado e humanizado.</p>
-    <div class="dfg-feats">
-      <div class="dfg-feat"><i class="fas fa-bolt"></i> Recebeu, usou!</div>
-      <div class="dfg-feat"><i class="fas fa-shield-alt"></i> Compra 100% segura</div>
-      <div class="dfg-feat"><i class="fas fa-headset"></i> Suporte especializado</div>
+  <!-- CARROSSEL TOPO: informacoes + 5 produtos em destaque -->
+  <section class="dfg-carousel" id="dfgTopCarousel">
+    <div class="dfg-carousel-track">
+      <!-- Slide 0: informacoes (mantidas) -->
+      <div class="dfg-slide dfg-slide-hero dfg-active">
+        <div class="dfg-hero">
+          <h1>ENTREGA AUTOMÁTICA<small>+ RÁPIDA DO BRASIL</small></h1>
+          <p class="sub">Receba sua chave ou acesso na hora. Compra 100% segura com suporte especializado e humanizado.</p>
+          <div class="dfg-feats">
+            <div class="dfg-feat"><i class="fas fa-bolt"></i> Recebeu, usou!</div>
+            <div class="dfg-feat"><i class="fas fa-shield-alt"></i> Compra 100% segura</div>
+            <div class="dfg-feat"><i class="fas fa-headset"></i> Suporte especializado</div>
+          </div>
+          <a href="#produtos" class="dfg-ver-btn">Ver produtos <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <!-- Slides 1..n: produtos em destaque -->
+      <% (featured || []).slice(0, 5).forEach(function(p){ %>
+      <div class="dfg-slide dfg-slide-prod">
+        <a href="/logins/<%= p.slug %>" class="dfg-prod-slide">
+          <div class="dfg-ps-img">
+            <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
+            <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+          </div>
+          <div class="dfg-ps-info">
+            <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category || '' %></span></div>
+            <div class="dfg-card-title"><%= p.name %></div>
+            <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
+            <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
+            <span class="dfg-buy">Comprar</span>
+          </div>
+        </a>
+      </div>
+      <% }) %>
     </div>
-    <a href="#produtos" class="dfg-ver-btn">Ver produtos <i class="fas fa-arrow-right"></i></a>
+    <button class="dfg-car-arrow dfg-car-prev" aria-label="Anterior" onclick="dfgCarouselGo(-1)"><i class="fas fa-chevron-left"></i></button>
+    <button class="dfg-car-arrow dfg-car-next" aria-label="Próximo" onclick="dfgCarouselGo(1)"><i class="fas fa-chevron-right"></i></button>
+    <div class="dfg-car-dots" id="dfgCarDots"></div>
   </section>
+
+  <script>
+  (function(){
+    var car = document.getElementById('dfgTopCarousel');
+    if (!car) return;
+    var slides = car.querySelectorAll('.dfg-slide');
+    var dotsWrap = document.getElementById('dfgCarDots');
+    if (slides.length <= 1) return;
+    var idx = 0, timer = null;
+    slides.forEach(function(s, i){
+      var d = document.createElement('button');
+      d.className = 'dfg-dot' + (i === 0 ? ' active' : '');
+      d.setAttribute('aria-label', 'Slide ' + (i + 1));
+      d.addEventListener('click', function(){ dfgShow(i); dfgRestart(); });
+      dotsWrap.appendChild(d);
+    });
+    var dots = dotsWrap.querySelectorAll('.dfg-dot');
+    function dfgShow(n){
+      idx = (n + slides.length) % slides.length;
+      slides.forEach(function(s, i){ s.classList.toggle('dfg-active', i === idx); });
+      dots.forEach(function(d, i){ d.classList.toggle('active', i === idx); });
+    }
+    function dfgRestart(){ if (timer) clearInterval(timer); timer = setInterval(function(){ dfgShow(idx + 1); }, 4500); }
+    window.dfgCarouselGo = function(step){ dfgShow(idx + step); dfgRestart(); };
+    car.addEventListener('mouseenter', function(){ if (timer) clearInterval(timer); });
+    car.addEventListener('mouseleave', dfgRestart);
+    dfgShow(0); dfgRestart();
+  })();
+  </script>
 
   <!-- BANNER STREAMING + BUSCA -->
   <section class="dfg-stream">
