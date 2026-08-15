@@ -11,17 +11,22 @@ body.hacker-theme {
   --hack-panel-2: #0f1626;
   --hack-border: #1c2a3f;
   --hack-border-hi: #2c4a6b;
-  --hack-green: #00ff9c;
-  --hack-green-dim: #00b368;
+  --hack-green: #ffd400;
+  --hack-green-dim: #c9a800;
   --hack-cyan: #00e5ff;
   --hack-red: #ff3860;
   --hack-amber: #ffcc00;
   --hack-purple: #b14cff;
-  --hack-text: #c8d6e5;
-  --hack-text-hi: #f0f6ff;
-  --hack-dim: #5a6c85;
+  --hack-text: #e8edf5;
+  --hack-text-hi: #fff8d6;
+  --hack-dim: #7a8aa3;
   --hack-font: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, 'Courier New', monospace;
-  --hack-shadow: 0 0 24px rgba(0, 255, 156, 0.06);
+  --hack-shadow: 0 0 24px rgba(255, 212, 0, 0.08);
+  --primary: #ffd400;
+  --primary-dark: #c9a800;
+  --primary-light: #ffe066;
+  --card-bg: #0f1626;
+  --text: #e8edf5;
   background: var(--hack-bg);
   color: var(--hack-text);
   font-family: var(--hack-font);
@@ -35,8 +40,8 @@ body.hacker-theme::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(0, 255, 156, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 156, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(255, 212, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 212, 0, 0.03) 1px, transparent 1px);
   background-size: 42px 42px;
 }
 
@@ -66,12 +71,12 @@ body.hacker-theme .main-content { position: relative; z-index: 1; }
 body.hacker-theme .main-header {
   background: linear-gradient(135deg, #04060b 0%, #0a101d 100%);
   border-bottom: 1px solid var(--hack-border);
-  box-shadow: 0 2px 24px rgba(0, 255, 156, 0.08);
+  box-shadow: 0 2px 24px rgba(255, 212, 0, 0.08);
 }
 
 body.hacker-theme .logo i {
   color: var(--hack-green);
-  text-shadow: 0 0 14px rgba(0, 255, 156, 0.8);
+  text-shadow: 0 0 14px rgba(255, 212, 0, 0.8);
 }
 
 body.hacker-theme .search-form {
@@ -81,7 +86,7 @@ body.hacker-theme .search-form {
 
 body.hacker-theme .search-form:focus-within {
   border-color: var(--hack-green);
-  box-shadow: 0 0 15px rgba(0, 255, 156, 0.15);
+  box-shadow: 0 0 15px rgba(255, 212, 0, 0.15);
 }
 
 body.hacker-theme .search-form i { color: var(--hack-dim); }
@@ -105,7 +110,7 @@ body.hacker-theme .btn-admin-header {
 }
 
 body.hacker-theme .btn-admin-header:hover {
-  background: rgba(0, 255, 156, 0.1);
+  background: rgba(255, 212, 0, 0.1);
   border-color: var(--hack-green);
   color: var(--hack-green);
 }
@@ -115,16 +120,16 @@ body.hacker-theme .notif-bell.has-unread i { color: var(--hack-cyan); }
 
 /* Toggle de tema */
 body.hacker-theme .theme-toggle-btn {
-  background: rgba(0, 255, 156, 0.1);
+  background: rgba(255, 212, 0, 0.1);
   border: 1px solid var(--hack-green);
   color: var(--hack-green);
-  box-shadow: 0 0 12px rgba(0, 255, 156, 0.2);
+  box-shadow: 0 0 12px rgba(255, 212, 0, 0.2);
 }
 
 body.hacker-theme .theme-toggle-btn:hover {
   background: var(--hack-green);
   color: #03120a;
-  box-shadow: 0 0 18px rgba(0, 255, 156, 0.5);
+  box-shadow: 0 0 18px rgba(255, 212, 0, 0.5);
 }
 
 body.hacker-theme .mobile-menu {
@@ -136,9 +141,9 @@ body.hacker-theme .mobile-menu-header {
   border-bottom: 1px solid var(--hack-border);
 }
 
-body.hacker-theme .mobile-logo i { color: var(--hack-green); text-shadow: 0 0 10px rgba(0, 255, 156, 0.6); }
+body.hacker-theme .mobile-logo i { color: var(--hack-green); text-shadow: 0 0 10px rgba(255, 212, 0, 0.6); }
 body.hacker-theme .mobile-nav-links a { color: var(--hack-text); font-family: var(--hack-font); }
-body.hacker-theme .mobile-nav-links a:hover { background: rgba(0, 255, 156, 0.06); color: var(--hack-green); }
+body.hacker-theme .mobile-nav-links a:hover { background: rgba(255, 212, 0, 0.06); color: var(--hack-green); }
 body.hacker-theme .mobile-search-form input {
   background: var(--hack-panel);
   border: 1px solid var(--hack-border);
@@ -163,10 +168,10 @@ body.hacker-theme .filter-section h4 { color: var(--hack-text-hi); }
 
 body.hacker-theme .filter-label { color: var(--hack-text); font-family: var(--hack-font); font-size: 13px; }
 
-body.hacker-theme .filter-label:hover { background: rgba(0, 255, 156, 0.06); color: var(--hack-green); }
+body.hacker-theme .filter-label:hover { background: rgba(255, 212, 0, 0.06); color: var(--hack-green); }
 
 body.hacker-theme .filter-label.active {
-  background: linear-gradient(90deg, rgba(0, 255, 156, 0.15), rgba(0, 255, 156, 0.03));
+  background: linear-gradient(90deg, rgba(255, 212, 0, 0.15), rgba(255, 212, 0, 0.03));
   color: var(--hack-green);
   box-shadow: inset 2px 0 0 var(--hack-green);
 }
@@ -181,7 +186,7 @@ body.hacker-theme .price-field {
   font-family: var(--hack-font);
 }
 
-body.hacker-theme .price-field:focus { border-color: var(--hack-green); box-shadow: 0 0 0 3px rgba(0, 255, 156, 0.12); }
+body.hacker-theme .price-field:focus { border-color: var(--hack-green); box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12); }
 body.hacker-theme .price-sep { color: var(--hack-dim); }
 
 body.hacker-theme .btn-price-apply {
@@ -224,7 +229,7 @@ body.hacker-theme .filter-chip {
 }
 
 body.hacker-theme .filter-chip.active {
-  background: rgba(0, 255, 156, 0.12);
+  background: rgba(255, 212, 0, 0.12);
   border-color: var(--hack-green);
   color: var(--hack-green);
 }
@@ -266,7 +271,7 @@ body.hacker-theme .product-card {
 
 body.hacker-theme .product-card:hover {
   border-color: var(--hack-border-hi);
-  box-shadow: 0 0 30px rgba(0, 255, 156, 0.12);
+  box-shadow: 0 0 30px rgba(255, 212, 0, 0.12);
 }
 
 body.hacker-theme .product-card::before {
@@ -287,7 +292,7 @@ body.hacker-theme .no-image { color: var(--hack-dim); background: var(--hack-bg-
 
 body.hacker-theme .product-name { color: var(--hack-text-hi); font-family: var(--hack-font); font-size: 13px; }
 
-body.hacker-theme .product-price { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 12px rgba(0, 255, 156, 0.3); }
+body.hacker-theme .product-price { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 12px rgba(255, 212, 0, 0.3); }
 
 body.hacker-theme .original-price { color: var(--hack-dim); }
 
@@ -309,7 +314,7 @@ body.hacker-theme .flash-badge {
   color: #ff8a65;
 }
 
-body.hacker-theme .condition-badge.new { background: rgba(0, 255, 156, 0.12); border: 1px solid rgba(0, 255, 156, 0.4); color: var(--hack-green); }
+body.hacker-theme .condition-badge.new { background: rgba(255, 212, 0, 0.12); border: 1px solid rgba(255, 212, 0, 0.4); color: var(--hack-green); }
 body.hacker-theme .condition-badge.used { background: rgba(255, 56, 96, 0.12); border: 1px solid rgba(255, 56, 96, 0.4); color: var(--hack-red); }
 body.hacker-theme .condition-badge[style*="background:#ff9800"] { background: rgba(255, 152, 0, 0.12) !important; color: var(--hack-amber); border: 1px solid rgba(255, 152, 0, 0.4); }
 body.hacker-theme .condition-badge[style*="background:#7c4dff"] { background: rgba(177, 76, 255, 0.12) !important; color: var(--hack-purple); border: 1px solid rgba(177, 76, 255, 0.4); }
@@ -319,13 +324,13 @@ body.hacker-theme .product-buy-btn {
   background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
   color: #03120a;
   font-family: var(--hack-font);
-  border: 1px solid rgba(0, 255, 156, 0.6);
-  box-shadow: 0 0 14px rgba(0, 255, 156, 0.25);
+  border: 1px solid rgba(255, 212, 0, 0.6);
+  box-shadow: 0 0 14px rgba(255, 212, 0, 0.25);
 }
 
 body.hacker-theme .product-buy-btn:hover {
   background: linear-gradient(135deg, var(--hack-green), #7dffc8);
-  box-shadow: 0 0 20px rgba(0, 255, 156, 0.45);
+  box-shadow: 0 0 20px rgba(255, 212, 0, 0.45);
 }
 
 /* =========================================
@@ -358,7 +363,7 @@ body.hacker-theme .flash-card {
   border: 1px solid var(--hack-border);
 }
 
-body.hacker-theme .flash-card:hover { border-color: var(--hack-green); box-shadow: 0 0 24px rgba(0, 255, 156, 0.12); }
+body.hacker-theme .flash-card:hover { border-color: var(--hack-green); box-shadow: 0 0 24px rgba(255, 212, 0, 0.12); }
 
 body.hacker-theme .flash-card-image { background: var(--hack-bg-2); }
 
@@ -396,19 +401,19 @@ body.hacker-theme .product-detail-info h1 {
   font-family: var(--hack-font);
 }
 
-body.hacker-theme .product-price-large { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 16px rgba(0, 255, 156, 0.35); }
+body.hacker-theme .product-price-large { color: var(--hack-green); font-family: var(--hack-font); text-shadow: 0 0 16px rgba(255, 212, 0, 0.35); }
 
 body.hacker-theme .btn-comprar-agora {
   background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green));
   color: #03120a;
   font-family: var(--hack-font);
-  border: 1px solid rgba(0, 255, 156, 0.6);
-  box-shadow: 0 0 18px rgba(0, 255, 156, 0.3);
+  border: 1px solid rgba(255, 212, 0, 0.6);
+  box-shadow: 0 0 18px rgba(255, 212, 0, 0.3);
 }
 
 body.hacker-theme .btn-comprar-agora:hover {
   background: linear-gradient(135deg, var(--hack-green), #7dffc8);
-  box-shadow: 0 0 26px rgba(0, 255, 156, 0.5);
+  box-shadow: 0 0 26px rgba(255, 212, 0, 0.5);
 }
 
 body.hacker-theme .product-attributes {
@@ -433,7 +438,7 @@ body.hacker-theme .seller-card {
   border: 1px solid var(--hack-border);
 }
 
-body.hacker-theme .seller-card-content:hover { background: rgba(0, 255, 156, 0.04); }
+body.hacker-theme .seller-card-content:hover { background: rgba(255, 212, 0, 0.04); }
 
 body.hacker-theme .seller-card-info strong { color: var(--hack-text-hi); font-family: var(--hack-font); }
 body.hacker-theme .seller-card-info span { color: var(--hack-dim); font-family: var(--hack-font); font-size: 12px; }
@@ -502,7 +507,7 @@ body.hacker-theme .badge-featured {
   border: 1px solid rgba(255, 204, 0, 0.4);
   color: var(--hack-amber);
 }
-body.hacker-theme .badge-new { background: rgba(0, 255, 156, 0.12); border: 1px solid rgba(0, 255, 156, 0.4); color: var(--hack-green); }
+body.hacker-theme .badge-new { background: rgba(255, 212, 0, 0.12); border: 1px solid rgba(255, 212, 0, 0.4); color: var(--hack-green); }
 body.hacker-theme .badge-semi { background: rgba(177, 76, 255, 0.12); border: 1px solid rgba(177, 76, 255, 0.4); color: var(--hack-purple); }
 body.hacker-theme .badge-used { background: rgba(255, 56, 96, 0.12); border: 1px solid rgba(255, 56, 96, 0.4); color: var(--hack-red); }
 
@@ -545,19 +550,19 @@ body.hacker-theme div[style*="background:#fff"] {
 body.hacker-theme div[style*="background:#fff;border-radius:12px"] {
   background: linear-gradient(160deg, var(--hack-panel), var(--hack-bg-2)) !important;
   border: 1px solid var(--hack-border-hi) !important;
-  box-shadow: 0 0 30px rgba(0, 255, 156, 0.1) !important;
+  box-shadow: 0 0 30px rgba(255, 212, 0, 0.1) !important;
 }
 
 body.hacker-theme div[style*="background:#f9f9f9"] { background: var(--hack-panel-2) !important; }
 
-body.hacker-theme div[style*="background:#e8f5e9"] { background: rgba(0, 255, 156, 0.1) !important; }
+body.hacker-theme div[style*="background:#e8f5e9"] { background: rgba(255, 212, 0, 0.1) !important; }
 body.hacker-theme div[style*="background:#fdecea"] { background: rgba(255, 56, 96, 0.1) !important; }
 body.hacker-theme div[style*="background:#fff3cd"] { background: rgba(255, 204, 0, 0.12) !important; }
 
 body.hacker-theme div[style*="color:#1565c0"],
 body.hacker-theme span[style*="color:#1565c0"],
 body.hacker-theme h2[style*="color:#1565c0"],
-body.hacker-theme div[style*="color:#2e7d32"] { color: var(--hack-green) !important; text-shadow: 0 0 10px rgba(0, 255, 156, 0.3); }
+body.hacker-theme div[style*="color:#2e7d32"] { color: var(--hack-green) !important; text-shadow: 0 0 10px rgba(255, 212, 0, 0.3); }
 
 body.hacker-theme div[style*="color:#c62828"],
 body.hacker-theme span[style*="color:#c62828"] { color: var(--hack-red) !important; }
@@ -587,7 +592,7 @@ body.hacker-theme select {
 
 body.hacker-theme input:focus, body.hacker-theme textarea:focus, body.hacker-theme select:focus {
   border-color: var(--hack-green) !important;
-  box-shadow: 0 0 0 3px rgba(0, 255, 156, 0.12) !important;
+  box-shadow: 0 0 0 3px rgba(255, 212, 0, 0.12) !important;
 }
 
 body.hacker-theme input::placeholder, body.hacker-theme textarea::placeholder { color: var(--hack-dim) !important; }
@@ -596,7 +601,7 @@ body.hacker-theme button[style*="background:#00c853"] {
   background: linear-gradient(135deg, var(--hack-green-dim), var(--hack-green)) !important;
   color: #03120a !important;
   font-family: var(--hack-font) !important;
-  box-shadow: 0 0 18px rgba(0, 255, 156, 0.3) !important;
+  box-shadow: 0 0 18px rgba(255, 212, 0, 0.3) !important;
 }
 
 body.hacker-theme button[style*="background:#1565c0"] {
@@ -616,7 +621,7 @@ body.hacker-theme button[style*="background:#9c27b0"] {
 body.hacker-theme .quickbuy-modal {
   background: linear-gradient(160deg, var(--hack-panel), var(--hack-bg-2));
   border: 1px solid var(--hack-border-hi);
-  box-shadow: 0 0 40px rgba(0, 255, 156, 0.15);
+  box-shadow: 0 0 40px rgba(255, 212, 0, 0.15);
 }
 
 body.hacker-theme .quickbuy-modal h3,
@@ -627,7 +632,7 @@ body.hacker-theme .quickbuy-close { background: var(--hack-bg-2); color: var(--h
 body.hacker-theme .quickbuy-close:hover { background: rgba(255, 56, 96, 0.15); color: var(--hack-red); }
 
 body.hacker-theme .quickbuy-body div[style*="background:#f9f9f9"] { background: var(--hack-panel-2) !important; }
-body.hacker-theme .quickbuy-body div[style*="background:#e8f5e9"] { background: rgba(0, 255, 156, 0.12) !important; }
+body.hacker-theme .quickbuy-body div[style*="background:#e8f5e9"] { background: rgba(255, 212, 0, 0.12) !important; }
 body.hacker-theme .quickbuy-body div[style*="background:#fdecea"] { background: rgba(255, 56, 96, 0.12) !important; }
 
 body.hacker-theme .quickbuy-body div[style*="color:#1565c0"],
@@ -665,5 +670,5 @@ body.hacker-theme .footer-social a:hover { color: var(--hack-green) !important; 
 
 body.hacker-theme *::-webkit-scrollbar { width: 8px; height: 8px; }
 body.hacker-theme *::-webkit-scrollbar-track { background: transparent; }
-body.hacker-theme *::-webkit-scrollbar-thumb { background: rgba(0, 255, 156, 0.25); border-radius: 4px; }
-body.hacker-theme *::-webkit-scrollbar-thumb:hover { background: rgba(0, 255, 156, 0.45); }
+body.hacker-theme *::-webkit-scrollbar-thumb { background: rgba(255, 212, 0, 0.25); border-radius: 4px; }
+body.hacker-theme *::-webkit-scrollbar-thumb:hover { background: rgba(255, 212, 0, 0.45); }
