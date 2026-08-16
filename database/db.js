@@ -974,6 +974,7 @@ async function initDb() {
   if (newsInfo.length > 0) {
     var newsCols = newsInfo[0].values.map(function (r) { return r[1]; });
     if (!newsCols.includes('video')) db.run("ALTER TABLE news ADD COLUMN video TEXT DEFAULT ''");
+    if (!newsCols.includes('updated_at')) db.run("ALTER TABLE news ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
   }
 
   db.run(`

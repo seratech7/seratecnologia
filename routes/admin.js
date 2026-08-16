@@ -2174,18 +2174,38 @@ router.post('/noticias/excluir/:id', (req, res) => {
 });
 
 router.post('/noticias/publicar/:id', (req, res) => {
-  try { db.run("UPDATE news SET published = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [parseInt(req.params.id, 10)]); db.saveDb(); } catch (e) {}
+  try {
+    var nid = parseInt(req.params.id, 10);
+    // published é o essencial: define primeiro, independente de updated_at
+    db.run("UPDATE news SET published = 1 WHERE id = ?", [nid]);
+    try { db.run("UPDATE news SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [nid]); } catch (e) { /* updated_at pode não existir em schema antigo */ }
+    db.saveDb();
+  } catch (e) {
+    console.error('Erro ao publicar notícia', req.params.id, e.message);
+    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') >= 0)) return res.status(500).json({ ok: false, error: e.message });
+    return res.redirect('/admin/noticias?err=' + encodeURIComponent('Erro ao publicar: ' + e.message));
+  }
   if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') >= 0)) return res.json({ ok: true });
   res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia publicada.'));
 });
 
 router.post('/noticias/rascunho/:id', (req, res) => {
-  try { db.run("UPDATE news SET published = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [parseInt(req.params.id, 10)]); db.saveDb(); } catch (e) {}
+  try {
+    var nid = parseInt(req.params.id, 10);
+    db.run("UPDATE news SET published = 0 WHERE id = ?", [nid]);
+    try { db.run("UPDATE news SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", [nid]); } catch (e) {}
+    db.saveDb();
+  } catch (e) {
+    console.error('Erro ao mover notícia para rascunho', req.params.id, e.message);
+    return res.redirect('/admin/noticias?err=' + encodeURIComponent('Erro ao mover para rascunho: ' + e.message));
+  }
   res.redirect('/admin/noticias?msg=' + encodeURIComponent('Notícia movida para rascunho.'));
 });
 
 router.post('/noticias/destaque/:id', (req, res) => {
-  try { db.toggleNewsFeatured(parseInt(req.params.id, 10)); db.saveDb(); } catch (e) {}
+  try { db.toggleNewsFeatured(parseInt(req.params.id, 10)); db.saveDb(); } catch (e) {
+    console.error('Erro ao destacar notícia', req.params.id, e.message);
+  }
   res.redirect('/admin/noticias');
 });
 
