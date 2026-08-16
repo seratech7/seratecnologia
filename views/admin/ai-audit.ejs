@@ -34,6 +34,7 @@
 .aud-btn.ignored { background:rgba(150,150,150,0.15); color:#bbb; }
 .aud-btn.open { background:rgba(52,152,219,0.15); color:#5dade2; }
 .aud-btn.link { background:rgba(255,255,255,0.06); color:var(--hack-text); text-decoration:none; display:inline-block; }
+.aud-btn.fix { background:linear-gradient(135deg,#9b59b6,#3498db); color:#fff; }
 .aud-ai { background:linear-gradient(135deg, rgba(155,89,182,0.08), rgba(52,152,219,0.08)); border:1px solid var(--hack-border); border-radius:10px; padding:20px; margin-bottom:20px; }
 .aud-ai .markdown { font-size:13px; line-height:1.6; color:var(--hack-text); }
 .aud-ai .markdown h1, .aud-ai .markdown h2, .aud-ai .markdown h3 { color:var(--hack-text-hi); font-size:15px; margin:12px 0 6px; }
@@ -47,12 +48,31 @@
 .filter-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
 .filter-tabs button { border:1px solid var(--hack-border); background:var(--hack-bg-2); color:var(--hack-text); padding:5px 12px; border-radius:16px; font-size:12px; cursor:pointer; }
 .filter-tabs button.active { background:var(--hack-green); color:#000; border-color:var(--hack-green); font-weight:600; }
+.aud-search { width:100%; padding:8px 12px; border:1px solid var(--hack-border); border-radius:8px; font-size:13px; background:var(--hack-bg-2); color:var(--hack-text); margin-bottom:12px; }
+.aud-trend { display:flex; gap:6px; align-items:flex-end; margin-top:10px; flex-wrap:wrap; }
+.aud-trend .bar { width:18px; text-align:center; }
+.aud-trend .bar .col { width:100%; border-radius:4px 4px 0 0; background:var(--hack-green); min-height:3px; }
+.aud-trend .bar .v { font-size:10px; color:var(--hack-dim); }
+.aud-trend .bar .d { font-size:8px; color:var(--hack-dim); margin-top:2px; }
+.hl { color:var(--hack-green); font-weight:700; }
+.hl-down { color:#ff6b81; font-weight:700; }
 </style>
 
 <div class="admin-content">
   <div class="admin-header-bar">
     <h1><i class="fas fa-robot"></i> Auditoria Inteligente (IA)</h1>
-    <a href="/admin/ai-audit" class="btn-primary" style="background:#1976d2;text-decoration:none;"><i class="fas fa-sync"></i> Executar Auditoria</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <form method="POST" action="/admin/ai-audit/refresh" style="display:inline;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn-primary" style="background:#1976d2;"><i class="fas fa-sync"></i> Atualizar</button>
+      </form>
+      <form method="POST" action="/admin/ai-audit/analyze" style="display:inline;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" class="btn-primary" style="background:#9b59b6;"><i class="fas fa-brain"></i> Gerar Análise IA</button>
+      </form>
+      <a href="/admin/ai-audit/export?fmt=json" class="btn-primary" style="background:#455a64;text-decoration:none;"><i class="fas fa-file-code"></i> JSON</a>
+      <a href="/admin/ai-audit/export?fmt=md" class="btn-primary" style="background:#455a64;text-decoration:none;"><i class="fas fa-file-alt"></i> Markdown</a>
+    </div>
   </div>
 
   <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
@@ -75,28 +95,46 @@
       <div><i class="fas fa-clock"></i> Gerado: <%= new Date(report.generatedAt).toLocaleString('pt-BR') %></div>
       <div><i class="fas fa-microchip"></i> Node <%= report.context.runtime.node %> · <%= report.context.runtime.memoryMb %> MB</div>
       <div><i class="fas fa-database"></i> <%= report.context.db.tables %> tabelas · <%= report.context.db.sizeBytes ? (report.context.db.sizeBytes/1048576).toFixed(1)+' MB' : 'n/d' %></div>
+      <% if (history && history.length > 1) {
+           var prev = history[history.length-2].score;
+           var delta = report.score - prev;
+      %>
+      <div style="margin-top:6px;">
+        <i class="fas fa-chart-line"></i> Tendência:
+        <% if (delta > 0) { %><span class="hl">▲ +<%= delta %></span><% } else if (delta < 0) { %><span class="hl-down">▼ <%= delta %></span><% } else { %><span style="color:var(--hack-dim);">— 0</span><% } %>
+        vs. auditoria anterior
+      </div>
+      <div class="aud-trend">
+        <% history.slice(-12).forEach(function(h){ var c = h.score>=85?'var(--hack-green)':(h.score>=60?'#ffd93b':'var(--hack-red)'); %>
+          <div class="bar">
+            <div class="col" style="height:<%= Math.max(3, h.score) %>px;background:<%= c %>;"></div>
+            <div class="v"><%= h.score %></div>
+            <div class="d"><%= new Date(h.at).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) %></div>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
     </div>
   </div>
 
   <!-- ANÁLISE IA -->
   <div class="aud-ai">
     <h2 style="margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;color:var(--hack-text-hi);"><i class="fas fa-brain" style="color:#9b59b6;"></i> Análise da Inteligência Artificial</h2>
-    <% if (report.aiError) { %>
+    <% if (cachedAi && cachedAi.aiError) { %>
       <div style="background:rgba(255,56,96,0.08);border:1px solid rgba(255,56,96,0.3);border-radius:8px;padding:14px;font-size:13px;color:#ff6b81;">
-        <i class="fas fa-exclamation-triangle"></i> Falha na análise de IA: <%= report.aiError %>
+        <i class="fas fa-exclamation-triangle"></i> Falha na última análise de IA: <%= cachedAi.aiError %>
+        <div style="margin-top:8px;"><b>Dica:</b> use "Gerar Análise IA" acima após configurar a chave em Configuração da IA.</div>
       </div>
-    <% } else if (report.ai) { %>
-      <div class="markdown"><%- report.ai.summary %></div>
-      <div style="margin-top:10px;font-size:11px;color:var(--hack-dim);">Modelo: <%= report.ai.model %></div>
+    <% } else if (cachedAi && cachedAi.ai) { %>
+      <div class="markdown"><%- cachedAi.ai.summary %></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--hack-dim);">
+        Modelo: <%= cachedAi.ai.model %> · Gerado em <%= new Date(cachedAi.generatedAt).toLocaleString('pt-BR') %> ·
+        <a href="#" onclick="document.querySelectorAll('form[action=\'/admin/ai-audit/analyze\']')[0].submit();return false;" style="color:var(--hack-cyan);">Regerar</a>
+      </div>
     <% } else { %>
       <div style="font-size:13px;color:var(--hack-dim);">
         <i class="fas fa-info-circle"></i> A análise automática já lista todos os problemas encontrados abaixo.
-        Para receber um <b>resumo executivo e recomendações prioritárias geradas por IA</b>, configure uma chave de API abaixo (OpenAI-compatível).
-      </div>
-      <div style="margin-top:12px;">
-        <form method="POST" action="/admin/ai-audit/analyze" style="display:inline;">
-          <button type="submit" class="btn-primary" style="background:#9b59b6;"><i class="fas fa-brain"></i> Gerar Análise com IA</button>
-        </form>
+        Para receber um <b>resumo executivo e recomendações prioritárias geradas por IA</b>, clique em <b>Gerar Análise IA</b> acima (requer chave de API em Configuração da IA).
       </div>
     <% } %>
   </div>
@@ -130,6 +168,8 @@
   <div class="aud-section">
     <h2><i class="fas fa-exclamation-triangle"></i> Problemas e Vulnerabilidades (<%= report.findings.length %>)</h2>
 
+    <input type="text" id="audSearch" class="aud-search" placeholder="🔍 Buscar nos achados (título, código, descrição)..." oninput="filterAud(currentFilter, null)">
+
     <div class="filter-tabs">
       <button class="active" data-filter="all" onclick="filterAud('all',this)">Todos</button>
       <button data-filter="critical" onclick="filterAud('critical',this)">Críticos</button>
@@ -144,7 +184,7 @@
       <div class="aud-empty"><i class="fas fa-check-circle" style="font-size:40px;color:var(--hack-green);display:block;margin-bottom:10px;"></i>Nenhum problema encontrado. Sistema saudável!</div>
     <% } else { %>
       <% report.findings.forEach(function(f) { %>
-        <div class="aud-finding <%= f.severity %> <%= f.status %>" data-sev="<%= f.severity %>" data-status="<%= f.status %>">
+        <div class="aud-finding <%= f.severity %> <%= f.status %>" data-sev="<%= f.severity %>" data-status="<%= f.status %>" data-text="<%= (f.title + ' ' + f.code + ' ' + f.description + ' ' + f.category).toLowerCase().replace(/"/g,'') %>">
           <div class="aud-fh">
             <span class="sev" style="background:<%= f.severity === 'critical' ? 'rgba(255,56,96,0.15)' : (f.severity === 'high' ? 'rgba(255,143,46,0.15)' : (f.severity === 'medium' ? 'rgba(255,217,59,0.15)' : (f.severity === 'low' ? 'rgba(46,204,113,0.15)' : 'rgba(52,152,219,0.15)'))) %>;color:<%= f.severity === 'critical' ? '#ff3860' : (f.severity === 'high' ? '#ff8f2e' : (f.severity === 'medium' ? '#ffd93b' : (f.severity === 'low' ? '#2ecc71' : '#3498db'))) %>;"><%= f.label %></span>
             <span class="cat"><%= f.category %></span>
@@ -156,6 +196,12 @@
           <div class="aud-ev">Evidência: <%= f.evidence %></div>
           <div class="aud-rec"><i class="fas fa-lightbulb"></i> <b>Correção:</b> <%= f.recommendation %></div>
           <div class="aud-actions">
+            <% if (f.fix) { %>
+              <form method="POST" action="/admin/ai-audit/fix/<%= f.code %>" style="display:inline;">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                <button type="submit" class="aud-btn fix"><i class="fas fa-magic"></i> Corrigir automaticamente</button>
+              </form>
+            <% } %>
             <% if (f.status === 'open') { %>
               <form method="POST" action="/admin/ai-audit/finding/<%= f.code %>" style="display:inline;">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -183,16 +229,22 @@
 </div>
 
 <script>
+var currentFilter = 'all';
 function filterAud(filter, btn) {
+  currentFilter = filter;
+  var q = (document.getElementById('audSearch').value || '').toLowerCase().trim();
   document.querySelectorAll('.aud-finding').forEach(function(el) {
-    var show = false;
-    if (filter === 'all') show = true;
-    else if (filter === 'open') show = el.dataset.status === 'open';
-    else show = el.dataset.sev === filter;
-    el.style.display = show ? '' : 'none';
+    var showFilter = false;
+    if (filter === 'all') showFilter = true;
+    else if (filter === 'open') showFilter = el.dataset.status === 'open';
+    else showFilter = el.dataset.sev === filter;
+    var showSearch = !q || (el.dataset.text || '').indexOf(q) !== -1;
+    el.style.display = (showFilter && showSearch) ? '' : 'none';
   });
-  document.querySelectorAll('.filter-tabs button').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
+  if (btn) {
+    document.querySelectorAll('.filter-tabs button').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+  }
 }
 </script>
 

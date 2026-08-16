@@ -231,3 +231,29 @@
       </div>
     </div>
     <script src="/js/notifications.js"></script>
+    <script>
+    // Mantém o menu lateral na mesma posição ao navegar entre páginas
+    // (corrige o "menu volta pro início" causado pelo reload completo).
+    (function () {
+      try {
+        var nav = document.querySelector('.admin-sidebar .sidebar-nav') || document.querySelector('.sidebar-nav');
+        if (!nav) return;
+        var KEY = 'admSidebarScroll';
+        function restore() {
+          var saved = null;
+          try { saved = sessionStorage.getItem(KEY); } catch (e) {}
+          if (saved !== null && saved !== '0') {
+            nav.scrollTop = parseInt(saved, 10) || 0;
+          } else {
+            var act = nav.querySelector('a.active');
+            if (act) act.scrollIntoView({ block: 'center' });
+          }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', restore);
+        else restore();
+        function save() { try { sessionStorage.setItem(KEY, String(nav.scrollTop)); } catch (e) {} }
+        window.addEventListener('beforeunload', save);
+        nav.addEventListener('click', save);
+      } catch (e) {}
+    })();
+    </script>

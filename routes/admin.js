@@ -1657,19 +1657,61 @@ router.get('/diagnostico', requireAdmin, (req, res) => {
 });
 
 // ========== AUDITORIA IA ==========
-const { runAudit, analyzeWithAI } = require('../utils/ai-audit');
+const aiAudit = require('../utils/ai-audit');
+const { runAudit, analyzeWithAI, saveAuditCache, loadAuditCache, pushAuditHistory, loadAuditHistory, reportToMarkdown } = aiAudit;
+const { backupDatabase } = require('../backup-db');
+
+// Aplica uma correção automática para o achado informado (quando suportado).
+function applyAuditFix(code) {
+  try {
+    switch (code) {
+      case 'RT_NO_BACKUP':
+      case 'RT_BACKUP_OLD':
+        backupDatabase();
+        return { ok: true, msg: 'Backup criado com sucesso' };
+      case 'CFG_MAINTENANCE':
+        db.run("UPDATE config SET value = '0' WHERE key = 'maintenance_mode'");
+        return { ok: true, msg: 'Modo de manutenção desativado' };
+      case 'DB_COUPONS_EXPIRED': {
+        var r = db.run("UPDATE coupons SET active = 0 WHERE active = 1 AND expires_at IS NOT NULL AND expires_at < datetime('now')");
+        return { ok: true, msg: 'Cupons expirados desativados' };
+      }
+      case 'DB_ACTIVITY_LOG_BIG':
+      case 'RT_DB_BIG':
+        if (typeof db.cleanupOldData === 'function') db.cleanupOldData();
+        return { ok: true, msg: 'Limpeza de dados antigos executada' };
+      case 'CFG_PAYMENT_TOGGLE':
+        db.setToggle('pix', '1');
+        db.setToggle('mercado_pago', '1');
+        return { ok: true, msg: 'Pagamentos (PIX e Mercado Pago) reativados' };
+      default:
+        return { ok: false, msg: 'Este achado não possui correção automática' };
+    }
+  } catch (e) {
+    return { ok: false, msg: 'Falha ao aplicar correção: ' + e.message };
+  }
+}
+
+function buildAiConfig() {
+  return {
+    api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
+    base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
+    model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || process.env.AI_MODEL || 'llama-3.3-70b-versatile'
+  };
+}
 
 router.get('/ai-audit', async (req, res) => {
   try {
-    const report = await runAudit();
+    // Auditoria "ao vivo" sem chamar a IA a cada carregamento (usa cache da última análise).
+    const report = await runAudit({ skipAi: true });
+    const cached = loadAuditCache();
+    const history = loadAuditHistory();
     res.render('admin/ai-audit', {
       title: 'Auditoria IA',
       report: report,
-      aiConfig: {
-        api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
-        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
-        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || process.env.AI_MODEL || 'llama-3.3-70b-versatile'
-      },
+      cachedAi: cached ? { ai: cached.ai, aiError: cached.aiError, generatedAt: cached.generatedAt } : null,
+      history: history,
+      aiConfig: buildAiConfig(),
       msg: req.query.msg || ''
     });
   } catch(e) {
@@ -1699,19 +1741,74 @@ router.post('/ai-audit/config', (req, res) => {
 router.post('/ai-audit/analyze', async (req, res) => {
   try {
     const report = await runAudit();
-    const open = report.findings.filter(f => f.status === 'open');
-    const ai = await analyzeWithAI(open);
+    saveAuditCache(report);
+    const history = pushAuditHistory(report.score, report.generatedAt);
     res.render('admin/ai-audit', {
       title: 'Auditoria IA',
-      report: Object.assign(report, { ai: ai && !ai.error ? ai : null, aiError: ai && ai.error ? ai.error : null }),
-      aiConfig: {
-        api_key: (db.get("SELECT value FROM config WHERE key = 'ai_api_key'") || {}).value || '',
-        base_url: (db.get("SELECT value FROM config WHERE key = 'ai_base_url'") || {}).value || process.env.AI_BASE_URL || 'https://api.groq.com/openai/v1',
-        model: (db.get("SELECT value FROM config WHERE key = 'ai_model'") || {}).value || process.env.AI_MODEL || 'llama-3.3-70b-versatile'
-      },
-      msg: ai && ai.error ? 'Falha na análise de IA: ' + ai.error : (ai ? 'Análise de IA gerada com sucesso' : 'Configure uma chave de API de IA para usar a análise inteligente')
+      report: report,
+      cachedAi: { ai: report.ai, aiError: report.aiError, generatedAt: report.generatedAt },
+      history: history,
+      aiConfig: buildAiConfig(),
+      msg: report.aiError ? 'Falha na análise de IA: ' + report.aiError : (report.ai ? 'Análise de IA gerada com sucesso' : 'Configure uma chave de API de IA para usar a análise inteligente')
     });
   } catch(e) {
+    res.status(500).send('Erro: ' + e.message);
+  }
+});
+
+// Reexecuta a auditoria (sem IA) e atualiza o cache + histórico de score.
+router.post('/ai-audit/refresh', async (req, res) => {
+  try {
+    const report = await runAudit({ skipAi: true });
+    const prev = loadAuditCache() || {};
+    report.ai = prev.ai || null;
+    report.aiError = prev.aiError || null;
+    saveAuditCache(report);
+    const history = pushAuditHistory(report.score, report.generatedAt);
+    res.render('admin/ai-audit', {
+      title: 'Auditoria IA',
+      report: report,
+      cachedAi: { ai: report.ai, aiError: report.aiError, generatedAt: report.generatedAt },
+      history: history,
+      aiConfig: buildAiConfig(),
+      msg: 'Auditoria atualizada'
+    });
+  } catch(e) {
+    res.status(500).send('Erro: ' + e.message);
+  }
+});
+
+// Correção automática de um achado (quando suportado).
+router.post('/ai-audit/fix/:code', (req, res) => {
+  const code = String(req.params.code || '').slice(0, 64);
+  const result = applyAuditFix(code);
+  try {
+    const report = runAudit({ skipAi: true });
+    const prev = loadAuditCache() || {};
+    report.ai = prev.ai || null;
+    report.aiError = prev.aiError || null;
+    saveAuditCache(report);
+  } catch (e) {}
+  res.redirect('/admin/ai-audit?msg=' + encodeURIComponent(result.msg));
+});
+
+// Exporta o relatório completo (JSON ou Markdown).
+router.get('/ai-audit/export', async (req, res) => {
+  try {
+    const report = await runAudit({ skipAi: true });
+    const cached = loadAuditCache();
+    if (cached) { report.ai = cached.ai || null; report.aiError = cached.aiError || null; }
+    const fmt = req.query.fmt === 'md' ? 'md' : 'json';
+    const ts = new Date().toISOString().slice(0, 10);
+    if (fmt === 'md') {
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="auditoria-' + ts + '.md"');
+      return res.send(reportToMarkdown(report));
+    }
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="auditoria-' + ts + '.json"');
+    res.send(JSON.stringify(report, null, 2));
+  } catch (e) {
     res.status(500).send('Erro: ' + e.message);
   }
 });

@@ -389,6 +389,84 @@ function checkIntegrity(findings) {
   } catch(e) {}
 }
 
+// Achados que podem ser corrigidos automaticamente pelo painel (1 clique).
+var FIXABLE = {
+  RT_NO_BACKUP: 'create_backup',
+  RT_BACKUP_OLD: 'create_backup',
+  CFG_MAINTENANCE: 'disable_maintenance',
+  DB_COUPONS_EXPIRED: 'deactivate_expired_coupons',
+  DB_ACTIVITY_LOG_BIG: 'cleanup_logs',
+  RT_DB_BIG: 'cleanup_logs',
+  CFG_PAYMENT_TOGGLE: 'enable_payments'
+};
+
+// ---------------- CACHE / HISTÓRICO ----------------
+// Guarda o último relatório (sem refazer a chamada à IA a cada carregamento)
+// e mantém o histórico de scores para exibir a tendência de saúde.
+function getConfigJSON(key, def) {
+  var r = db.get("SELECT value FROM config WHERE key = ?", [key]);
+  if (!r || !r.value) return def;
+  try { return JSON.parse(r.value); } catch (e) { return def; }
+}
+function setConfigJSON(key, val) {
+  db.run("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", [key, JSON.stringify(val)]);
+}
+function saveAuditCache(report) {
+  var cache = {
+    generatedAt: report.generatedAt,
+    score: report.score,
+    counts: report.counts,
+    ai: report.ai || null,
+    aiError: report.aiError || null,
+    findings: (report.findings || []).map(function (f) {
+      return { code: f.code, severity: f.severity, category: f.category, title: f.title, status: f.status, recommendation: f.recommendation, link: f.link || null, fix: f.fix || null };
+    })
+  };
+  setConfigJSON('ai_audit_cache', cache);
+}
+function loadAuditCache() { return getConfigJSON('ai_audit_cache', null); }
+function pushAuditHistory(score, generatedAt) {
+  var h = getConfigJSON('ai_audit_history', []);
+  if (!Array.isArray(h)) h = [];
+  h.push({ score: score, at: generatedAt });
+  if (h.length > 15) h = h.slice(-15);
+  setConfigJSON('ai_audit_history', h);
+  return h;
+}
+function loadAuditHistory() {
+  var h = getConfigJSON('ai_audit_history', []);
+  return Array.isArray(h) ? h : [];
+}
+function reportToMarkdown(report) {
+  var lines = [];
+  lines.push('# Relatório de Auditoria Inteligente');
+  lines.push('');
+  lines.push('**Saúde do sistema:** ' + report.score + '/100');
+  lines.push('Gerado em: ' + new Date(report.generatedAt).toLocaleString('pt-BR'));
+  lines.push('');
+  lines.push('## Resumo por severidade');
+  ['critical', 'high', 'medium', 'low', 'info'].forEach(function (s) {
+    lines.push('- ' + s + ': ' + (report.counts[s] || 0));
+  });
+  lines.push('');
+  if (report.ai && report.ai.summary) {
+    lines.push('## Análise da Inteligência Artificial');
+    lines.push('');
+    lines.push(report.ai.summary);
+    lines.push('');
+  }
+  lines.push('## Problemas encontrados (' + report.findings.length + ')');
+  report.findings.forEach(function (f) {
+    lines.push('');
+    lines.push('### [' + f.severity.toUpperCase() + '] ' + f.title + (f.status !== 'open' ? ' (' + f.status + ')' : ''));
+    lines.push('- Categoria: ' + f.category + ' · Código: `' + f.code + '`');
+    lines.push('- Descrição: ' + f.description);
+    lines.push('- Evidência: ' + f.evidence);
+    lines.push('- Correção: ' + f.recommendation);
+  });
+  return lines.join('\n');
+}
+
 // ---------------- SCORE ----------------
 var WEIGHTS = { critical: 40, high: 20, medium: 10, low: 4, info: 1 };
 
@@ -446,7 +524,8 @@ async function analyzeWithAI(findings) {
 }
 
 // ---------------- MOTOR PRINCIPAL ----------------
-async function runAudit() {
+async function runAudit(opts) {
+  opts = opts || {};
   var findings = [];
   checkEnvSecurity(findings);
   checkConfigSecurity(findings);
@@ -462,6 +541,7 @@ async function runAudit() {
     f.status = statusMap[f.code] || 'open';
     f.label = severityLabel(f.severity);
     f.timestamp = nowIso();
+    f.fix = FIXABLE[f.code] || null;
   });
 
   var open = findings.filter(function(f) { return f.status === 'open'; });
@@ -470,14 +550,17 @@ async function runAudit() {
   var counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
   open.forEach(function(f) { counts[f.severity] = (counts[f.severity] || 0) + 1; });
 
-  var ai = await analyzeWithAI(open);
-  if (ai && ai.error) {
-    findings.push({
-      code: 'AI_ERROR', severity: 'info', category: 'ai', status: 'open',
-      title: 'Falha na análise de IA', description: ai.error,
-      evidence: ai.error, recommendation: 'Verifique a chave/URL do modelo em Auditoria IA > Configurações.',
-      label: 'Informativo', timestamp: nowIso()
-    });
+  var ai = null;
+  if (!opts.skipAi) {
+    ai = await analyzeWithAI(open);
+    if (ai && ai.error) {
+      findings.push({
+        code: 'AI_ERROR', severity: 'info', category: 'ai', status: 'open',
+        title: 'Falha na análise de IA', description: ai.error,
+        evidence: ai.error, recommendation: 'Verifique a chave/URL do modelo em Auditoria IA > Configurações.',
+        label: 'Informativo', timestamp: nowIso()
+      });
+    }
   }
 
   return {
@@ -491,4 +574,7 @@ async function runAudit() {
   };
 }
 
-module.exports = { runAudit, analyzeWithAI, computeScore, severityLabel, collectContext };
+module.exports = {
+  runAudit, analyzeWithAI, computeScore, severityLabel, collectContext,
+  saveAuditCache, loadAuditCache, pushAuditHistory, loadAuditHistory, reportToMarkdown
+};
