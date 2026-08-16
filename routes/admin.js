@@ -535,6 +535,7 @@ router.post('/sellers/new', (req, res) => {
       } catch (e) { console.error('Erro users_auth seller:', e.message); }
     });
   } catch (e) {
+    console.error('[DEBUG sellers/new] real error:', e && e.message, e && e.stack);
     return loadSellersAndRender('Email já cadastrado');
   }
   res.redirect('/admin/sellers');
