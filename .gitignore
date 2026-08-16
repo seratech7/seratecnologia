@@ -22,3 +22,6 @@ rufus.com
 server_err.txt
 server_out.txt
 uploads/db-imports/
+
+# segredo de sessao (gerado em runtime)
+.session-secret

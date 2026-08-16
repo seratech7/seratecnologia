@@ -12,6 +12,10 @@ const SESSION_COOKIE_PREFIX = '__Host-';
 const DB_PATH = process.env.DB_PATH ? path.resolve(process.env.DB_PATH) : path.join(__dirname, '..', 'database.sqlite');
 
 let db = null;
+// sql.js zera last_insert_rowid() apos db.export() (usado em saveDb), entao
+// capturamos o rowid aqui, imediatamente apos o INSERT, antes do saveDb.
+let _lastRowId = 0;
+function lastRowId() { return _lastRowId; }
 
 async function getDb() {
   if (db) return db;
@@ -1077,6 +1081,7 @@ function query(sql, params = []) {
     return results;
   } else {
     const result = stmt.run(params);
+    try { _lastRowId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0]; } catch (e) { _lastRowId = 0; }
     stmt.free();
     saveDb();
     return result;
@@ -1211,7 +1216,7 @@ function createPayout(sellerId, amount, bankInfo, paymentMethod) {
   var net = amount - fee;
   run("INSERT INTO payouts (seller_id, amount, fee, net_amount, bank_info, payment_method) VALUES (?, ?, ?, ?, ?, ?)",
     [sellerId, amount, fee, net, bankInfo || '', paymentMethod || 'pix']);
-  var payoutId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  var payoutId = lastRowId();
   addTransaction(sellerId, 'payout', 'Saque solicitado - R$ ' + amount.toFixed(2), -amount, 'payout', payoutId);
   return payoutId;
 }
@@ -1630,7 +1635,7 @@ function getMarketingTemplate(id) { return get('SELECT * FROM marketing_template
 function saveMarketingTemplate(name, platform, subject, content, id) {
   if (id) { run("UPDATE marketing_templates SET name=?, platform=?, subject=?, content=?, updated_at=datetime('now') WHERE id=?", [name,platform,subject||'',content,id]); return id; }
   run("INSERT INTO marketing_templates (name,platform,subject,content) VALUES (?,?,?,?)", [name,platform,subject||'',content]);
-  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  return lastRowId();
 }
 function deleteMarketingTemplate(id) { run("DELETE FROM marketing_templates WHERE id = ?", [id]); }
 
@@ -1645,7 +1650,7 @@ function getMarketingCampaignResults(campaignId) {
 function createMarketingCampaign(name, message, platforms, target, createdBy) {
   run("INSERT INTO marketing_campaigns (name,message,platforms,target,created_by) VALUES (?,?,?,?,?)",
     [name||'',message,platforms,target||'all',createdBy||0]);
-  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  return lastRowId();
 }
 function addMarketingCampaignResult(campaignId, platform, recipient, status, error) {
   run("INSERT INTO marketing_campaign_results (campaign_id,platform,recipient,status,error) VALUES (?,?,?,?,?)",
@@ -1665,7 +1670,7 @@ function getMarketingStats() {
 // === MARKETING SCHEDULE ===
 function getMarketingSchedules(limit) { return query("SELECT * FROM marketing_schedule ORDER BY scheduled_for ASC LIMIT ?", [limit||50]); }
 function getPendingMarketingSchedules() { return query("SELECT * FROM marketing_schedule WHERE status='pending' AND scheduled_for <= datetime('now') ORDER BY scheduled_for ASC"); }
-function createMarketingSchedule(title, platform, content, scheduledFor) { run("INSERT INTO marketing_schedule (title,platform,content,scheduled_for) VALUES (?,?,?,?)", [title,platform,content,scheduledFor]); return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0]; }
+function createMarketingSchedule(title, platform, content, scheduledFor) { run("INSERT INTO marketing_schedule (title,platform,content,scheduled_for) VALUES (?,?,?,?)", [title,platform,content,scheduledFor]); return lastRowId(); }
 function markMarketingScheduleDone(id) { run("UPDATE marketing_schedule SET status='sent' WHERE id=?", [id]); }
 function deleteMarketingSchedule(id) { run("DELETE FROM marketing_schedule WHERE id = ?", [id]); }
 
@@ -1685,14 +1690,14 @@ function getMarketingFullStats() {
 // === BROADCAST LISTS ===
 function getMarketingLists() { return query("SELECT ml.*, (SELECT COUNT(*) FROM marketing_list_members WHERE list_id=ml.id) as member_count FROM marketing_lists ml ORDER BY name"); }
 function getMarketingList(id) { return get('SELECT * FROM marketing_lists WHERE id = ?', [id]); }
-function createMarketingList(name, desc) { run("INSERT INTO marketing_lists (name,description) VALUES (?,?)", [name,desc||'']); return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0]; }
+function createMarketingList(name, desc) { run("INSERT INTO marketing_lists (name,description) VALUES (?,?)", [name,desc||'']); return lastRowId(); }
 function deleteMarketingList(id) { run("DELETE FROM marketing_lists WHERE id = ?", [id]); run("DELETE FROM marketing_list_members WHERE list_id = ?", [id]); }
 function getMarketingListMembers(listId) { return query("SELECT * FROM marketing_list_members WHERE list_id = ? ORDER BY name", [listId]); }
 function addMarketingListMember(listId, phone, name) {
   var existing = get("SELECT id FROM marketing_list_members WHERE list_id = ? AND phone = ?", [listId, phone]);
   if (existing) return existing.id;
   run("INSERT INTO marketing_list_members (list_id,phone,name) VALUES (?,?,?)", [listId,phone,name||'']);
-  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  return lastRowId();
 }
 function deleteMarketingListMember(id) { run("DELETE FROM marketing_list_members WHERE id = ?", [id]); }
 
@@ -1701,7 +1706,7 @@ function getAutoReplies() { return query("SELECT * FROM wa_autoreply ORDER BY ke
 function getAutoReply(id) { return get("SELECT * FROM wa_autoreply WHERE id = ?", [id]); }
 function saveAutoReply(keyword, reply, matchType, active) {
   run("INSERT INTO wa_autoreply (keyword, reply, match_type, active) VALUES (?,?,?,?)", [keyword, reply, matchType||'exact', active?1:0]);
-  return db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  return lastRowId();
 }
 function updateAutoReply(id, keyword, reply, matchType, active) {
   run("UPDATE wa_autoreply SET keyword=?, reply=?, match_type=?, active=? WHERE id=?", [keyword, reply, matchType||'exact', active?1:0, id]);
@@ -1730,14 +1735,15 @@ function getConversationMessages(conversationId, sellerId, limit, offset) {
 }
 function sendMessage(conversationId, senderId, content, productId) {
   run("INSERT INTO chat_messages (conversation_id, sender_id, content, product_id) VALUES (?,?,?,?)", [conversationId, senderId, content, productId || null]);
+  var msgId = get("SELECT id FROM chat_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 1", [conversationId]);
+  msgId = msgId ? msgId.id : 0;
   run("UPDATE chat_conversations SET last_message_at = datetime('now') WHERE id = ?", [conversationId]);
-  var msgId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
   var msg = get("SELECT m.*, s.name as sender_name, s.avatar as sender_avatar FROM chat_messages m INNER JOIN sellers s ON s.id = m.sender_id WHERE m.id = ?", [msgId]);
   return msg;
 }
 function createConversation(seller1Id, seller2Id, subject) {
   run("INSERT INTO chat_conversations (subject) VALUES (?)", [subject || '']);
-  var convId = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  var convId = lastRowId();
   run("INSERT INTO chat_participants (conversation_id, seller_id) VALUES (?,?)", [convId, seller1Id]);
   run("INSERT INTO chat_participants (conversation_id, seller_id) VALUES (?,?)", [convId, seller2Id]);
   return convId;
@@ -1857,7 +1863,7 @@ function getCustomerById(id) {
 
 function createCustomer(name, email, phone, passwordHash) {
   run('INSERT INTO customers (name, email, phone, password_hash) VALUES (?, ?, ?, ?)', [name, email, phone || '', passwordHash]);
-  const r = db.exec("SELECT last_insert_rowid() as id")[0].values[0][0];
+  const r = lastRowId();
   return r;
 }
 

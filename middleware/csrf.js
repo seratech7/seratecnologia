@@ -19,7 +19,12 @@ function csrfProtection(req, res, next) {
     if (req.xhr || req.headers['content-type']?.includes('json')) {
       return res.status(403).json({ error: 'Token CSRF inválido. Recarregue a página.' });
     }
-    return res.status(403).send('Token CSRF inválido. Recarregue a página.');
+    // Form POST comum: em vez de erro fatal, recarrega a página (Referer) para
+    // que o navegador pegue um token novo — evita o "Token CSRF inválido" após
+    // deploy/reinício (sessão regenerada) e o usuário só precisa reenviar.
+    var back = req.headers['referer'] || req.path;
+    var sep = back.indexOf('?') >= 0 ? '&' : '?';
+    return res.redirect(303, back + sep + 'err=' + encodeURIComponent('Sessão expirou. Recarregue a página e tente novamente.'));
   }
   next();
 }

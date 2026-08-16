@@ -344,7 +344,8 @@ app.use((req, res, next) => {
 // Also patch res.send/res.render to rewrite paths in HTML
 app.use((req, res, next) => {
   var origRedirect = res.redirect.bind(res);
-  res.redirect = function(url) {
+  res.redirect = function(status, url) {
+    if (typeof url === 'undefined') { url = status; status = 302; }
     if (typeof url === 'string') {
       if (SECRET_ADMIN !== '/admin' && url.indexOf('/admin') === 0) {
         url = SECRET_ADMIN + url.substring(6);
@@ -352,7 +353,7 @@ app.use((req, res, next) => {
         url = SECRET_SELLER + url.substring(7);
       }
     }
-    return origRedirect(url);
+    return origRedirect(status, url);
   };
 
   // Patch send to rewrite /admin/ and /seller/ in HTML
