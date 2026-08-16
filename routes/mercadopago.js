@@ -62,20 +62,31 @@ router.post('/api/criar-pagamento-mp', function(req, res) {
 
 router.post('/api/webhook/mercadopago', async function(req, res) {
   try {
-    var topic = (req.body && (req.body.type || req.body.topic)) || (req.query && req.query.topic);
-    var paymentId = null;
-    if (topic === 'payment') paymentId = req.body && req.body.data && req.body.data.id;
-    else if (req.query && req.query.id) paymentId = req.query.id;
-    if (!paymentId) return res.send('ok');
+    // MP envia topic/id tanto no query string quanto no corpo JSON
+    var topic = (req.query && req.query.topic) || (req.body && (req.body.topic || req.body.type)) || '';
+    var resourceId = (req.query && req.query.id) || (req.body && req.body.data && req.body.data.id) || (req.body && req.body.id) || null;
 
-    var payment = await mpLib.getPayment(paymentId);
-    var extRef = payment && payment.external_reference;
-    if (!extRef) return res.send('ok');
-
-    var sale = db.getDigitalSaleByDeliveryCode(extRef);
-    if (!sale) return res.send('ok');
-
-    await mpLib.applyPayment(sale, payment);
+    if (topic === 'payment' && resourceId) {
+      var payment = await mpLib.getPayment(resourceId);
+      var extRef = payment && payment.external_reference;
+      if (extRef) {
+        var sale = db.getDigitalSaleByDeliveryCode(extRef);
+        if (sale) await mpLib.applyPayment(sale, payment);
+      }
+    } else if (topic === 'merchant_order' && resourceId) {
+      // Ordem de pagamento: busca os pagamentos nela contidos e aplica cada um
+      var order = await mpLib.getMerchantOrder(resourceId);
+      if (order && Array.isArray(order.payments)) {
+        for (var i = 0; i < order.payments.length; i++) {
+          var p = await mpLib.getPayment(order.payments[i].id);
+          var er = p && p.external_reference;
+          if (er) {
+            var s = db.getDigitalSaleByDeliveryCode(er);
+            if (s) await mpLib.applyPayment(s, p);
+          }
+        }
+      }
+    }
   } catch (e) {
     console.error('[MP webhook] erro:', e.message);
   }

@@ -142,12 +142,12 @@
           fd.forEach(function(v,k){ body.append(k, v); });
           fetch(form.getAttribute('action'), { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded','X-CSRF-Token':csrfToken}, body: body.toString() })
             .then(function(r){ return r.json(); }).then(function(d){
-              if(!d.ok){ btn.disabled = false; btn.style.opacity = 1; setStatus(d.error || 'Erro ao iniciar pagamento.', true); return; }
+              if(!d.ok){ btn.disabled = false; btn.style.opacity = 1; modal.style.display = 'flex'; setStatus(d.error || 'Erro ao iniciar pagamento.', true); return; }
               code = d.deliveryCode;
               modal.style.display = 'flex';
               openCheckout(d.preferenceId, d.publicKey);
               startPolling();
-            }).catch(function(){ btn.disabled = false; btn.style.opacity = 1; setStatus('Erro de conexão.', true); });
+            }).catch(function(){ btn.disabled = false; btn.style.opacity = 1; modal.style.display = 'flex'; setStatus('Erro de conexão. Tente novamente.', true); });
         });
         function closeModal(){ modal.style.display = 'none'; if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
         closeBtn.addEventListener('click', closeModal);

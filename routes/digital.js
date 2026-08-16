@@ -106,8 +106,12 @@ router.post('/:slug/comprar', async (req, res) => {
       payment_status: 'pending'
     });
 
-    // Reserva o estoque para evitar venda duplicada
-    db.markDigitalStockSold(available.id, saleId);
+    // Reserva atômica do estoque (só reserva se ainda disponível) — evita venda duplicada
+    const claimed = db.claimDigitalStock(available.id, saleId);
+    if (!claimed) {
+      db.run("UPDATE digital_sales SET status = 'cancelled', payment_status = 'cancelled' WHERE id = ?", [saleId]);
+      return res.status(400).json({ ok: false, error: 'Esgotado no momento.' });
+    }
     db.updateDigitalSalePayment(saleId, { mp_preference_id: pref.id });
 
     const creds = mp.getCreds();
@@ -145,5 +149,10 @@ router.get('/api/digital/venda/:code/status', async (req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
+// Libera reservas de estoque abandonadas (compra iniciada mas nunca paga) a cada 5 min
+setInterval(function () {
+  try { db.releaseExpiredDigitalReservations(30); } catch (e) { /* ignore */ }
+}, 5 * 60 * 1000);
 
 module.exports = router;
