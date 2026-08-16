@@ -290,8 +290,8 @@ app.use('/uploads', (req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Link do grupo VIP no WhatsApp exibido no banner amarelo do topo (todas as paginas)
-app.locals.whatsappGroupLink = process.env.WHATSAPP_GROUP_LINK || 'https://chat.whatsapp.com/SEU-GRUPO-AQUI';
+// Link do grupo no Signal exibido no banner amarelo do topo (todas as paginas)
+app.locals.signalGroupLink = process.env.SIGNAL_GROUP_LINK || 'https://signal.group/#CjQKIE4kEEyVZA0sdLKmgM2CfJ5qxYvr8wx-3vNyW6dIfSj3EhCu2rzTlvQ-X46-HP8GSdzg';
 
 // Upload error handler
 app.use((err, req, res, next) => {
