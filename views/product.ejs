@@ -13,10 +13,18 @@
 
   <div class="product-detail-content">
     <div class="product-gallery">
-      <% if (product.image) { %>
+      <% var galleryImgs = []; if (product.image) galleryImgs.push(product.image); if (typeof productImages !== 'undefined') productImages.forEach(function (pi) { if (pi.image && pi.image !== product.image) galleryImgs.push(pi.image); }); galleryImgs = galleryImgs.filter(Boolean); %>
+      <% if (galleryImgs.length > 0) { %>
         <div class="main-image">
-          <img src="<%= product.image %>" alt="<%= product.name %>">
+          <img id="pgMainImg" src="<%= galleryImgs[0] %>" alt="<%= product.name %>">
         </div>
+        <% if (galleryImgs.length > 1) { %>
+          <div class="pg-thumbs">
+            <% galleryImgs.forEach(function (src, i) { %>
+              <img class="pg-thumb <%= i === 0 ? 'active' : '' %>" src="<%= src %>" alt="imagem <%= i + 1 %>" onclick="document.getElementById('pgMainImg').src=this.src; document.querySelectorAll('.pg-thumb').forEach(function(t){ t.classList.remove('active'); }); this.classList.add('active');">
+            <% }) %>
+          </div>
+        <% } %>
       <% } else { %>
         <div class="main-image no-image-big">
           <i class="fas fa-image"></i>

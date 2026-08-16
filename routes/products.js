@@ -205,6 +205,11 @@ router.get('/produto/:id', (req, res) => {
     [product.category_id, product.id, 'active']
   );
 
+  const productImages = db.query(
+    "SELECT * FROM product_images WHERE product_id = ? ORDER BY sort_order, id",
+    [product.id]
+  );
+
   res.render('product', {
     title: product.name,
     product,
@@ -212,6 +217,7 @@ router.get('/produto/:id', (req, res) => {
     rating,
     reviews,
     related,
+    productImages,
     userRating: null
   });
 });
