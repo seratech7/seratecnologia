@@ -5,7 +5,7 @@
     <a href="/"><i class="fas fa-home"></i> Início</a>
     <% if (product.category_name) { %>
       <span><i class="fas fa-chevron-right"></i></span>
-      <a href="/?category=<%= product.category_slug || product.category_name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') %>"><%= product.category_icon %> <%= product.category_name %></a>
+      <a href="/marketplace?category=<%= product.category_slug || product.category_name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') %>"><%= product.category_icon %> <%= product.category_name %></a>
     <% } %>
     <span><i class="fas fa-chevron-right"></i></span>
     <span><%= product.name %></span>

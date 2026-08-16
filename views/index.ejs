@@ -59,7 +59,7 @@ function q(urlParams) {
       <button class="filter-sheet-close" id="filterSheetClose">&times;</button>
     </div>
     <div class="filter-sheet-body" id="filterSheetBody">
-      <form method="GET" action="/" class="filter-form" id="filterFormMobile">
+      <form method="GET" action="/marketplace" class="filter-form" id="filterFormMobile">
         <% if (search) { %><input type="hidden" name="search" value="<%= search %>"><% } %>
 
         <div class="filter-section">
@@ -152,7 +152,7 @@ function q(urlParams) {
   </div>
 
   <aside class="sidebar-filters" id="sidebarFilters">
-    <form method="GET" action="/" class="filter-form" id="filterFormDesktop">
+    <form method="GET" action="/marketplace" class="filter-form" id="filterFormDesktop">
       <% if (search) { %><input type="hidden" name="search" value="<%= search %>"><% } %>
 
       <div class="filter-section">
@@ -279,7 +279,7 @@ function q(urlParams) {
         <i class="fas fa-clock"></i>
         <span id="flashCountdown"></span>
       </div>
-      <a href="/?sort=flash&category=<%= flashProducts[0].category_slug || (flashProducts[0].category_name ? flashProducts[0].category_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') : '') %>" class="flash-ver-todas">Ver todas <i class="fas fa-arrow-right"></i></a>
+      <a href="/marketplace?sort=flash&category=<%= flashProducts[0].category_slug || (flashProducts[0].category_name ? flashProducts[0].category_name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') : '') %>" class="flash-ver-todas">Ver todas <i class="fas fa-arrow-right"></i></a>
     </div>
     <div class="flash-grid flash-grid-featured">
       <% flashProducts.forEach(function(p) { %>
