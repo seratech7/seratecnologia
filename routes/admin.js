@@ -72,6 +72,11 @@ router.get('/dashboard', (req, res) => {
   var avgOrder = db.get("SELECT AVG(product_price) as v FROM sales WHERE status NOT IN ('cancelled','pending')");
   var newSellers = (db.get("SELECT COUNT(*) as c FROM sellers WHERE created_at >= datetime('now', '-30 days')")||{}).c||0;
 
+  var digitalApproved = (db.get("SELECT COUNT(*) as c FROM digital_sales WHERE payment_status = 'approved'")||{}).c||0;
+  var digitalPending = (db.get("SELECT COUNT(*) as c FROM digital_sales WHERE payment_status = 'pending' OR payment_status IS NULL")||{}).c||0;
+  var digitalRejected = (db.get("SELECT COUNT(*) as c FROM digital_sales WHERE payment_status IN ('rejected','cancelled')")||{}).c||0;
+  var recentDigital = db.query("SELECT ds.*, dp.name as product_name FROM digital_sales ds LEFT JOIN digital_products dp ON ds.product_id = dp.id ORDER BY ds.id DESC LIMIT 6") || [];
+
   res.render('admin/dashboard', {
     title: 'Dashboard - Painel Admin',
     stats: {
@@ -98,7 +103,13 @@ router.get('/dashboard', (req, res) => {
     recentSales,
     chartSales,
     chartRevenue,
-    topSellers
+    topSellers,
+    digitalStats: {
+      approved: digitalApproved,
+      pending: digitalPending,
+      rejected: digitalRejected
+    },
+    recentDigital
   });
 });
 
@@ -855,16 +866,17 @@ router.get('/digital/vendas', (req, res) => {
 });
 
 router.get('/digital/new', (req, res) => {
-  res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: null });
+  const categories = db.query("SELECT DISTINCT category FROM digital_products WHERE category IS NOT NULL AND category != '' ORDER BY category") || [];
+  res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, categories: categories, error: null });
 });
 
 router.post('/digital/new', (req, res) => {
   const { name, slug, description, price, category, image, badge, status, featured } = req.body;
-  if (!name) return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: 'Nome é obrigatório' });
+  if (!name) return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, categories: [], error: 'Nome é obrigatório' });
   try {
     db.saveDigitalProduct({ name, slug, description, price, category, image, badge, status, featured });
   } catch (e) {
-    return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: 'Erro ao criar serviço' });
+    return res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, categories: [], error: 'Erro ao criar serviço' });
   }
   res.redirect('/admin/digital');
 });
@@ -872,16 +884,29 @@ router.post('/digital/new', (req, res) => {
 router.get('/digital/edit/:id', (req, res) => {
   const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
   if (!item) return res.redirect('/admin/digital');
-  res.render('admin/digital-form', { title: 'Editar Serviço Digital', item, error: null });
+  const categories = db.query("SELECT DISTINCT category FROM digital_products WHERE category IS NOT NULL AND category != '' ORDER BY category") || [];
+  res.render('admin/digital-form', { title: 'Editar Serviço Digital', item: item, categories: categories, error: null });
 });
 
 router.post('/digital/edit/:id', (req, res) => {
     const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
     if (!item) return res.redirect('/admin/digital');
     const { name, slug, description, price, category, image, badge, status, featured } = req.body;
-    if (!name) return res.render('admin/digital-form', { title: 'Editar Serviço Digital', item, error: 'Nome é obrigatório' });
+    if (!name) {
+      const categories = db.query("SELECT DISTINCT category FROM digital_products WHERE category IS NOT NULL AND category != '' ORDER BY category") || [];
+      return res.render('admin/digital-form', { title: 'Editar Serviço Digital', item: item, categories: categories, error: 'Nome é obrigatório' });
+    }
     db.saveDigitalProduct({ name, slug, description, price, category, image, badge, status, featured }, item.id);
     res.redirect('/admin/digital');
+});
+
+// Marcar/desmarcar anúncio como esgotado
+router.post('/digital/soldout/:id', (req, res) => {
+  const item = db.get('SELECT * FROM digital_products WHERE id = ?', [req.params.id]);
+  if (!item) return res.redirect('/admin/digital');
+  const newStatus = item.status === 'sold_out' ? 'active' : 'sold_out';
+  db.run('UPDATE digital_products SET status = ? WHERE id = ?', [newStatus, req.params.id]);
+  res.redirect('/admin/digital');
 });
 
 router.post('/digital/featured/:id', (req, res) => {

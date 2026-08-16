@@ -17,7 +17,7 @@ router.get('/', (req, res) => {
       const extra = all.filter(function(p){ return !featured.some(function(f){ return f.id === p.id; }); }).slice(0, 5 - featured.length);
       featured = featured.concat(extra);
     }
-    const categories = db.query('SELECT DISTINCT category FROM digital_products WHERE status = ? ORDER BY category', ['active']) || [];
+    const categories = db.query('SELECT DISTINCT category FROM digital_products WHERE status IN (?, ?) ORDER BY category', ['active', 'sold_out']) || [];
     res.render('digital', {
       title: 'Logins & Contas - Entrega Automática',
       products,
@@ -39,7 +39,8 @@ router.get('/', (req, res) => {
 router.get('/:slug', (req, res) => {
   try {
     const product = db.getDigitalProductBySlug(req.params.slug);
-    if (!product || product.status !== 'active') return res.status(404).render('404', { title: 'Produto não encontrado' });
+    if (!product) return res.status(404).render('404', { title: 'Produto não encontrado' });
+    if (product.status !== 'active' && product.status !== 'sold_out') return res.status(404).render('404', { title: 'Produto não encontrado' });
     const inStock = db.getDigitalAvailableCount(product.id) > 0;
     res.render('digital-detail', {
       title: product.name,
@@ -57,7 +58,9 @@ router.get('/:slug', (req, res) => {
 router.post('/:slug/comprar', async (req, res) => {
   try {
     const product = db.getDigitalProductBySlug(req.params.slug);
-    if (!product || product.status !== 'active') return res.status(404).json({ ok: false, error: 'Produto não encontrado.' });
+    if (!product) return res.status(404).json({ ok: false, error: 'Produto não encontrado.' });
+    if (product.status === 'sold_out') return res.status(400).json({ ok: false, error: 'Esgotado.' });
+    if (product.status !== 'active') return res.status(404).json({ ok: false, error: 'Produto não encontrado.' });
 
     const { buyer_name, buyer_email, buyer_phone, delivery_channel, delivery_contact, observation } = req.body;
     if (!buyer_email || !buyer_name) {

@@ -2050,7 +2050,7 @@ function getDigitalProducts(opts) {
   if (opts.instock) {
     sql += " AND (SELECT COUNT(*) FROM digital_stock ds WHERE ds.product_id = dp.id AND ds.status = 'available') > 0";
   }
-  if (opts.active) { sql += " AND dp.status = 'active'"; }
+  if (opts.active) { sql += " AND dp.status IN ('active','sold_out')"; }
   if (opts.sort === 'price_asc') sql += " ORDER BY dp.price ASC";
   else if (opts.sort === 'price_desc') sql += " ORDER BY dp.price DESC";
   else if (opts.sort === 'sold') sql += " ORDER BY dp.sold_count DESC";

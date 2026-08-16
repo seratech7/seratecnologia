@@ -46,8 +46,8 @@
               <% if (it.featured == 1) { %><span class="status-badge active"><i class="fas fa-star"></i> Sim</span><% } else { %><span class="status-badge inactive">Não</span><% } %>
             </td>
             <td>
-              <span class="status-badge <%= it.status === 'active' ? 'active' : 'inactive' %>">
-                <%= it.status === 'active' ? 'Ativo' : 'Inativo' %>
+              <span class="status-badge <%= it.status === 'active' ? 'active' : (it.status === 'sold_out' ? 'warning' : 'inactive') %>">
+                <%= it.status === 'active' ? 'Ativo' : (it.status === 'sold_out' ? 'Esgotado' : 'Inativo') %>
               </span>
             </td>
             <td class="actions-cell">
@@ -55,6 +55,11 @@
               <form method="POST" action="/admin/digital/featured/<%= it.id %>" class="inline-form">
                 <button type="submit" class="btn-icon" title="<%= it.featured == 1 ? 'Remover destaque' : 'Destacar' %>">
                   <i class="fas fa-star"></i>
+                </button>
+              </form>
+              <form method="POST" action="/admin/digital/soldout/<%= it.id %>" class="inline-form">
+                <button type="submit" class="btn-icon" title="<%= it.status === 'sold_out' ? 'Reativar estoque' : 'Marcar como esgotado' %>" style="<%= it.status === 'sold_out' ? 'color:#f0a500;' : '' %>">
+                  <i class="fas fa-<%= it.status === 'sold_out' ? 'box-open' : 'ban' %>"></i>
                 </button>
               </form>
               <form method="POST" action="/admin/digital/toggle/<%= it.id %>" class="inline-form">

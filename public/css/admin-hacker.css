@@ -353,6 +353,12 @@ body.admin-page::after {
   border-color: rgba(0, 229, 255, 0.4);
 }
 
+.status-badge.warning {
+  background: rgba(255, 176, 32, 0.12);
+  color: #f0a500;
+  border-color: rgba(255, 176, 32, 0.45);
+}
+
 .price-cell { color: var(--hack-green) !important; font-weight: 700; }
 .product-name-cell { color: var(--hack-text-hi); }
 
