@@ -1,10 +1,14 @@
 // Seed que SUBSTITUI todos os produtos do marketplace por 40 produtos realistas.
-// Imagens: foto REAL de cada modelo resolvida via Wikipedia (upload.wikimedia.org,
-// hotlink-friendly). Se não houver artigo, cai para LoremFlickr por categoria.
-// No servidor de produção, use "Baixar imagens externas" na Galeria de Imagens
-// (/admin/galeria) para armazená-las localmente.
+// Imagens: foto REAL de cada modelo resolvida via Wikipedia (upload.wikimedia.org)
+// e BAIXADA para /uploads (local). Se não houver artigo, cai para LoremFlickr por
+// categoria, também baixado localmente. Assim as fotos aparecem no browser mesmo
+// sem acesso externo (e sobrevivem a deploy com disco efêmero via file_store).
 const path = require('path');
+const fs = require('fs');
 const db = require(path.join(__dirname, '..', 'database', 'db'));
+
+const UPLOADS_DIR = path.join(__dirname, '..', 'public', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const CAT_TAGS = {
   'notebooks-pcs': 'gaming,laptop',
@@ -21,7 +25,11 @@ function lockFor(s) {
   return (h % 9000) + 1000;
 }
 
-async function resolveImage(name, cat) {
+function slugify(s) {
+  return (s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)) || 'produto';
+}
+
+async function resolveImageUrl(name, cat) {
   const tags = CAT_TAGS[cat] || 'computer';
   try {
     const url = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' +
@@ -37,6 +45,32 @@ async function resolveImage(name, cat) {
     }
   } catch (e) { /* ignora e cai no fallback */ }
   return 'https://loremflickr.com/640/480/' + tags + '?lock=' + lockFor(name);
+}
+
+const EXT_BY_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
+
+// Baixa a imagem resolvida para /uploads e retorna o caminho local.
+// Em caso de falha, retorna a URL externa (só aparece com internet no browser).
+async function downloadLocal(name, cat, index) {
+  const url = await resolveImageUrl(name, cat);
+  const base = 'seed-' + index + '-' + slugify(name);
+  try {
+    const resp = await fetch(url, {
+      signal: AbortSignal.timeout(15000),
+      headers: { 'User-Agent': 'MarketplaceSeed/1.0 (https://example.com; seed@seratecnologia.com)' }
+    });
+    const ct = (resp.headers.get('content-type') || '').toLowerCase();
+    if (!resp.ok || !ct.startsWith('image/')) throw new Error('nao e imagem: ' + resp.status + ' ' + ct);
+    const buf = Buffer.from(await resp.arrayBuffer());
+    if (buf.length < 500) throw new Error('imagem muito pequena');
+    const ext = EXT_BY_MIME[ct] || '.jpg';
+    const finalName = base + ext;
+    fs.writeFileSync(path.join(UPLOADS_DIR, finalName), buf);
+    try { db.saveFileToStore(finalName, buf, ct || 'image/jpeg'); } catch (e) { /* file_store opcional */ }
+    return '/uploads/' + finalName;
+  } catch (e) {
+    return url;
+  }
 }
 
 const products = [
@@ -152,7 +186,7 @@ const products = [
       const cat = db.get('SELECT id FROM categories WHERE slug = ?', [p.cat]);
       if (!cat) throw new Error('Categoria não encontrada: ' + p.cat);
       await new Promise(r => setTimeout(r, 300));
-      const image = await resolveImage(p.name, p.cat);
+      const image = await downloadLocal(p.name, p.cat, inserted + 1);
       db.run(
         'INSERT INTO products (name, description, price, category_id, seller_id, image, status, featured, condition, location, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [p.name, p.desc, p.price, cat.id, null, image, 'active', p.featured ? 1 : 0, 'new', 'Brasil', p.qty]
@@ -162,8 +196,8 @@ const products = [
     }
 
     const total = db.get('SELECT COUNT(*) as c FROM products');
-    const wiki = db.get("SELECT COUNT(*) as c FROM products WHERE image LIKE 'https://upload.wikimedia.org%'");
-    console.log('OK: ' + inserted + ' produtos inseridos. Total: ' + total.c + ' | com foto Wikipedia: ' + wiki.c);
+    const local = db.get("SELECT COUNT(*) as c FROM products WHERE image LIKE '/uploads/%'");
+    console.log('OK: ' + inserted + ' produtos inseridos. Total: ' + total.c + ' | com foto local (/uploads): ' + local.c);
     process.exit(0);
   } catch (e) {
     console.error('ERRO no seed:', e.message);
