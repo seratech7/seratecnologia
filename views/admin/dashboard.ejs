@@ -57,6 +57,15 @@
     </a>
   </div>
 
+  <!-- Venda de Login (topo) -->
+  <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;padding:12px 18px;margin-bottom:18px;">
+    <span style="font-size:13px;font-weight:700;color:var(--hack-text-hi);display:inline-flex;align-items:center;gap:8px;"><i class="fas fa-receipt" style="color:#00c853;"></i> Venda de Login</span>
+    <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;"><span style="width:9px;height:9px;border-radius:50%;background:#2e7d32;display:inline-block;"></span> Aprovados <strong style="color:#2e7d32;"><%= digitalStats.approved %></strong></span>
+    <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;"><span style="width:9px;height:9px;border-radius:50%;background:#b8860b;display:inline-block;"></span> Em análise <strong style="color:#b8860b;"><%= digitalStats.pending %></strong></span>
+    <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;"><span style="width:9px;height:9px;border-radius:50%;background:#c62828;display:inline-block;"></span> Rejeitados <strong style="color:#c62828;"><%= digitalStats.rejected %></strong></span>
+    <a href="/admin/digital/vendas" class="btn-small" style="margin-left:auto;text-decoration:none;font-size:12px;"><i class="fas fa-eye"></i> Ver vendas</a>
+  </div>
+
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-icon products-icon"><i class="fas fa-box"></i></div>
@@ -233,45 +242,6 @@
         <span class="stat-label">Variação 30 dias</span>
       </div>
     </div>
-  </div>
-
-  <!-- Painel: Logins Digitais (Mercado Pago) -->
-  <div class="admin-section" style="grid-column:1/-1;margin-top:20px;">
-    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-      <h2><i class="fas fa-receipt" style="color:#00c853;"></i> Logins Digitais — Pagamentos (Mercado Pago)</h2>
-      <a href="/admin/digital/vendas" class="btn-small" style="text-decoration:none;"><i class="fas fa-eye"></i> Ver todas as vendas</a>
-    </div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:170px;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;padding:18px;display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:10px;background:rgba(46,125,50,.16);display:flex;align-items:center;justify-content:center;"><i class="fas fa-check-circle" style="color:#2e7d32;font-size:20px;"></i></div>
-        <div><div style="font-size:24px;font-weight:700;color:#2e7d32;"><%= digitalStats.approved %></div><div style="font-size:12px;color:var(--hack-dim);">Aprovados</div></div>
-      </div>
-      <div style="flex:1;min-width:170px;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;padding:18px;display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:10px;background:rgba(255,212,0,.16);display:flex;align-items:center;justify-content:center;"><i class="fas fa-clock" style="color:#b8860b;font-size:20px;"></i></div>
-        <div><div style="font-size:24px;font-weight:700;color:#b8860b;"><%= digitalStats.pending %></div><div style="font-size:12px;color:var(--hack-dim);">Em análise</div></div>
-      </div>
-      <div style="flex:1;min-width:170px;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;padding:18px;display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:10px;background:rgba(198,40,40,.16);display:flex;align-items:center;justify-content:center;"><i class="fas fa-times-circle" style="color:#c62828;font-size:20px;"></i></div>
-        <div><div style="font-size:24px;font-weight:700;color:#c62828;"><%= digitalStats.rejected %></div><div style="font-size:12px;color:var(--hack-dim);">Rejeitados</div></div>
-      </div>
-    </div>
-    <% if (recentDigital && recentDigital.length) { %>
-    <div style="margin-top:14px;background:var(--card-bg);border:1px solid var(--hack-border);border-radius:12px;padding:12px 14px;">
-      <div style="font-size:12px;color:var(--hack-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Últimos logins vendidos</div>
-      <% recentDigital.forEach(function(d) { %>
-        <%
-          var st = d.payment_status || 'pending';
-          var chip = st === 'approved' ? { t:'Pago', c:'#2e7d32', bg:'rgba(46,125,50,.16)' }
-                  : st === 'pending' ? { t:'Em análise', c:'#b8860b', bg:'rgba(255,212,0,.16)' }
-                  : { t:'Rejeitado', c:'#c62828', bg:'rgba(198,40,40,.16)' };
-        %>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--hack-border);font-size:13px;">
-          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= d.product_name || 'Produto' %> <span style="color:var(--hack-dim);">— R$ <%= Number(d.price).toFixed(2) %></span></span>
-          <span style="font-size:11px;padding:2px 10px;border-radius:6px;font-weight:700;color:<%= chip.c %>;background:<%= chip.bg %>;white-space:nowrap;"><%= chip.t %></span>
-        </div>
-      <% }); %>
-    </div>
-    <% } %>
   </div>
 
   <% if (goalProgress) { %>
