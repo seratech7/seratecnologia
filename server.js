@@ -232,6 +232,9 @@ try {
     retries: 0
   });
   console.log('[session] FileStore em ' + sessionDir);
+  sessionStore.on('error', function (err) {
+    console.error('[session-store] erro ignorado (sessao regenerada):', err && err.message);
+  });
 } catch (e) {
   console.warn('[session] FileStore indisponível, usando MemoryStore:', e.message);
   sessionStore = new session.MemoryStore();
@@ -531,13 +534,14 @@ app.get('/', (req, res) => {
       videos,
       selectedCategory: category || '',
       search: search || '',
+      sort: req.query.sort || 'recent',
       initialLimit: 50,
       hasMore,
       total
     });
   } catch (e) {
     console.error('Home news error:', e);
-    res.render('news', { title: 'Notícias', news: [], categories: [], categoryCounts: {}, featured: [], videos: [], selectedCategory: '', search: '', initialLimit: 9, hasMore: false, total: 0 });
+    res.render('news', { title: 'Notícias', news: [], categories: [], categoryCounts: {}, featured: [], videos: [], selectedCategory: '', search: '', sort: 'recent', initialLimit: 9, hasMore: false, total: 0 });
   }
 });
 

@@ -109,7 +109,6 @@ router.post('/login', async (req, res) => {
 
 router.get('/logout', (req, res) => {
   authHive.logoutUser(req, res);
-  req.session.destroy();
   res.redirect('/seller/login');
 });
 

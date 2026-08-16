@@ -231,7 +231,6 @@ router.post('/conta/senha', requireCustomer, async (req, res) => {
 
 router.get('/conta/sair', requireCustomer, (req, res) => {
   authHive.logoutUser(req, res);
-  req.session.destroy();
   res.redirect('/');
 });
 
