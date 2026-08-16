@@ -503,14 +503,22 @@ router.get('/sellers', (req, res) => {
 
 router.post('/sellers/new', (req, res) => {
   const { name, email, phone, whatsapp, password } = req.body;
-  if (!name || !email || !password) {
+  const loadSellersAndRender = (error) => {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios', msg: '' });
+    const stats = {
+      total: (db.get('SELECT COUNT(*) as c FROM sellers') || {}).c || 0,
+      active: (db.get("SELECT COUNT(*) as c FROM sellers WHERE status = 'active'") || {}).c || 0,
+      inactive: (db.get("SELECT COUNT(*) as c FROM sellers WHERE status = 'inactive'") || {}).c || 0,
+      pendingProducts: (db.get("SELECT COUNT(*) as c FROM products WHERE status = 'pending'") || {}).c || 0
+    };
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, stats, error: error || null, msg: '', search: '', statusFilter: 'all' });
+  };
+  if (!name || !email || !password) {
+    return loadSellersAndRender('Nome, email e senha são obrigatórios');
   }
   var pwErrors = db.validatePassword(password);
   if (pwErrors.length > 0) {
-    const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: pwErrors.join('<br>'), msg: '' });
+    return loadSellersAndRender(pwErrors.join('<br>'));
   }
   const hash = bcrypt.hashSync(password, 10);
   try {
@@ -527,8 +535,7 @@ router.post('/sellers/new', (req, res) => {
       } catch (e) { console.error('Erro users_auth seller:', e.message); }
     });
   } catch (e) {
-    const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Email já cadastrado', msg: '' });
+    return loadSellersAndRender('Email já cadastrado');
   }
   res.redirect('/admin/sellers');
 });
