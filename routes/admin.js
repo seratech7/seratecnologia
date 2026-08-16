@@ -1194,7 +1194,7 @@ router.get('/config', (req, res) => {
 router.post('/config', (req, res) => {
   var allowedKeys = [
     'site_name', 'site_description', 'site_whatsapp', 'site_email',
-    'commission_pct', 'mp_access_token', 'pix_key_platform',
+    'commission_pct', 'mp_access_token', 'mp_public_key', 'pix_key_platform',
     'default_product_status', 'maintenance_mode', 'max_products_per_seller',
     'custom_css', 'custom_js', 'flash_category_id',
     'site_logo_url', 'site_favicon_url', 'social_instagram', 'social_facebook', 'social_tiktok', 'social_youtube', 'social_discord',
