@@ -505,12 +505,12 @@ router.post('/sellers/new', (req, res) => {
   const { name, email, phone, whatsapp, password } = req.body;
   if (!name || !email || !password) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios' });
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Nome, email e senha são obrigatórios', msg: '' });
   }
   var pwErrors = db.validatePassword(password);
   if (pwErrors.length > 0) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: pwErrors.join('<br>') });
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: pwErrors.join('<br>'), msg: '' });
   }
   const hash = bcrypt.hashSync(password, 10);
   try {
@@ -528,7 +528,7 @@ router.post('/sellers/new', (req, res) => {
     });
   } catch (e) {
     const sellers = db.query('SELECT s.*, (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.id) as product_count FROM sellers s ORDER BY s.created_at DESC');
-    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Email já cadastrado' });
+    return res.render('admin/sellers', { title: 'Vendedores', sellers, error: 'Email já cadastrado', msg: '' });
   }
   res.redirect('/admin/sellers');
 });
