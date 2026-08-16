@@ -27,6 +27,21 @@ body.hacker-theme {
   --primary-light: #ffe066;
   --card-bg: #0f1626;
   --text: #e8edf5;
+  /* Redefine variaveis semanticas do tema claro para o modo dark,
+     evitando "caixas brancas"/texto ilegivel sobre fundo escuro. */
+  --white: #0f1626;
+  --gray-50: #0d1424;
+  --gray-100: #111a2e;
+  --gray-200: #18233a;
+  --gray-300: #243049;
+  --gray-500: #7a8aa3;
+  --gray-700: #aab8d0;
+  --gray-900: #e8edf5;
+  --dark: #e8edf5;
+  --secondary: #00cc88;
+  --accent: #00e5ff;
+  --danger: #ff5c7a;
+  --warning: #ffcc00;
   background: var(--hack-bg);
   color: var(--hack-text);
   font-family: var(--hack-font);
@@ -380,6 +395,25 @@ body.hacker-theme .flash-card-price { color: var(--hack-green); font-family: var
 body.hacker-theme .flash-card-original { color: var(--hack-dim); font-family: var(--hack-font); }
 
 body.hacker-theme .flash-card-timer { color: var(--hack-cyan); font-family: var(--hack-font); }
+
+/* Pill do timer de oferta (fundo claro hardcoded no tema claro) */
+body.hacker-theme .flash-timer { background: var(--hack-panel-2); border: 1px solid var(--hack-border); }
+
+/* Seção principal de produtos (grade) - fundo branco hardcoded */
+body.hacker-theme .products-section { background: transparent; border: none; box-shadow: none; }
+
+/* Container de ofertas relâmpago - fundo claro hardcoded */
+body.hacker-theme .flash-featured {
+  background: linear-gradient(135deg, var(--hack-panel), var(--hack-panel-2));
+  border-color: var(--hack-green);
+}
+
+/* Modal de compra rápida - fundo branco hardcoded */
+body.hacker-theme .quickbuy-modal {
+  background: var(--hack-panel);
+  border: 1px solid var(--hack-border);
+  color: var(--hack-text);
+}
 
 /* =========================================
    PRODUCT DETAIL

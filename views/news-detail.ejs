@@ -157,12 +157,12 @@ body.hacker-theme .news-detail-page {
 
     <article class="nd-article">
        <div class="nd-cover">
-        <% var dimg = article.image || ('https://picsum.photos/seed/' + encodeURIComponent(article.slug) + '/1000/600'); %>
+        <% var dimg = (article.image && article.image.indexOf('/') === 0) ? article.image : ('/img/news-thumb?cat=' + encodeURIComponent(article.category || 'Geral') + '&w=1000&h=600'); %>
         <% if (article.video) { %>
           <% var ytIdVal = ytId(article.video); %>
           <% if (ytIdVal) { %>
           <div class="nd-video nd-video-player" id="ndVideoPlayer" data-vid="<%= ytIdVal %>">
-            <div class="nd-video-poster" style="background-image:url('https://img.youtube.com/vi/<%= ytIdVal %>/maxresdefault.jpg')">
+             <div class="nd-video-poster" style="background-image:url('/img/news-thumb?cat=<%= encodeURIComponent(article.category || 'Geral') %>&w=1000&h=562')">
               <span class="nd-play"><i class="fas fa-play"></i></span>
             </div>
           </div>
@@ -172,7 +172,7 @@ body.hacker-theme .news-detail-page {
           </div>
           <% } %>
         <% } else { %>
-          <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.src='/img/phone-placeholder.svg';">
+          <img src="<%= dimg %>" alt="<%= article.title %>" loading="lazy" onerror="this.src='/img/news-thumb?cat=<%= encodeURIComponent(article.category || 'Geral') %>&w=1000&h=600';">
         <% } %>
         <span class="nd-cat"><%= article.category %></span>
       </div>
@@ -216,7 +216,7 @@ body.hacker-theme .news-detail-page {
         <% related.forEach(function(n) { %>
           <a href="/noticia/<%= n.slug %>" class="nd-rel-card">
             <div class="nd-rel-thumb">
-              <% if (n.image) { %><img src="<%= n.image %>" alt="<%= n.title %>"><% } %>
+              <% var rimg = (n.image && n.image.indexOf('/') === 0) ? n.image : ('/img/news-thumb?cat=' + encodeURIComponent(n.category || 'Geral') + '&w=400&h=300'); %><img src="<%= rimg %>" alt="<%= n.title %>" loading="lazy" onerror="this.src='/img/news-thumb?cat=<%= encodeURIComponent(n.category || 'Geral') %>&w=400&h=300';">
               <span class="nd-cat"><%= n.category %></span>
             </div>
             <div class="nd-rel-body">

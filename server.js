@@ -533,6 +533,42 @@ app.use('/', require('./routes/attraction'));
 app.use('/noticias', newsRoutes);
 app.use('/noticia', newsRoutes);
 app.use('/logins', digitalRoutes);
+
+// Thumbnail gerado localmente para notícias (funciona offline, sem picsum/YT externo)
+function catColor(cat) {
+  var map = { 'Hacking':'#ff4d4f', 'Games':'#7c3aed', 'Tecnologia':'#00b894', 'Seguranca':'#ff7849', 'Segurança':'#ff7849', 'Ciencia':'#0984e3', 'Ciência':'#0984e3', 'Hardware':'#e17055', 'Software':'#6c5ce7' };
+  if (map[cat]) return map[cat];
+  var h = 0, s = String(cat || 'Geral');
+  for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  var palette = ['#ff4d4f','#7c3aed','#00b894','#0984e3','#e17055','#fdcb6e','#00cec9','#e84393'];
+  return palette[h % palette.length];
+}
+function catColorShade(hex, pct) {
+  hex = String(hex).replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(function (x) { return x + x; }).join('');
+  var r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+  function f(c) { return Math.max(0, Math.min(255, Math.round(c + (pct / 100) * 255))); }
+  return '#' + [f(r), f(g), f(b)].map(function (c) { return ('0' + c.toString(16)).slice(-2); }).join('');
+}
+app.get('/img/news-thumb', function (req, res) {
+  try {
+    var w = Math.max(120, Math.min(1200, parseInt(req.query.w) || 600));
+    var h = Math.max(120, Math.min(1200, parseInt(req.query.h) || 400));
+    var cat = req.query.cat || 'Geral';
+    var c = catColor(cat), c2 = catColorShade(c, -40);
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='" + w + "' height='" + h + "' viewBox='0 0 " + w + ' ' + h + "' preserveAspectRatio='xMidYMid slice'>"
+      + "<defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='" + c + "'/><stop offset='1' stop-color='" + c2 + "'/></linearGradient>"
+      + "<pattern id='p' width='30' height='30' patternUnits='userSpaceOnUse'><circle cx='3' cy='3' r='1.7' fill='rgba(255,255,255,0.16)'/></pattern></defs>"
+      + "<rect width='100%' height='100%' fill='url(#g)'/>"
+      + "<rect width='100%' height='100%' fill='url(#p)'/>"
+      + "<path d='M0 " + (h * 0.72) + ' L' + (w * 0.35) + ' ' + (h * 0.5) + ' L' + (w * 0.6) + ' ' + (h * 0.66) + ' L' + w + ' ' + (h * 0.4) + ' L' + w + ' ' + h + ' L0 ' + h + " Z' fill='rgba(0,0,0,0.18)'/>"
+      + "<path d='M0 " + (h * 0.82) + ' L' + (w * 0.4) + ' ' + (h * 0.62) + ' L' + (w * 0.7) + ' ' + (h * 0.78) + ' L' + w + ' ' + (h * 0.58) + ' L' + w + ' ' + h + ' L0 ' + h + " Z' fill='rgba(0,0,0,0.24)'/>"
+      + "</svg>";
+    res.set('Content-Type', 'image/svg+xml');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(svg);
+  } catch (e) { res.status(500).send(''); }
+});
 app.get('/entrega/:code', (req, res) => {
   try {
     const sale = db.getDigitalSaleByDeliveryCode(req.params.code);

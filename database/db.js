@@ -1972,7 +1972,8 @@ function getNews(opts) {
   if (opts.search) { sql += " AND (n.title LIKE ? OR n.excerpt LIKE ?)"; params.push('%' + opts.search + '%', '%' + opts.search + '%'); }
   if (opts.video) { sql += " AND n.video IS NOT NULL AND n.video <> ''"; }
   if (opts.published === undefined || opts.published === true) { sql += " AND n.published = 1"; }
-  sql += " ORDER BY n.featured DESC, n.created_at DESC";
+  if (opts.orderByViews) { sql += " ORDER BY n.views DESC, n.created_at DESC"; }
+  else { sql += " ORDER BY n.featured DESC, n.created_at DESC"; }
   if (opts.offset && opts.limit) {
     sql += " LIMIT ? OFFSET ?";
     params.push(parseInt(opts.limit), parseInt(opts.offset));

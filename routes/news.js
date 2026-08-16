@@ -39,6 +39,7 @@ router.get('/', (req, res) => {
     const news = db.getNews({ category, search, limit, offset: 0 }) || [];
     const featured = db.getFeaturedNews(3) || [];
     const videos = db.getNews({ video: true, limit: 4 }) || [];
+    const trending = db.getNews({ limit: 5, orderByViews: true }) || [];
     const hasMore = news.length < total;
     res.render('news', {
       title: 'Notícias - Games & Hacking',
@@ -47,6 +48,7 @@ router.get('/', (req, res) => {
       categoryCounts,
       featured,
       videos,
+      trending,
       selectedCategory: category || '',
       search: search || '',
       initialLimit: limit,
@@ -74,7 +76,7 @@ router.get('/:slug', (req, res) => {
     const og = {
       title: article.title,
       description: (article.excerpt || '').slice(0, 200),
-      image: article.image ? (article.image.indexOf('http') === 0 ? article.image : base + article.image) : base + '/img/og-default.png',
+      image: article.image && article.image.indexOf('/') === 0 ? (base + article.image) : (base + '/img/news-thumb?cat=' + encodeURIComponent(article.category || 'Geral') + '&w=800&h=500'),
       url: base + req.originalUrl
     };
     res.render('news-detail', {
