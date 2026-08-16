@@ -14,7 +14,7 @@
 <section class="banner-carousel news-banner">
   <div class="banner-track">
     <% fnews.forEach(function(n, i) { %>
-    <div class="banner-slide" data-duration="7" style="--cc:<%= colorFor(n.category) %>">
+    <div class="banner-slide" data-duration="<%= bannerSpeed || 7 %>" style="--cc:<%= colorFor(n.category) %>">
       <a href="/noticia/<%= n.slug %>">
         <img src="/img/news-thumb?cat=<%= encodeURIComponent(n.category || 'Geral') %>&w=1200&h=500" alt="<%= n.title %>" loading="lazy">
         <div class="banner-overlay">

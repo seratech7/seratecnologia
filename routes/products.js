@@ -54,6 +54,8 @@ router.get('/', (req, res) => {
     const products = db.query(sql, params) || [];
     const heroBanners = db.getToggle('banners') === '1' ? (db.getBannersByPosition('hero') || []) : [];
     const flashProducts = db.getFlashSales() || [];
+    const bsRow = db.get("SELECT value FROM config WHERE key = 'news_banner_speed'");
+    const bannerSpeed = bsRow ? (parseInt(bsRow.value) || 7) : 7;
 
     res.render('index', {
       title: 'SeraTecnologia',
@@ -62,6 +64,7 @@ router.get('/', (req, res) => {
       locations,
       banners: heroBanners,
       featuredNews: db.getFeaturedNews(5) || [],
+      bannerSpeed: bannerSpeed,
       flashProducts,
       search: search || '',
       selectedCategory: category || '',
@@ -142,6 +145,8 @@ router.get('/marketplace', (req, res) => {
     const products = db.query(sql, params) || [];
     const heroBanners = db.getToggle('banners') === '1' ? (db.getBannersByPosition('hero') || []) : [];
     const flashProducts = db.getFlashSales() || [];
+    const bsRow = db.get("SELECT value FROM config WHERE key = 'news_banner_speed'");
+    const bannerSpeed = bsRow ? (parseInt(bsRow.value) || 7) : 7;
 
     res.render('index', {
       title: 'Marketplace',
@@ -150,6 +155,7 @@ router.get('/marketplace', (req, res) => {
       locations,
       banners: heroBanners,
       featuredNews: db.getFeaturedNews(5) || [],
+      bannerSpeed: bannerSpeed,
       flashProducts,
       search: search || '',
       selectedCategory: category || '',

@@ -40,6 +40,8 @@ router.get('/', (req, res) => {
     const featured = db.getFeaturedNews(3) || [];
     const videos = db.getNews({ video: true, limit: 4 }) || [];
     const trending = db.getNews({ limit: 5, orderByViews: true }) || [];
+    const bsRow = db.get("SELECT value FROM config WHERE key = 'news_banner_speed'");
+    const bannerSpeed = bsRow ? (parseInt(bsRow.value) || 7) : 7;
     const hasMore = news.length < total;
     res.render('news', {
       title: 'Notícias - Games & Hacking',
@@ -47,8 +49,10 @@ router.get('/', (req, res) => {
       categories: cats,
       categoryCounts,
       featured,
+      featuredNews: db.getFeaturedNews(5) || [],
       videos,
       trending,
+      bannerSpeed: bannerSpeed,
       selectedCategory: category || '',
       search: search || '',
       initialLimit: limit,
