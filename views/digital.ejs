@@ -226,18 +226,19 @@ body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
       </div>
       <!-- Slides 1..n: produtos em destaque -->
       <% (featured || []).slice(0, 5).forEach(function(p){ %>
+      <% var out = (p.status === 'sold_out') || ((p.stock_count || 0) === 0); %>
       <div class="dfg-slide dfg-slide-prod">
         <a href="/logins/<%= p.slug %>" class="dfg-prod-slide">
           <div class="dfg-ps-img">
             <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
-            <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+            <span class="dfg-auto" style="<%= out ? 'background:rgba(120,120,120,.94);' : '' %>"><%= out ? 'ESGOTADO' : 'ENTREGA AUTOMÁTICA' %></span>
           </div>
           <div class="dfg-ps-info">
             <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category || '' %></span></div>
             <div class="dfg-card-title"><%= p.name %></div>
             <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
             <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
-            <span class="dfg-buy">Comprar</span>
+            <span class="dfg-buy" style="<%= out ? 'background:#6b6b6b;cursor:not-allowed;' : '' %>"><%= out ? 'Esgotado' : 'Comprar' %></span>
           </div>
         </a>
       </div>
@@ -280,10 +281,13 @@ body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
   <!-- BANNER STREAMING + BUSCA -->
   <section class="dfg-stream">
     <div class="stxt">
-      <div class="big">N <b>D+</b> prime STREAMING</div>
-      <div class="small">FILMES • SÉRIES • CANAIS • +</div>
+      <div class="big">ND<b>+</b> Prime</div>
+      <div class="small">Streaming premium: Filmes • Séries • Canais • e muito mais</div>
     </div>
     <form action="/logins" method="GET" class="dfg-search">
+      <input type="hidden" name="category" value="<%= selectedCategory %>">
+      <input type="hidden" name="sort" value="<%= sort %>">
+      <input type="hidden" name="instock" value="<%= instock %>">
       <input type="text" name="search" placeholder="Buscar logins, contas, acessos..." value="<%= search %>">
       <button type="submit"><i class="fas fa-search"></i></button>
     </form>
@@ -339,17 +343,18 @@ body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
   </div>
   <div class="dfg-grid">
     <% destaque.forEach(function(p){ %>
+      <% var out = (p.status === 'sold_out') || ((p.stock_count || 0) === 0); %>
       <a href="/logins/<%= p.slug %>" class="dfg-card">
         <div class="dfg-card-img">
           <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
-          <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+          <span class="dfg-auto" style="<%= out ? 'background:rgba(120,120,120,.94);' : '' %>"><%= out ? 'ESGOTADO' : 'ENTREGA AUTOMÁTICA' %></span>
         </div>
         <div class="dfg-card-body">
           <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
           <div class="dfg-card-title"><%= p.name %></div>
           <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
           <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
-          <span class="dfg-buy">Comprar</span>
+          <span class="dfg-buy" style="<%= out ? 'background:#6b6b6b;cursor:not-allowed;' : '' %>"><%= out ? 'Esgotado' : 'Comprar' %></span>
         </div>
       </a>
     <% }) %>
@@ -376,17 +381,18 @@ body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
   <% } else if (selectedCategory) { %>
     <div class="dfg-grid">
       <% products.forEach(function(p){ %>
+        <% var out = (p.status === 'sold_out') || ((p.stock_count || 0) === 0); %>
         <a href="/logins/<%= p.slug %>" class="dfg-card">
           <div class="dfg-card-img">
             <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
-            <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+            <span class="dfg-auto" style="<%= out ? 'background:rgba(120,120,120,.94);' : '' %>"><%= out ? 'ESGOTADO' : 'ENTREGA AUTOMÁTICA' %></span>
           </div>
           <div class="dfg-card-body">
             <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
             <div class="dfg-card-title"><%= p.name %></div>
             <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
             <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
-            <span class="dfg-buy">Comprar</span>
+            <span class="dfg-buy" style="<%= out ? 'background:#6b6b6b;cursor:not-allowed;' : '' %>"><%= out ? 'Esgotado' : 'Comprar' %></span>
           </div>
         </a>
       <% }) %>
@@ -397,17 +403,18 @@ body.hacker-theme .dfg-result-count span { color: var(--hack-text); }
       <h3 class="dfg-cat-title"><%= cat.toUpperCase() %></h3>
       <div class="dfg-grid">
         <% grouped[cat].forEach(function(p){ %>
+          <% var out = (p.status === 'sold_out') || ((p.stock_count || 0) === 0); %>
           <a href="/logins/<%= p.slug %>" class="dfg-card">
             <div class="dfg-card-img">
               <% if (p.image) { %><img src="<%= p.image %>" alt="<%= p.name %>" loading="lazy"><% } %>
-              <span class="dfg-auto">ENTREGA AUTOMÁTICA</span>
+              <span class="dfg-auto" style="<%= out ? 'background:rgba(120,120,120,.94);' : '' %>"><%= out ? 'ESGOTADO' : 'ENTREGA AUTOMÁTICA' %></span>
             </div>
             <div class="dfg-card-body">
               <div><span class="dfg-vendor"><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'Loja' %></span><span class="dfg-cat-link"><%= p.category %></span></div>
               <div class="dfg-card-title"><%= p.name %></div>
               <div class="dfg-stars">★★★★★ <span class="cnt">(<%= p.sold_count || 0 %>)</span></div>
               <div class="dfg-price">R$ <%= Number(p.price).toFixed(2) %></div>
-              <span class="dfg-buy">Comprar</span>
+              <span class="dfg-buy" style="<%= out ? 'background:#6b6b6b;cursor:not-allowed;' : '' %>"><%= out ? 'Esgotado' : 'Comprar' %></span>
             </div>
           </a>
         <% }) %>
