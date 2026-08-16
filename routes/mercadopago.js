@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database/db');
+const mpLib = require('../lib/mercadopago');
 
 // Seller connects MP account via OAuth
 router.get('/seller/mercadopago/auth', function(req, res) {
@@ -59,10 +60,25 @@ router.post('/api/criar-pagamento-mp', function(req, res) {
   res.json({ error: 'Mercado Pago ainda não configurado. Use PIX por enquanto.' });
 });
 
-router.post('/api/webhook/mercadopago', function(req, res) {
-  // TODO: receber confirmação de pagamento
-  // Atualizar status da venda para "paid"
-  // Notificar vendedor
+router.post('/api/webhook/mercadopago', async function(req, res) {
+  try {
+    var topic = (req.body && (req.body.type || req.body.topic)) || (req.query && req.query.topic);
+    var paymentId = null;
+    if (topic === 'payment') paymentId = req.body && req.body.data && req.body.data.id;
+    else if (req.query && req.query.id) paymentId = req.query.id;
+    if (!paymentId) return res.send('ok');
+
+    var payment = await mpLib.getPayment(paymentId);
+    var extRef = payment && payment.external_reference;
+    if (!extRef) return res.send('ok');
+
+    var sale = db.getDigitalSaleByDeliveryCode(extRef);
+    if (!sale) return res.send('ok');
+
+    await mpLib.applyPayment(sale, payment);
+  } catch (e) {
+    console.error('[MP webhook] erro:', e.message);
+  }
   res.send('ok');
 });
 

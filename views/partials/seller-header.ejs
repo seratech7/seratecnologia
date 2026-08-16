@@ -6,6 +6,7 @@
   <title><%= title %> | MarketPlace</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
+  <link rel="stylesheet" href="/css/notifications.css">
 </head>
 <body class="admin-page">
 
@@ -73,31 +74,19 @@
       <button class="sidebar-toggle" onclick="toggleAdminSidebar()" title="Menu">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="notif-bell" style="position:relative;margin-left:auto;">
-        <a href="/seller/notifications" style="color:#666;font-size:18px;position:relative;display:inline-block;padding:6px;">
+      <div class="notif-center">
+        <button class="notif-bell-btn" data-endpoint="/api/notifications/recent" data-all-link="/seller/notifications" aria-label="Notificações">
           <i class="fas fa-bell"></i>
-          <span id="notifBadge" style="display:none;position:absolute;top:0;right:0;background:#e53935;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;text-align:center;line-height:16px;padding:0 4px;border:2px solid #fff;"></span>
-        </a>
+          <span class="notif-badge" hidden>0</span>
+        </button>
+        <div class="notif-panel">
+          <div class="notif-panel-head">
+            <strong><i class="fas fa-bell"></i> Notificações <span class="notif-count-pill">0</span></strong>
+            <button class="notif-mark-all">Marcar todas como lidas</button>
+          </div>
+          <div class="notif-list"></div>
+          <div class="notif-panel-foot"><a href="/seller/notifications">Ver todas</a></div>
+        </div>
       </div>
     </div>
-    <script>
-    (function() {
-      function fetchNotifCount() {
-        var x = new XMLHttpRequest();
-        x.onload = function() {
-          if (x.status === 200) {
-            try {
-              var d = JSON.parse(x.responseText);
-              var badge = document.getElementById('notifBadge');
-              if (d.count > 0) { badge.style.display = 'inline'; badge.textContent = d.count > 99 ? '99+' : d.count; }
-              else { badge.style.display = 'none'; }
-            } catch(e) {}
-          }
-        };
-        x.open('GET', '/seller/notifications/count', true);
-        x.send();
-      }
-      fetchNotifCount();
-      setInterval(fetchNotifCount, 15000);
-    })();
-    </script>
+    <script src="/js/notifications.js"></script>

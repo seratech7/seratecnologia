@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/market-hacker.css">
   <link rel="stylesheet" href="/fonts/fontawesome.min.css">
+  <link rel="stylesheet" href="/css/notifications.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <meta name="theme-color" content="#1565c0">
   <% if (typeof og !== 'undefined' && og) { %>
@@ -100,9 +101,19 @@ body.hacker-theme .wa-topbar-link:hover { background:rgba(0,0,0,.07); }
         <i class="fas fa-truck"></i>
         <span>Rastrear</span>
       </a>
-      <div class="notif-bell" id="notifBell" onclick="window.location.href='/notificacoes'">
-        <i class="fas fa-bell"></i>
-        <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
+      <div class="notif-center">
+        <button class="notif-bell-btn" data-endpoint="/api/notifications/recent" data-all-link="/notificacoes" aria-label="Notificações">
+          <i class="fas fa-bell"></i>
+          <span class="notif-badge" hidden>0</span>
+        </button>
+        <div class="notif-panel">
+          <div class="notif-panel-head">
+            <strong><i class="fas fa-bell"></i> Notificações <span class="notif-count-pill">0</span></strong>
+            <button class="notif-mark-all">Marcar todas como lidas</button>
+          </div>
+          <div class="notif-list"></div>
+          <div class="notif-panel-foot"><a href="/notificacoes">Ver todas</a></div>
+        </div>
       </div>
       <button class="search-toggle-mobile" id="searchToggle" aria-label="Buscar">
         <i class="fas fa-search"></i>
@@ -234,28 +245,7 @@ function toggleHackerTheme() {
 }
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  function atualizarNotificacoes() {
-    fetch('/api/notifications').then(function(r) { return r.json(); }).then(function(data) {
-      var badge = document.getElementById('notifBadge');
-      if (!badge) return;
-      if (data.count > 0) {
-        badge.textContent = data.count;
-        badge.style.display = 'flex';
-        var bell = document.getElementById('notifBell');
-        if (bell) bell.classList.add('has-unread');
-      } else {
-        badge.style.display = 'none';
-        var bell = document.getElementById('notifBell');
-        if (bell) bell.classList.remove('has-unread');
-      }
-    }).catch(function() {});
-  }
-  atualizarNotificacoes();
-  setInterval(atualizarNotificacoes, 15000);
-});
-</script>
+<script src="/js/notifications.js"></script>
 
 <div class="top-ad" id="topAd">
   <div class="top-ad-content">

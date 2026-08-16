@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const db = require('../database/db');
+const mp = require('../lib/mercadopago');
 
 // Lista de produtos digitais (logins com entrega automática)
 router.get('/', (req, res) => {
@@ -52,35 +53,41 @@ router.get('/:slug', (req, res) => {
   }
 });
 
-// Checkout / compra
-router.post('/:slug/comprar', (req, res) => {
+// Checkout / compra -> cria venda PENDENTE + preferencia Mercado Pago (retorna JSON)
+router.post('/:slug/comprar', async (req, res) => {
   try {
     const product = db.getDigitalProductBySlug(req.params.slug);
-    if (!product || product.status !== 'active') return res.status(404).render('404', { title: 'Produto não encontrado' });
+    if (!product || product.status !== 'active') return res.status(404).json({ ok: false, error: 'Produto não encontrado.' });
 
     const { buyer_name, buyer_email, buyer_phone, delivery_channel, delivery_contact, observation } = req.body;
     if (!buyer_email || !buyer_name) {
-      const inStock = db.getDigitalAvailableCount(product.id) > 0;
-      return res.render('digital-detail', {
-        title: product.name,
-        product,
-        inStock,
-        error: 'Nome e e-mail são obrigatórios.'
-      });
+      return res.status(400).json({ ok: false, error: 'Nome e e-mail são obrigatórios.' });
     }
 
     const available = db.getAvailableDigitalStock(product.id);
     if (!available) {
-      const inStock = db.getDigitalAvailableCount(product.id) > 0;
-      return res.render('digital-detail', {
-        title: product.name,
-        product,
-        inStock,
-        error: 'Esgotado no momento.'
-      });
+      return res.status(400).json({ ok: false, error: 'Esgotado no momento.' });
     }
 
     const deliveryCode = 'ENT' + crypto.randomBytes(6).toString('hex').toUpperCase();
+
+    if (!mp.enabled()) {
+      return res.status(400).json({ ok: false, error: 'Pagamento indisponível no momento (Mercado Pago desativado).' });
+    }
+
+    // Gera a preferência no MP ANTES de criar a venda, para não deixar venda órfã
+    let pref;
+    try {
+      pref = await mp.createPreference({
+        title: product.name,
+        price: product.price,
+        payerEmail: buyer_email,
+        externalRef: deliveryCode
+      });
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: 'Não foi possível gerar o pagamento: ' + e.message });
+    }
+
     const saleId = db.createDigitalSale({
       product_id: product.id,
       stock_id: available.id,
@@ -92,16 +99,47 @@ router.post('/:slug/comprar', (req, res) => {
       observation: String(observation || '').slice(0, 500),
       price: product.price,
       delivery_code: deliveryCode,
-      status: 'confirmed'
+      status: 'pending_payment',
+      payment_status: 'pending'
     });
 
+    // Reserva o estoque para evitar venda duplicada
     db.markDigitalStockSold(available.id, saleId);
-    db.incrementDigitalSold(product.id);
+    db.updateDigitalSalePayment(saleId, { mp_preference_id: pref.id });
 
-    res.redirect('/entrega/' + deliveryCode);
+    const creds = mp.getCreds();
+    res.json({
+      ok: true,
+      saleId: saleId,
+      deliveryCode: deliveryCode,
+      preferenceId: pref.id,
+      publicKey: creds.publicKey,
+      initPoint: pref.init_point || pref.sandbox_init_point
+    });
   } catch (e) {
     console.error('Digital checkout error:', e);
-    res.status(500).render('404', { title: 'Erro ao processar compra' });
+    res.status(500).json({ ok: false, error: 'Erro ao processar compra.' });
+  }
+});
+
+// Status da venda (polling do front + sincroniza com MP quando pendente)
+router.get('/api/digital/venda/:code/status', async (req, res) => {
+  try {
+    const sale = db.getDigitalSaleByDeliveryCode(req.params.code);
+    if (!sale) return res.status(404).json({ ok: false });
+    if ((sale.payment_status === 'pending' || !sale.payment_status) && mp.enabled()) {
+      try {
+        const payments = await mp.getPaymentsByExternalRef(sale.delivery_code);
+        if (payments.length) {
+          const p = payments.sort(function (a, b) { return (b.date_created || '').localeCompare(a.date_created || ''); })[0];
+          await mp.applyPayment(sale, p);
+        }
+      } catch (e) { /* ignora erro de sincronizacao */ }
+    }
+    const refreshed = db.getDigitalSaleByDeliveryCode(req.params.code);
+    res.json({ ok: true, payment_status: refreshed.payment_status, status: refreshed.status });
+  } catch (e) {
+    res.status(500).json({ ok: false });
   }
 });
 

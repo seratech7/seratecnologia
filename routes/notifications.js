@@ -42,4 +42,13 @@ router.post('/api/notifications/read-all', function(req, res) {
   res.json({ ok: true });
 });
 
+router.get('/api/notifications/recent', function(req, res) {
+  var ip = req.ip || req.connection.remoteAddress || '';
+  if (req.admin) ip = 'admin';
+  else if (req.seller) ip = (req.seller.id ? req.seller.id.toString() : 'seller');
+  var list = db.getNotifications(ip, 12, 0) || [];
+  var count = db.getNotificationCount(ip);
+  res.json({ count: count, notifications: list });
+});
+
 module.exports = router;

@@ -23,7 +23,7 @@
       <% if (error) { %><div class="alert alert-error" style="margin-bottom:16px;"><%= error %></div><% } %>
 
       <% if (inStock) { %>
-      <form method="POST" action="/logins/<%= product.slug %>/comprar" style="display:flex;flex-direction:column;gap:12px;">
+      <form id="buyForm" method="POST" action="/logins/<%= product.slug %>/comprar" style="display:flex;flex-direction:column;gap:12px;">
         <div class="form-group">
           <label style="font-size:13px;color:var(--hack-dim);">Seu nome</label>
           <input type="text" name="buyer_name" class="admin-input" required placeholder="Nome completo">
@@ -72,11 +72,88 @@
           dfgUpdContact();
         </script>
 
-        <button type="submit" class="btn-primary" style="margin-top:8px;padding:14px;font-size:16px;">
-          <i class="fas fa-bolt"></i> Comprar e receber agora
+        <button type="submit" class="btn-primary" id="buyBtn" style="margin-top:8px;padding:14px;font-size:16px;">
+          <i class="fas fa-bolt"></i> Comprar e pagar
         </button>
-        <p style="font-size:12px;color:var(--hack-dim);text-align:center;margin:4px 0 0;">Entrega automática dos dados de acesso após a confirmação.</p>
+        <p style="font-size:12px;color:var(--hack-dim);text-align:center;margin:4px 0 0;">Ao clicar, abre o Mercado Pago para pagamento seguro. Após a confirmação, os dados são liberados.</p>
       </form>
+
+      <!-- Modal de pagamento Mercado Pago (mesma página) -->
+      <div id="mpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+        <div style="background:#fff;color:#1a1a1a;border-radius:16px;max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:22px;position:relative;">
+          <button id="mpClose" style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#666;">&times;</button>
+          <h3 style="margin:0 0 4px;font-size:18px;">Finalizar pagamento</h3>
+          <p id="mpStatus" style="font-size:13px;color:#666;margin:0 0 16px;">Carregando o Mercado Pago...</p>
+          <div id="mp-checkout"></div>
+        </div>
+      </div>
+
+      <script>
+      (function(){
+        var form = document.getElementById('buyForm');
+        if(!form) return;
+        var btn = document.getElementById('buyBtn');
+        var modal = document.getElementById('mpModal');
+        var closeBtn = document.getElementById('mpClose');
+        var statusEl = document.getElementById('mpStatus');
+        var container = document.getElementById('mp-checkout');
+        var pollTimer = null, code = null;
+
+        function setStatus(t, isErr){ statusEl.textContent = t; statusEl.style.color = isErr ? '#c62828' : '#666'; }
+        var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        var csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
+        function loadMpSdk(cb){
+          if(window.MercadoPago) return cb();
+          var s = document.createElement('script'); s.src = 'https://sdk.mercadopago.com/js/v2';
+          s.onload = cb; s.onerror = function(){ setStatus('Não foi possível carregar o Mercado Pago.', true); };
+          document.head.appendChild(s);
+        }
+        function openCheckout(prefId, publicKey){
+          loadMpSdk(function(){
+            try {
+              var mp = new MercadoPago(publicKey, { locale: 'pt-BR' });
+              container.innerHTML = '';
+              mp.checkout({ preference: { id: prefId }, render: { container: '#mp-checkout', label: 'Pagar com Mercado Pago' } });
+              setTimeout(function(){ var b = container.querySelector('button'); if(b) b.click(); }, 900);
+            } catch(e){ setStatus('Erro ao abrir o pagamento: ' + e.message, true); }
+          });
+        }
+        function startPolling(){
+          if(pollTimer) return;
+          pollTimer = setInterval(function(){
+            fetch('/logins/api/digital/venda/' + code + '/status').then(function(r){return r.json();}).then(function(d){
+              if(!d.ok) return;
+              if(d.payment_status === 'approved' || d.status === 'confirmed'){
+                clearInterval(pollTimer); pollTimer = null;
+                setStatus('Pagamento aprovado! Liberando dados...', false);
+                setTimeout(function(){ window.location.href = '/entrega/' + code; }, 1300);
+              } else if(d.payment_status === 'rejected' || d.payment_status === 'cancelled' || d.status === 'cancelled'){
+                clearInterval(pollTimer); pollTimer = null;
+                setStatus('Pagamento não concluído (' + d.payment_status + '). Tente novamente.', true);
+              }
+            }).catch(function(){});
+          }, 4000);
+        }
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          btn.disabled = true; btn.style.opacity = .7; setStatus('Processando...', false);
+          var fd = new FormData(form);
+          var body = new URLSearchParams();
+          fd.forEach(function(v,k){ body.append(k, v); });
+          fetch(form.getAttribute('action'), { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded','X-CSRF-Token':csrfToken}, body: body.toString() })
+            .then(function(r){ return r.json(); }).then(function(d){
+              if(!d.ok){ btn.disabled = false; btn.style.opacity = 1; setStatus(d.error || 'Erro ao iniciar pagamento.', true); return; }
+              code = d.deliveryCode;
+              modal.style.display = 'flex';
+              openCheckout(d.preferenceId, d.publicKey);
+              startPolling();
+            }).catch(function(){ btn.disabled = false; btn.style.opacity = 1; setStatus('Erro de conexão.', true); });
+        });
+        function closeModal(){ modal.style.display = 'none'; if(pollTimer){ clearInterval(pollTimer); pollTimer = null; } }
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+      })();
+      </script>
       <% } else { %>
         <div class="empty-row" style="text-align:center;padding:20px;">Produto indisponível no momento.</div>
       <% } %>

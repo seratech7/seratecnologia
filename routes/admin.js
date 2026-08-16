@@ -832,6 +832,28 @@ router.get('/digital', (req, res) => {
   res.render('admin/digital', { title: 'Serviços Digitais - Painel Admin', items: items || [], error: null });
 });
 
+// Vendas de logins (com status de pagamento Mercado Pago)
+router.get('/digital/vendas', (req, res) => {
+  const filter = req.query.filter || 'all';
+  const page = parseInt(req.query.page) || 1;
+  const limit = 50;
+  const offset = (page - 1) * limit;
+  let where = '';
+  if (filter === 'approved') where = "WHERE ds.payment_status = 'approved'";
+  else if (filter === 'pending') where = "WHERE ds.payment_status = 'pending'";
+  else if (filter === 'unpaid') where = "WHERE ds.payment_status IN ('rejected','cancelled')";
+  const count = db.get('SELECT COUNT(*) as c FROM digital_sales ds ' + where);
+  const sales = db.query(
+    'SELECT ds.*, dp.name as product_name FROM digital_sales ds LEFT JOIN digital_products dp ON ds.product_id = dp.id ' + where + ' ORDER BY ds.id DESC LIMIT ? OFFSET ?',
+    [limit, offset]
+  );
+  const totalPages = Math.ceil((count ? count.c : 0) / limit);
+  res.render('admin/digital-sales', {
+    title: 'Vendas de Logins - Painel Admin',
+    sales: sales || [], filter, page, totalPages, error: null
+  });
+});
+
 router.get('/digital/new', (req, res) => {
   res.render('admin/digital-form', { title: 'Novo Serviço Digital', item: null, error: null });
 });

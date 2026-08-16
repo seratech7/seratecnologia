@@ -1,7 +1,14 @@
 <%- include('partials/header') %>
 
+<%
+  var liberado = (sale.payment_status === 'approved' || sale.status === 'confirmed');
+  var pendente = (!sale.payment_status || sale.payment_status === 'pending');
+%>
+
 <div class="marketplace-container" style="padding:40px 16px;max-width:620px;margin:0 auto;text-align:center;">
   <div style="background:var(--card-bg);border:1px solid var(--hack-border);border-radius:16px;padding:32px;">
+
+    <% if (liberado) { %>
     <div style="width:64px;height:64px;border-radius:50%;background:rgba(76,175,80,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
       <i class="fas fa-check" style="font-size:30px;color:#4caf50;"></i>
     </div>
@@ -15,18 +22,18 @@
         <% if (sale.password) { %><div style="margin-top:8px;"><span style="color:var(--hack-dim);">Senha:</span> <code style="background:rgba(255,255,255,.08);padding:2px 8px;border-radius:5px;user-select:all;"><%= sale.password %></code></div><% } %>
         <% if (sale.note) { %><div style="margin-top:8px;"><span style="color:var(--hack-dim);">Observações:</span> <%= sale.note %></div><% } %>
       </div>
-      </div>
+    </div>
 
-      <% if (sale.delivery_channel || sale.delivery_contact || sale.observation) { %>
-      <div style="text-align:left;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:12px;padding:16px;margin-bottom:20px;font-size:14px;line-height:1.8;">
-        <h3 style="margin:0 0 8px;font-size:15px;color:var(--primary);"><i class="fas fa-paper-plane"></i> Recebimento</h3>
-        <% if (sale.delivery_channel) { %><div><span style="color:var(--hack-dim);">Canal:</span>
-          <% if (sale.delivery_channel === 'email') { %>E-mail<% } else if (sale.delivery_channel === 'whatsapp') { %>WhatsApp<% } else if (sale.delivery_channel === 'telegram') { %>Telegram<% } else if (sale.delivery_channel === 'signal') { %>Signal<% } else { %><%= sale.delivery_channel %><% } %>
-        </div><% } %>
-        <% if (sale.delivery_contact) { %><div><span style="color:var(--hack-dim);">Contato:</span> <%= sale.delivery_contact %></div><% } %>
-        <% if (sale.observation) { %><div style="margin-top:6px;"><span style="color:var(--hack-dim);">Observação:</span> <%= sale.observation %></div><% } %>
-      </div>
-      <% } %>
+    <% if (sale.delivery_channel || sale.delivery_contact || sale.observation) { %>
+    <div style="text-align:left;background:var(--hack-bg-2);border:1px solid var(--hack-border);border-radius:12px;padding:16px;margin-bottom:20px;font-size:14px;line-height:1.8;">
+      <h3 style="margin:0 0 8px;font-size:15px;color:var(--primary);"><i class="fas fa-paper-plane"></i> Recebimento</h3>
+      <% if (sale.delivery_channel) { %><div><span style="color:var(--hack-dim);">Canal:</span>
+        <% if (sale.delivery_channel === 'email') { %>E-mail<% } else if (sale.delivery_channel === 'whatsapp') { %>WhatsApp<% } else if (sale.delivery_channel === 'telegram') { %>Telegram<% } else if (sale.delivery_channel === 'signal') { %>Signal<% } else { %><%= sale.delivery_channel %><% } %>
+      </div><% } %>
+      <% if (sale.delivery_contact) { %><div><span style="color:var(--hack-dim);">Contato:</span> <%= sale.delivery_contact %></div><% } %>
+      <% if (sale.observation) { %><div style="margin-top:6px;"><span style="color:var(--hack-dim);">Observação:</span> <%= sale.observation %></div><% } %>
+    </div>
+    <% } %>
 
     <div style="background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.3);border-radius:10px;padding:14px;margin-bottom:20px;">
       <span style="font-size:13px;color:var(--hack-dim);">Código de rastreio da entrega:</span><br>
@@ -36,6 +43,38 @@
     <p style="font-size:12px;color:var(--hack-dim);">Guarde este código. Você pode acessar esta entrega novamente em <a href="/entrega/<%= sale.delivery_code %>" style="color:var(--primary);">/entrega/<%= sale.delivery_code %></a></p>
 
     <a href="/logins" class="btn-primary" style="display:inline-block;margin-top:16px;padding:12px 24px;text-decoration:none;">Voltar aos logins</a>
+
+    <% } else if (pendente) { %>
+    <div style="width:64px;height:64px;border-radius:50%;background:rgba(255,212,0,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <i class="fas fa-clock" style="font-size:30px;color:#b8860b;"></i>
+    </div>
+    <h1 style="font-size:24px;margin:0 0 8px;">Aguardando pagamento</h1>
+    <p style="color:var(--hack-dim);margin:0 0 20px;">Identificamos o pedido <strong><%= sale.product_name %></strong>, mas o pagamento ainda não foi confirmado pelo Mercado Pago. Assim que for aprovado, os dados serão liberados automaticamente aqui.</p>
+
+    <div style="background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.3);border-radius:10px;padding:14px;margin-bottom:20px;">
+      <span style="font-size:13px;color:var(--hack-dim);">Código de rastreio:</span><br>
+      <code style="font-size:16px;font-weight:600;color:var(--primary);user-select:all;"><%= sale.delivery_code %></code>
+    </div>
+
+    <p style="font-size:13px;color:var(--hack-dim);margin:0 0 16px;">Já pagou? A confirmação pode levar alguns instantes. Você pode acompanhar o status abaixo.</p>
+    <button id="checkPayBtn" onclick="window.location.reload()" class="btn-primary" style="display:inline-block;padding:12px 24px;">Atualizar status</button>
+    <a href="/logins" class="btn-primary" style="display:inline-block;margin-top:12px;padding:12px 24px;text-decoration:none;opacity:.85;">Voltar aos logins</a>
+
+    <% } else { %>
+    <div style="width:64px;height:64px;border-radius:50%;background:rgba(198,40,40,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <i class="fas fa-times-circle" style="font-size:30px;color:#c62828;"></i>
+    </div>
+    <h1 style="font-size:24px;margin:0 0 8px;">Pagamento não concluído</h1>
+    <p style="color:var(--hack-dim);margin:0 0 20px;">O pagamento para <strong><%= sale.product_name %></strong> não foi finalizado (<%= sale.payment_status %>). Nenhum dado foi liberado. Você pode tentar novamente.</p>
+
+    <div style="background:rgba(21,101,192,.1);border:1px solid rgba(21,101,192,.3);border-radius:10px;padding:14px;margin-bottom:20px;">
+      <span style="font-size:13px;color:var(--hack-dim);">Código de rastreio:</span><br>
+      <code style="font-size:16px;font-weight:600;color:var(--primary);user-select:all;"><%= sale.delivery_code %></code>
+    </div>
+
+    <a href="/logins/<%= sale.slug %>" class="btn-primary" style="display:inline-block;padding:12px 24px;text-decoration:none;">Tentar novamente</a>
+    <% } %>
+
   </div>
 </div>
 

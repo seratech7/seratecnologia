@@ -1,5 +1,7 @@
 function csrfProtection(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  // Webhooks externos (ex.: Mercado Pago) não possuem token CSRF
+  if (req.path === '/api/webhook/mercadopago') return next();
   // Para forms multipart (upload) o corpo só é parseado pelo multer da rota,
   // que roda DEPOIS deste middleware. Então o token é enviado via query string
   // (injetado na action do form pelo injectCsrfIntoHtml) e lido daqui.
