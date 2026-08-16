@@ -152,6 +152,64 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 .news-loadmore:disabled { opacity:.6; cursor:default; }
 #news-sentinel { height:1px; }
 
+/* === Melhorias visuais e de usabilidade === */
+.news-hero-top { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+.news-hero-stats { display:flex; gap:12px; }
+.news-stat { background:rgba(255,255,255,0.13); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:10px 16px; text-align:center; min-width:82px; backdrop-filter:blur(4px); }
+.news-stat-num { display:block; font-size:22px; font-weight:800; line-height:1; }
+.news-stat-lbl { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.6px; opacity:.85; margin-top:5px; }
+body.hacker-theme .news-stat { background:rgba(0,230,118,0.08); border-color:rgba(0,230,118,0.25); }
+
+.news-controls { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; align-items:center; }
+.news-viewtoggle { display:inline-flex; background:rgba(255,255,255,0.14); border-radius:10px; padding:4px; gap:4px; }
+.news-viewtoggle button { border:0; background:transparent; color:#fff; width:38px; height:34px; border-radius:8px; cursor:pointer; font-size:14px; opacity:.8; transition:all .15s; }
+.news-viewtoggle button.active { background:#fff; color:var(--naccent); opacity:1; box-shadow:0 4px 12px rgba(0,0,0,.2); }
+body.hacker-theme .news-viewtoggle button.active { background:#00e676; color:#04140d; }
+.news-sort { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.14); border-radius:10px; padding:0 12px 0 14px; color:#fff; font-size:13px; font-weight:600; }
+.news-sort select { border:0; background:transparent; color:#fff; font-weight:700; font-size:13px; padding:9px 4px; outline:0; cursor:pointer; }
+.news-sort select option { color:#0d1b2a; }
+
+/* Lista (modo lista) */
+.news-grid.list-view { grid-template-columns:1fr; }
+.news-grid.list-view .news-card { flex-direction:row; align-items:stretch; }
+.news-grid.list-view .news-card.size-lg, .news-grid.list-view .news-card.size-tall { grid-column:auto; grid-row:auto; }
+.news-grid.list-view .news-thumb { width:280px; flex:0 0 280px; height:auto; min-height:172px; }
+.news-grid.list-view .news-card.size-lg .news-thumb, .news-grid.list-view .news-card.size-tall .news-thumb { height:auto; }
+.news-grid.list-view .news-body2 { padding:18px 22px; }
+.news-grid.list-view .news-title { font-size:19px; -webkit-line-clamp:1; }
+.news-grid.list-view .news-excerpt { -webkit-line-clamp:2; }
+@media (max-width:640px){
+  .news-grid.list-view .news-card { flex-direction:column; }
+  .news-grid.list-view .news-thumb { width:100%; flex:none; height:180px; }
+}
+
+/* Autor nos cards */
+.news-author { display:flex; align-items:center; gap:8px; }
+.news-author-ava { width:26px; height:26px; border-radius:50%; background:var(--cc, var(--naccent)); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; text-transform:uppercase; flex:0 0 auto; }
+.news-author-name { font-size:12px; color:var(--ndim); font-weight:600; }
+
+/* Newsletter (sidebar) */
+.news-newsletter { margin-top:22px; background:linear-gradient(135deg, var(--naccent), #0047b3); color:#fff; border-radius:16px; padding:20px; box-shadow:var(--nshadow); position:relative; overflow:hidden; }
+body.hacker-theme .news-newsletter { background:linear-gradient(135deg, #064e3b, #022c22); }
+.news-newsletter::after { content:""; position:absolute; right:-30px; bottom:-30px; width:130px; height:130px; background:radial-gradient(circle, rgba(255,255,255,.22), transparent 70%); border-radius:50%; }
+.news-newsletter h4 { margin:0 0 6px; font-size:16px; display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
+.news-newsletter p { margin:0 0 14px; font-size:12.5px; opacity:.92; line-height:1.5; position:relative; z-index:1; }
+.news-news-form { display:flex; gap:8px; position:relative; z-index:1; }
+.news-news-form input { flex:1; min-width:0; border:0; border-radius:9px; padding:10px 12px; font-size:13px; outline:0; color:#0d1b2a; }
+.news-news-form button { border:0; background:#0d1b2a; color:#fff; border-radius:9px; padding:10px 16px; font-weight:700; cursor:pointer; font-size:13px; white-space:nowrap; }
+body.hacker-theme .news-news-form button { background:#00e676; color:#04140d; }
+.news-news-ok { font-size:12.5px; background:rgba(255,255,255,.18); border-radius:9px; padding:10px 12px; display:none; position:relative; z-index:1; }
+
+/* Voltar ao topo */
+.news-totop { position:fixed; right:20px; bottom:20px; width:46px; height:46px; border-radius:50%; background:var(--naccent); color:#fff; border:0; cursor:pointer; font-size:18px; box-shadow:0 8px 24px rgba(0,102,255,.4); opacity:0; transform:translateY(12px); pointer-events:none; transition:all .2s; z-index:200; }
+.news-totop.show { opacity:1; transform:none; pointer-events:auto; }
+.news-totop:hover { transform:translateY(-3px); }
+body.hacker-theme .news-totop { background:#00e676; color:#04140d; box-shadow:0 8px 24px rgba(0,230,118,.4); }
+
+.news-empty { display:flex; flex-direction:column; align-items:center; }
+.news-empty .news-empty-actions { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.news-empty .news-empty-actions a { background:var(--naccent); color:#fff; text-decoration:none; padding:9px 18px; border-radius:24px; font-size:13px; font-weight:700; }
+
 .news-empty { text-align:center; padding:60px 20px; color:var(--ndim); background:var(--ncard); border:1px dashed var(--nborder); border-radius:14px; max-width:1400px; margin:0 auto 24px; }
 .news-empty i { font-size:32px; display:block; margin-bottom:10px; opacity:.5; }
 
@@ -202,14 +260,36 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
 <div class="news-page">
   <header class="news-hero">
     <div class="news-hero-inner">
-      <span class="news-kicker"><i class="fas fa-microchip"></i> Games &amp; Hacking</span>
-      <h1><i class="fas fa-newspaper"></i> Notícias</h1>
-      <p>As últimas novidades, análises e alertas de segurança. Alterne os temas ou role para ver tudo.</p>
+      <div class="news-hero-top">
+        <div>
+          <span class="news-kicker"><i class="fas fa-microchip"></i> Games &amp; Hacking</span>
+          <h1><i class="fas fa-newspaper"></i> Notícias</h1>
+          <p>As últimas novidades, análises e alertas de segurança. Alterne os temas ou role para ver tudo.</p>
+        </div>
+        <div class="news-hero-stats">
+          <div class="news-stat"><span class="news-stat-num"><%= total %></span><span class="news-stat-lbl">Notícias</span></div>
+          <div class="news-stat"><span class="news-stat-num"><%= categories.length %></span><span class="news-stat-lbl">Categorias</span></div>
+          <div class="news-stat"><span class="news-stat-num"><%= galleryVideos.length %></span><span class="news-stat-lbl">Vídeos</span></div>
+        </div>
+      </div>
       <form action="/noticias" method="GET" class="news-search">
         <i class="fas fa-search"></i>
         <input type="text" name="search" placeholder="Buscar notícias..." value="<%= search %>">
         <button type="submit">Buscar</button>
       </form>
+      <div class="news-controls">
+        <div class="news-viewtoggle" id="news-viewtoggle">
+          <button type="button" data-view="grid" class="active" title="Grade"><i class="fas fa-th-large"></i></button>
+          <button type="button" data-view="list" title="Lista"><i class="fas fa-list"></i></button>
+        </div>
+        <label class="news-sort">
+          <i class="fas fa-sort-amount-down"></i>
+          <select id="news-sort">
+            <option value="recent">Mais recentes</option>
+            <option value="popular">Mais lidas</option>
+          </select>
+        </label>
+      </div>
     </div>
   </header>
 
@@ -249,6 +329,16 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
         </ol>
       </div>
       <% } %>
+
+      <div class="news-newsletter">
+        <h4><i class="fas fa-envelope-open-text"></i> Receba no e-mail</h4>
+        <p>Novidades de Games &amp; Hacking toda semana. Sem spam.</p>
+        <form class="news-news-form" id="news-news-form" onsubmit="return false;">
+          <input type="email" id="news-news-email" placeholder="seu@email.com" required>
+          <button type="submit"><i class="fas fa-paper-plane"></i> Assinar</button>
+        </form>
+        <div class="news-news-ok" id="news-news-ok"><i class="fas fa-check"></i> Inscrito! Em breve você recebe novidades.</div>
+      </div>
     </aside>
 
     <main class="news-main">
@@ -288,6 +378,10 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
               <div class="news-body2">
                 <h3 class="news-title"><%= n.title %></h3>
                 <p class="news-excerpt"><%= (n.excerpt || '').slice(0,160) %></p>
+                <div class="news-author">
+                  <span class="news-author-ava"><%= (n.author || 'R').charAt(0) %></span>
+                  <span class="news-author-name"><%= n.author || 'Redação' %></span>
+                </div>
                 <div class="news-meta">
                   <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
                   <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
@@ -300,7 +394,12 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
       <% } %>
 
       <% if (news.length === 0) { %>
-        <div class="news-empty"><i class="far fa-folder-open"></i>Nenhuma notícia encontrada.</div>
+        <div class="news-empty"><i class="far fa-folder-open"></i><div>Nenhuma notícia encontrada.</div>
+          <div class="news-empty-actions">
+            <a href="/noticias"><i class="fas fa-th-large"></i> Ver todas</a>
+            <a href="/noticias?video=1"><i class="fab fa-youtube"></i> Ver vídeos</a>
+          </div>
+        </div>
       <% } else { %>
       <div class="news-grid" id="news-grid">
         <% gridNews.forEach(function(n, idx) { %>
@@ -315,10 +414,14 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
               </span>
               <% if (n.video) { %><span class="news-play-badge" data-vid="<%= ytId(n.video) %>"><i class="fas fa-play"></i></span><% } %>
             </div>
-            <div class="news-body2">
-              <h3 class="news-title"><%= n.title %></h3>
-              <p class="news-excerpt"><%= (n.excerpt || '').slice(0,140) %></p>
-              <div class="news-meta">
+              <div class="news-body2">
+                <h3 class="news-title"><%= n.title %></h3>
+                <p class="news-excerpt"><%= (n.excerpt || '').slice(0,140) %></p>
+                <div class="news-author">
+                  <span class="news-author-ava"><%= (n.author || 'R').charAt(0) %></span>
+                  <span class="news-author-name"><%= n.author || 'Redação' %></span>
+                </div>
+                <div class="news-meta">
                 <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
                 <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
               </div>
@@ -337,8 +440,14 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     </main>
   </div>
 
-  <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i>Nenhuma notícia neste tema.</div>
+  <div id="news-empty" class="news-empty" style="display:none;"><i class="far fa-folder-open"></i><div>Nenhuma notícia neste tema.</div>
+    <div class="news-empty-actions">
+      <a href="/noticias"><i class="fas fa-th-large"></i> Ver todas</a>
+    </div>
+  </div>
 </div>
+
+<button class="news-totop" id="news-totop" title="Voltar ao topo"><i class="fas fa-arrow-up"></i></button>
 
 <div class="news-modal" id="news-modal">
   <div class="news-modal-box">
@@ -363,11 +472,14 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     category: '<%= selectedCategory %>',
     search: '<%= search %>',
     video: false,
+    sort: '<%= sort %>',
     offset: <%- news.length %>,
     limit: <%- initialLimit %>,
     loading: false,
     hasMore: <%- hasMore ? 'true' : 'false' %>
   };
+  try { var savedView = localStorage.getItem('news_view'); } catch (e) { var savedView = null; }
+  if (savedView === 'list' && grid) grid.classList.add('list-view');
 
   function openVideo(raw, title) {
     if (!modal || !raw) return;
@@ -452,6 +564,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
       '<div class="news-body2">' +
         '<h3 class="news-title">' + esc(n.title) + '</h3>' +
         '<p class="news-excerpt">' + esc((n.excerpt || '').slice(0, 140)) + '</p>' +
+        '<div class="news-author"><span class="news-author-ava">' + esc((n.author || 'R').charAt(0)) + '</span><span class="news-author-name">' + esc(n.author || 'Redação') + '</span></div>' +
         '<div class="news-meta"><span><i class="far fa-calendar"></i> ' + new Date(n.created_at).toLocaleDateString('pt-BR') + '</span><span class="news-views"><i class="far fa-eye"></i> ' + (n.views || 0) + '</span></div>' +
       '</div>' +
     '</a>';
@@ -472,7 +585,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   function loadMore() {
     if (state.loading || !state.hasMore) return;
     setBusy(true);
-    var url = '/noticias/api?' + (state.video ? 'video=1&' : '') + 'category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&offset=' + state.offset + '&limit=' + state.limit;
+    var url = '/noticias/api?' + (state.video ? 'video=1&' : '') + 'category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&sort=' + encodeURIComponent(state.sort) + '&offset=' + state.offset + '&limit=' + state.limit;
     fetch(url).then(function (r) { return r.json(); }).then(function (data) {
       appendItems(data.items || [], state.offset);
       state.offset = data.nextOffset || (state.offset + (data.items ? data.items.length : 0));
@@ -497,7 +610,7 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
       grid.innerHTML = '';
       if (empty) empty.style.display = 'none';
       setBusy(true);
-      var url = '/noticias/api?' + (isVideo ? 'video=1&' : '') + 'category=' + encodeURIComponent(cat) + '&search=' + encodeURIComponent(state.search) + '&offset=0&limit=' + state.limit;
+      var url = '/noticias/api?' + (isVideo ? 'video=1&' : '') + 'category=' + encodeURIComponent(cat) + '&search=' + encodeURIComponent(state.search) + '&sort=' + encodeURIComponent(state.sort) + '&offset=0&limit=' + state.limit;
       fetch(url).then(function (r) { return r.json(); }).then(function (data) {
         appendItems(data.items || [], 0);
         state.offset = data.nextOffset || (data.items ? data.items.length : 0);
@@ -518,6 +631,72 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', loadMore);
     loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+  }
+
+  // === Alternar visualização grade/lista ===
+  var viewToggle = document.getElementById('news-viewtoggle');
+  if (viewToggle) {
+    var vtBtns = viewToggle.querySelectorAll('button');
+    vtBtns.forEach(function (b) {
+      if (b.getAttribute('data-view') === state.view) {
+        vtBtns.forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+      }
+      b.addEventListener('click', function () {
+        var v = b.getAttribute('data-view');
+        vtBtns.forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        if (grid) grid.classList.toggle('list-view', v === 'list');
+        try { localStorage.setItem('news_view', v); } catch (e) {}
+      });
+    });
+  }
+
+  // === Ordenação ===
+  var sortSel = document.getElementById('news-sort');
+  if (sortSel) {
+    sortSel.value = state.sort;
+    sortSel.addEventListener('change', function () {
+      state.sort = sortSel.value;
+      state.offset = 0; state.hasMore = true; state.loading = false;
+      if (featuredSection) featuredSection.style.display = (state.category || state.video) ? 'none' : '';
+      var gallerySection = document.getElementById('news-videos');
+      if (gallerySection) gallerySection.style.display = (state.video || state.category) ? 'none' : '';
+      grid.innerHTML = '';
+      if (empty) empty.style.display = 'none';
+      setBusy(true);
+      var url = '/noticias/api?' + (state.video ? 'video=1&' : '') + 'category=' + encodeURIComponent(state.category) + '&search=' + encodeURIComponent(state.search) + '&sort=' + encodeURIComponent(state.sort) + '&offset=0&limit=' + state.limit;
+      fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+        appendItems(data.items || [], 0);
+        state.offset = data.nextOffset || (data.items ? data.items.length : 0);
+        state.hasMore = !!data.hasMore;
+        if (loadMoreBtn) loadMoreBtn.style.display = state.hasMore ? '' : 'none';
+        if ((data.items || []).length === 0 && empty) empty.style.display = '';
+        setBusy(false);
+      }).catch(function () { setBusy(false); });
+    });
+  }
+
+  // === Voltar ao topo ===
+  var toTop = document.getElementById('news-totop');
+  if (toTop) {
+    window.addEventListener('scroll', function () {
+      if (window.scrollY > 500) toTop.classList.add('show');
+      else toTop.classList.remove('show');
+    }, { passive: true });
+    toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+
+  // === Newsletter (simulado no cliente) ===
+  var nf = document.getElementById('news-news-form');
+  if (nf) {
+    nf.addEventListener('submit', function () {
+      var email = document.getElementById('news-news-email');
+      if (!email || !email.value) return;
+      nf.style.display = 'none';
+      var ok = document.getElementById('news-news-ok');
+      if (ok) ok.style.display = 'block';
+    });
   }
 })();
 </script>

@@ -10,7 +10,9 @@ router.get('/api', (req, res) => {
     const onlyVideo = req.query.video === '1';
     const offset = parseInt(req.query.offset || '0', 10);
     const limit = parseInt(req.query.limit || '9', 10);
+    const sort = req.query.sort === 'popular' ? 'popular' : 'recent';
     const opts = { limit, offset };
+    if (sort === 'popular') opts.orderByViews = true;
     if (category) opts.category = category;
     if (search) opts.search = search;
     if (onlyVideo) opts.video = true;
@@ -31,12 +33,15 @@ router.get('/api', (req, res) => {
 router.get('/', (req, res) => {
   try {
     const { category, search } = req.query;
+    const sort = req.query.sort === 'popular' ? 'popular' : 'recent';
     const limit = 9;
     const cats = db.getNewsCategories() || [];
     const categoryCounts = {};
     cats.forEach(c => { categoryCounts[c.category] = db.getNewsCount({ category: c.category }); });
     const total = db.getNewsCount({ category, search });
-    const news = db.getNews({ category, search, limit, offset: 0 }) || [];
+    const newsOpts = { category, search, limit, offset: 0 };
+    if (sort === 'popular') newsOpts.orderByViews = true;
+    const news = db.getNews(newsOpts) || [];
     const featured = db.getFeaturedNews(3) || [];
     const videos = db.getNews({ video: true, limit: 4 }) || [];
     const trending = db.getNews({ limit: 5, orderByViews: true }) || [];
@@ -51,13 +56,14 @@ router.get('/', (req, res) => {
       trending,
       selectedCategory: category || '',
       search: search || '',
+      sort: sort,
       initialLimit: limit,
       hasMore,
       total
     });
   } catch (e) {
     console.error('News list error:', e);
-    res.render('news', { title: 'Notícias', news: [], categories: [], categoryCounts: {}, featured: [], selectedCategory: '', search: '', initialLimit: 9, hasMore: false, total: 0 });
+    res.render('news', { title: 'Notícias', news: [], categories: [], categoryCounts: {}, featured: [], selectedCategory: '', search: '', sort: 'recent', initialLimit: 9, hasMore: false, total: 0 });
   }
 });
 

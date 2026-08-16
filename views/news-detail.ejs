@@ -129,11 +129,69 @@ body.hacker-theme .news-detail-page {
   box-shadow: 0 4px 12px rgba(0,102,255,0.35);
 }
 .nd-react.active .nd-count { color: #fff; }
-.nd-views-badge {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-  font-size: 13px; color: var(--ndim); background: var(--nchip, #eef2ff);
-  padding: 8px 14px; border-radius: 24px;
-}
+ .nd-views-badge {
+   margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+   font-size: 13px; color: var(--ndim); background: var(--nchip, #eef2ff);
+   padding: 8px 14px; border-radius: 24px;
+ }
+
+ /* === Melhorias visuais e de usabilidade === */
+ .nd-progress {
+   position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+   background: linear-gradient(90deg, #0066ff, #00e676); z-index: 9999;
+   transition: width .1s linear;
+ }
+ body.hacker-theme .nd-progress { background: linear-gradient(90deg, #00e676, #00b894); }
+
+ .nd-author {
+   display: flex; align-items: center; gap: 12px;
+   margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--nborder);
+ }
+ .nd-author-ava {
+   width: 46px; height: 46px; border-radius: 50%;
+   background: linear-gradient(135deg, #0066ff, #0047b3); color: #fff;
+   display: flex; align-items: center; justify-content: center;
+   font-size: 18px; font-weight: 800; text-transform: uppercase; flex: 0 0 auto;
+ }
+ body.hacker-theme .nd-author-ava { background: linear-gradient(135deg, #00e676, #00875a); }
+ .nd-author-info { display: flex; flex-direction: column; gap: 2px; }
+ .nd-author-name { font-size: 14px; font-weight: 700; color: var(--ntext); }
+ .nd-author-sub { font-size: 12px; color: var(--ndim); }
+
+ .nd-bookmark {
+   margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+   border: 1px solid var(--nborder); background: var(--ncard); color: var(--ntext);
+   padding: 9px 15px; border-radius: 24px; cursor: pointer; font-size: 13px; font-weight: 600;
+   transition: all .15s;
+ }
+ .nd-bookmark:hover { border-color: var(--primary); transform: translateY(-2px); }
+ .nd-bookmark.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+ body.hacker-theme .nd-bookmark.active { background: #00e676; color: #04140d; border-color: #00e676; }
+
+ .nd-share-btn.x:hover { color: #fff; background: #000; border-color: #000; }
+ .nd-share-btn.fb:hover { color: #fff; background: #1877f2; border-color: #1877f2; }
+ .nd-share-btn.linkedin:hover { color: #fff; background: #0a66c2; border-color: #0a66c2; }
+
+ .nd-newsletter {
+   margin-top: 34px; background: linear-gradient(135deg, var(--primary, #0066ff), #0047b3);
+   color: #fff; border-radius: 16px; padding: 22px 24px; position: relative; overflow: hidden;
+   box-shadow: var(--nshadow);
+ }
+ body.hacker-theme .nd-newsletter { background: linear-gradient(135deg, #064e3b, #022c22); }
+ .nd-newsletter::after {
+   content: ""; position: absolute; right: -30px; bottom: -30px; width: 140px; height: 140px;
+   background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%); border-radius: 50%;
+ }
+ .nd-newsletter h4 { margin: 0 0 6px; font-size: 17px; position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; }
+ .nd-newsletter p { margin: 0 0 14px; font-size: 13px; opacity: .92; position: relative; z-index: 1; }
+ .nd-news-form { display: flex; gap: 8px; position: relative; z-index: 1; }
+ .nd-news-form input { flex: 1; min-width: 0; border: 0; border-radius: 9px; padding: 11px 13px; font-size: 13px; outline: 0; color: #0d1b2a; }
+ .nd-news-form button { border: 0; background: #0d1b2a; color: #fff; border-radius: 9px; padding: 11px 18px; font-weight: 700; cursor: pointer; font-size: 13px; white-space: nowrap; }
+ body.hacker-theme .nd-news-form button { background: #00e676; color: #04140d; }
+ .nd-news-ok { font-size: 13px; background: rgba(255,255,255,.18); border-radius: 9px; padding: 11px 13px; display: none; position: relative; z-index: 1; }
+
+ .nd-rel-card .nd-rel-read { font-size: 11px; color: var(--ndim); display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+
 
 .nd-share {
   display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
@@ -152,6 +210,7 @@ body.hacker-theme .news-detail-page {
 </style>
 
 <div class="news-detail-page">
+  <div class="nd-progress" id="nd-progress"></div>
   <div class="nd-wrap">
     <a class="nd-back" href="/noticias"><i class="fas fa-arrow-left"></i> Voltar às notícias</a>
 
@@ -185,15 +244,24 @@ body.hacker-theme .news-detail-page {
           <span><i class="far fa-eye"></i> <%= article.views || 0 %> visualizações</span>
           <% var _w = (article.content||'').split(/\s+/).filter(Boolean).length; var _rt = Math.max(1, Math.round(_w/200)); %>
           <span><i class="far fa-clock"></i> <%= _rt %> min de leitura</span>
-          <% if (article.author) { %><span class="nd-author"><i class="far fa-user"></i> <%= article.author %></span><% } %>
+        </div>
+        <div class="nd-author">
+          <span class="nd-author-ava"><%= (article.author || 'R').charAt(0) %></span>
+          <span class="nd-author-info">
+            <span class="nd-author-name"><%= article.author || 'Redação' %></span>
+            <span class="nd-author-sub">Escrito por • <%= new Date(article.created_at).toLocaleDateString('pt-BR') %></span>
+          </span>
         </div>
         <div class="nd-prose"><%- article.content %></div>
 
         <div class="nd-share">
           <span class="nd-share-label"><i class="fas fa-share-alt"></i> Compartilhar</span>
           <a class="nd-share-btn" id="share-wa" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-          <a class="nd-share-btn" id="share-tg" target="_blank" rel="noopener"><i class="fab fa-telegram-plane"></i> Telegram</a>
+          <a class="nd-share-btn x" id="share-x" target="_blank" rel="noopener"><i class="fab fa-x-twitter"></i> X</a>
+          <a class="nd-share-btn fb" id="share-fb" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i> Facebook</a>
+          <a class="nd-share-btn linkedin" id="share-li" target="_blank" rel="noopener"><i class="fab fa-linkedin-in"></i> LinkedIn</a>
           <button class="nd-share-btn" id="share-copy"><i class="far fa-copy"></i> Copiar link</button>
+          <button class="nd-bookmark" id="nd-bookmark"><i class="far fa-bookmark"></i> <span>Salvar</span></button>
         </div>
 
         <div class="nd-reactions" id="nd-reactions">
@@ -222,12 +290,23 @@ body.hacker-theme .news-detail-page {
             <div class="nd-rel-body">
               <h4><%= n.title %></h4>
               <span><%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
+              <span class="nd-rel-read"><i class="far fa-clock"></i> <%= Math.max(1, Math.round(((n.content||'').split(/\s+/).filter(Boolean).length)/200)) %> min de leitura</span>
             </div>
           </a>
         <% }) %>
       </div>
     </section>
     <% } %>
+
+    <div class="nd-newsletter">
+      <h4><i class="fas fa-envelope-open-text"></i> Não perca nenhuma novidade</h4>
+      <p>Receba as melhores análises de Games &amp; Hacking direto no seu e-mail.</p>
+      <form class="nd-news-form" id="nd-news-form" onsubmit="return false;">
+        <input type="email" id="nd-news-email" placeholder="seu@email.com" required>
+        <button type="submit"><i class="fas fa-paper-plane"></i> Assinar</button>
+      </form>
+      <div class="nd-news-ok" id="nd-news-ok"><i class="fas fa-check"></i> Inscrito! Em breve você recebe novidades.</div>
+    </div>
   </div>
 </div>
 
@@ -240,6 +319,12 @@ body.hacker-theme .news-detail-page {
   var copy = document.getElementById('share-copy');
   if (wa) wa.href = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(shareTitle + ' ' + shareUrl);
   if (tg) tg.href = 'https://t.me/share/url?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(shareTitle);
+  var sx = document.getElementById('share-x');
+  var sf = document.getElementById('share-fb');
+  var sl = document.getElementById('share-li');
+  if (sx) sx.href = 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(shareUrl) + '&text=' + encodeURIComponent(shareTitle);
+  if (sf) sf.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(shareUrl);
+  if (sl) sl.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(shareUrl);
   if (copy) {
     copy.addEventListener('click', function () {
       var done = function () {
@@ -296,13 +381,58 @@ body.hacker-theme .news-detail-page {
         headers: headers,
         body: body
       })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (data && data.reactions) paint(data.reactions, isActive ? null : type);
-      })
-      .catch(function () {});
-    });
-  });
+       .then(function (r) { return r.json(); })
+       .then(function (data) {
+         if (data && data.reactions) paint(data.reactions, isActive ? null : type);
+       })
+       .catch(function () {});
+     });
+   });
+
+   // === Barra de progresso de leitura ===
+   var progress = document.getElementById('nd-progress');
+   if (progress) {
+     var updateProgress = function () {
+       var h = document.documentElement;
+       var max = h.scrollHeight - h.clientHeight;
+       var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max * 100 : 0;
+       progress.style.width = Math.min(100, Math.max(0, pct)) + '%';
+     };
+     window.addEventListener('scroll', updateProgress, { passive: true });
+     window.addEventListener('resize', updateProgress, { passive: true });
+     updateProgress();
+   }
+
+   // === Salvar / favoritar (localStorage) ===
+   var bm = document.getElementById('nd-bookmark');
+   if (bm) {
+     var bmKey = 'news_bookmark_' + <%- JSON.stringify(article && article.slug ? article.slug : '') %>;
+     var bmActive = false;
+     try { bmActive = localStorage.getItem(bmKey) === '1'; } catch (e) {}
+     function paintBm() {
+       bm.classList.toggle('active', bmActive);
+       bm.querySelector('span').textContent = bmActive ? 'Salvo' : 'Salvar';
+       bm.querySelector('i').className = bmActive ? 'fas fa-bookmark' : 'far fa-bookmark';
+     }
+     paintBm();
+     bm.addEventListener('click', function () {
+       bmActive = !bmActive;
+       try { localStorage.setItem(bmKey, bmActive ? '1' : '0'); } catch (e) {}
+       paintBm();
+     });
+   }
+
+   // === Newsletter (simulado no cliente) ===
+   var ndf = document.getElementById('nd-news-form');
+   if (ndf) {
+     ndf.addEventListener('submit', function () {
+       var email = document.getElementById('nd-news-email');
+       if (!email || !email.value) return;
+       ndf.style.display = 'none';
+       var ok = document.getElementById('nd-news-ok');
+       if (ok) ok.style.display = 'block';
+     });
+   }
 })();
 </script>
 
