@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a1628"/>
+      <stop offset="0.55" stop-color="#0c1124"/>
+      <stop offset="1" stop-color="#170a2e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.34" r="0.5">
+      <stop offset="0" stop-color="#22D3EE" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <rect width="1080" height="1080" fill="url(#glow)"/>
+
+  <!-- grade de circuito decorativa -->
+  <g stroke="#22D3EE" stroke-opacity="0.08" stroke-width="2" fill="none">
+    <path d="M0 150 H1080 M0 930 H1080"/>
+    <path d="M120 0 V1080 M960 0 V1080"/>
+  </g>
+  <g fill="#22D3EE" fill-opacity="0.18">
+    <circle cx="120" cy="150" r="4"/><circle cx="960" cy="150" r="4"/>
+    <circle cx="120" cy="930" r="4"/><circle cx="960" cy="930" r="4"/>
+  </g>
+
+  
+  <g transform="translate(412,210) scale(4)">
+    <rect x="6" y="6" width="52" height="52" rx="15" fill="url(#g)"/>
+    <rect x="6" y="6" width="52" height="52" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+    <g fill="#ffffff" fill-opacity="0.9">
+      <rect x="20" y="57" width="4" height="7" rx="1.5"/>
+      <rect x="30" y="57" width="4" height="7" rx="1.5"/>
+      <rect x="40" y="57" width="4" height="7" rx="1.5"/>
+    </g>
+    <g fill="#ffffff" fill-opacity="0.85">
+      <circle cx="15" cy="15" r="2.6"/>
+      <circle cx="49" cy="15" r="2.6"/>
+      <circle cx="15" cy="49" r="2.6"/>
+      <circle cx="49" cy="49" r="2.6"/>
+    </g>
+    <text x="32" y="33" text-anchor="middle" dominant-baseline="central"
+          font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="800"
+          fill="#ffffff" letter-spacing="-1">S</text>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="540" y="610" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="800"
+        letter-spacing="-1.5">
+    <tspan fill="#ffffff">Sera</tspan><tspan fill="url(#g2)">Tecnologia</tspan>
+  </text>
+
+  <line x1="360" y1="650" x2="720" y2="650" stroke="url(#g2)" stroke-width="3" stroke-linecap="round"/>
+
+  <text x="540" y="712" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="600"
+        fill="#cbd5e1">Marketplace de Hardware, Games &amp; Tecnologia</text>
+
+  <text x="540" y="758" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="500"
+        fill="#7c8aa3">HDs • SSDs • Memórias • Placas de Vídeo • Notebooks • Periféricos</text>
+
+  <text x="540" y="1000" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700"
+        fill="#22D3EE" letter-spacing="0.5">seratecnologia-1.onrender.com</text>
+</svg>
