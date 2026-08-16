@@ -17,7 +17,7 @@
      return '/img/news-thumb?cat=' + encodeURIComponent(n.category || 'Geral') + '&w=' + dims[0] + '&h=' + dims[1];
    }
    function ytId(v){ if(!v) return ''; var m=String(v).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/); return m?m[1]:''; }
-   var gridNews = news.slice();
+   var gridNews = news.filter(function(n){ return !(n.featured && !selectedCategory); });
    var galleryVideos = (typeof videos !== 'undefined' && videos) ? videos.filter(function(v){ return v && v.video; }) : [];
    var trendingList = (typeof trending !== 'undefined' && trending) ? trending : [];
 %>
@@ -213,36 +213,6 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
     </div>
   </header>
 
-  <% var fnews = (typeof featuredNews !== 'undefined' && featuredNews && featuredNews.length) ? featuredNews : []; %>
-  <% if (fnews.length > 0) { %>
-  <section class="banner-carousel news-banner">
-    <div class="banner-track">
-      <% fnews.forEach(function(n, i) { %>
-      <div class="banner-slide" data-duration="<%= bannerSpeed || 7 %>" style="--cc:<%= colorFor(n.category) %>">
-        <a href="/noticia/<%= n.slug %>">
-          <img src="/img/news-thumb?cat=<%= encodeURIComponent(n.category || 'Geral') %>&w=1200&h=500" alt="<%= n.title %>" loading="lazy">
-          <div class="banner-overlay">
-            <span class="banner-cat"><i class="fas fa-newspaper"></i> <%= n.category %></span>
-            <h2><%= n.title %></h2>
-            <p><%= (n.excerpt || '').slice(0,160) %></p>
-            <span class="banner-cta">Ler matéria <i class="fas fa-arrow-right"></i></span>
-          </div>
-        </a>
-      </div>
-      <% }) %>
-    </div>
-    <% if (fnews.length > 1) { %>
-    <button class="banner-arrow banner-arrow-left" data-dir="-1">&#10094;</button>
-    <button class="banner-arrow banner-arrow-right" data-dir="1">&#10095;</button>
-    <div class="banner-dots">
-      <% fnews.forEach(function(n, i) { %>
-      <span class="banner-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>"></span>
-      <% }) %>
-    </div>
-    <% } %>
-  </section>
-  <% } %>
-
   <% if (categories.length > 0) { %>
   <nav class="news-filters">
     <a href="/noticias" class="news-chip cat-Todas tema-btn <%= !selectedCategory ? 'active' : '' %>" data-tema=""><i class="fas fa-th-large"></i> Todas</a>
@@ -298,6 +268,32 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
                 <a href="/noticia/<%= v.slug %>" class="news-video-title"><%= v.title %></a>
               </div>
             </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <% if (featured && featured.length > 0) { %>
+      <section class="news-featured">
+        <h2 class="news-section-title">Destaques</h2>
+        <div class="news-featured-grid">
+          <% featured.forEach(function(n, fi) { %>
+            <% var fsize = fi === 0 ? 'size-lg' : ''; %>
+            <a href="/noticia/<%= n.slug %>" class="news-card <%= fsize %> <%= catClass(n.category) %>" data-tema="<%= n.category %>" style="--cc:<%= colorFor(n.category) %>">
+              <div class="news-thumb">
+                <img src="<%= imgFor(n, fsize) %>" alt="<%= n.title %>" loading="lazy" onerror="this.src='/img/news-thumb?cat=<%= encodeURIComponent(n.category || 'Geral') %>&w=600&h=400';">
+                <span class="news-cat"><%= n.category %></span>
+                <span class="news-feat-badge"><i class="fas fa-star"></i> Destaque</span>
+              </div>
+              <div class="news-body2">
+                <h3 class="news-title"><%= n.title %></h3>
+                <p class="news-excerpt"><%= (n.excerpt || '').slice(0,160) %></p>
+                <div class="news-meta">
+                  <span><i class="far fa-calendar"></i> <%= new Date(n.created_at).toLocaleDateString('pt-BR') %></span>
+                  <span class="news-views"><i class="far fa-eye"></i> <%= n.views || 0 %></span>
+                </div>
+              </div>
+            </a>
           <% }) %>
         </div>
       </section>
@@ -522,41 +518,6 @@ body.hacker-theme .news-skeleton .sk, body.hacker-theme .news-skeleton .sk-thumb
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', loadMore);
     loadMoreBtn.style.display = state.hasMore ? '' : 'none';
-  }
-
-  // Banner carousel (destaques)
-  var carousel = document.querySelector('.banner-carousel');
-  var track = carousel ? carousel.querySelector('.banner-track') : null;
-  var slides = carousel ? carousel.querySelectorAll('.banner-slide') : [];
-  var dots = carousel ? carousel.querySelectorAll('.banner-dot') : [];
-  var arrows = carousel ? carousel.querySelectorAll('.banner-arrow') : [];
-  if (track && dots.length > 0) {
-    var bCurrent = 0;
-    var bTotal = dots.length;
-    var bTimer = null;
-    function bDuration(i) {
-      var s = slides[i];
-      return (s ? parseInt(s.dataset.duration) : 7) * 1000;
-    }
-    function bGoTo(i) {
-      if (i < 0) i = bTotal - 1;
-      if (i >= bTotal) i = 0;
-      bCurrent = i;
-      track.style.transform = 'translateX(-' + (bCurrent * 100) + '%)';
-      dots.forEach(function(d, k) { d.classList.toggle('active', k === bCurrent); });
-      bReset();
-    }
-    function bReset() {
-      if (bTimer) clearTimeout(bTimer);
-      bTimer = setTimeout(function () { bGoTo(bCurrent + 1); }, bDuration(bCurrent));
-    }
-    dots.forEach(function (dot) {
-      dot.addEventListener('click', function () { bGoTo(parseInt(this.dataset.index)); });
-    });
-    arrows.forEach(function (arrow) {
-      arrow.addEventListener('click', function () { bGoTo(bCurrent + parseInt(this.dataset.dir)); });
-    });
-    bReset();
   }
 })();
 </script>

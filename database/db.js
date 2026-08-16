@@ -312,8 +312,7 @@ async function initDb() {
     'default_product_status': 'pending',
     'pix_key_platform': '',
     'max_products_per_seller': '50',
-    'flash_category_id': '',
-    'news_banner_speed': '7'
+    'flash_category_id': ''
   };
   Object.keys(defaultConfigs).forEach(function(key) {
     var existing = get("SELECT value FROM config WHERE key = ?", [key]);

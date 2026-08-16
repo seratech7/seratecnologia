@@ -1198,7 +1198,7 @@ router.post('/config', (req, res) => {
     'commission_pct', 'mp_access_token', 'mp_public_key', 'pix_key_platform',
     'default_product_status', 'maintenance_mode', 'max_products_per_seller',
     'custom_css', 'custom_js', 'flash_category_id',
-    'site_logo_url', 'site_favicon_url', 'social_instagram', 'social_facebook', 'social_tiktok', 'social_youtube', 'social_discord', 'news_banner_speed',
+    'site_logo_url', 'site_favicon_url', 'social_instagram', 'social_facebook', 'social_tiktok', 'social_youtube', 'social_discord',
     'site_address', 'site_phone', 'footer_text'
   ];
   allowedKeys.forEach(function(key) {
