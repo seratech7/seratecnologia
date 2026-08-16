@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "promote": "node promote.js"
+    "promote": "node promote.js",
+    "prestart": "node scripts/prepare-db.js"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "argon2": "^0.45.1",
@@ -19,7 +23,6 @@
     "express-session": "^1.17.3",
     "helmet": "^8.3.0",
     "multer": "^1.4.5-lts.1",
-    "puppeteer": "^25.6.0",
     "qrcode": "^1.5.4",
     "session-file-store": "^1.5.0",
     "sharp": "^0.35.3",

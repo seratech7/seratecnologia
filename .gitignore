@@ -1,8 +1,6 @@
 node_modules/
 .env
-database.sqlite
 database/backups/
-*.sqlite
 
 server_out.txt
 server_err.txt
