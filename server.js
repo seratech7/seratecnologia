@@ -651,6 +651,10 @@ app.use((req, res) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.message, err.stack);
+  // If the response was already flushed (e.g. an async session-store error
+  // surfaced after res.end), do not attempt to send again — that throws
+  // ERR_HTTP_HEADERS_SENT and crashes the request.
+  if (res.headersSent) return next(err);
   if (req.xhr || req.headers['content-type']?.includes('json')) {
     return res.status(500).json({ error: 'Erro interno do servidor', detail: err.message });
   }
