@@ -3868,8 +3868,6 @@ img { max-width: 100%; height: auto; display: block; }
 .sidebar-toggle { display: none; }
 
 @media (max-width: 480px) {
-   ========================================= */
-@media (max-width: 480px) {
   .admin-sidebar {
     transform: translateX(-100%);
     width: 260px;

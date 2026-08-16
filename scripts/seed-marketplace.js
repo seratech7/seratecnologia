@@ -29,11 +29,39 @@ function slugify(s) {
   return (s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50)) || 'produto';
 }
 
-async function resolveImageUrl(name, cat) {
-  const tags = CAT_TAGS[cat] || 'computer';
+// Tags relevantes POR TIPO de produto -> LoremFlickr devolve foto real e condizente.
+function deriveTags(name) {
+  const n = name.toLowerCase();
+  if (/notebook|laptop|book/.test(n)) return 'laptop,gaming';
+  if (/phone|celular|smartphone|galaxy|poco|red.?magic|rog phone|moto|realme|xiaomi|iphone/.test(n)) return 'smartphone';
+  if (/teclado|keyboard/.test(n)) return 'mechanical,keyboard';
+  if (/mouse/.test(n)) return 'gaming,mouse';
+  if (/headset|fone/.test(n)) return 'headset,gamer';
+  if (/ram|mem.ria/.test(n)) return 'ram,memory';
+  if (/ssd/.test(n)) return 'ssd';
+  if (/hd|hard/.test(n)) return 'hard,drive';
+  if (/pc|desktop|computador|mini/.test(n)) return 'desktop,computer';
+  return 'computer';
+}
+
+// So aceita a foto da Wikipedia se o artigo realmente corresponder ao produto
+// (evita ex.: foto de chip quando o anuncio e de um PC completo).
+function titleMatches(productName, pageTitle) {
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const stop = new Set(['de','da','do','gamer','gaming','pro','plus','max','ultra','edition','cm','mm','gb','tb','ghz','core','ryzen','intel','amd','with','and','the','para']);
+  const toks = norm(productName).split(/[^a-z0-9]+/).filter(t => t.length >= 3 && !stop.has(t));
+  const ptoks = new Set(norm(pageTitle).split(/[^a-z0-9]+/).filter(t => t.length >= 3));
+  let shared = 0;
+  for (const t of toks) if (ptoks.has(t)) shared++;
+  return shared >= 1;
+}
+
+// Tenta a foto ESPECIFICA do modelo na Wikipedia; so aceita se o artigo combinar
+// e a imagem nao for webp (para nao ter problema de exibicao). Senao retorna null.
+async function resolveImageUrl(name) {
   try {
     const url = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' +
-      encodeURIComponent(name) + '&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=640&format=json';
+      encodeURIComponent(name) + '&gsrlimit=5&prop=pageimages&piprop=thumbnail&pithumbsize=640&format=json';
     const resp = await fetch(url, {
       signal: AbortSignal.timeout(12000),
       headers: { 'User-Agent': 'MarketplaceSeed/1.0 (https://example.com; seed@seratecnologia.com)' }
@@ -41,18 +69,31 @@ async function resolveImageUrl(name, cat) {
     const j = await resp.json();
     const pages = (j.query && j.query.pages) ? Object.values(j.query.pages) : [];
     for (const p of pages) {
-      if (p.thumbnail && p.thumbnail.source) return p.thumbnail.source;
+      if (p.title && titleMatches(name, p.title) && p.thumbnail && p.thumbnail.source && !/\.webp($|\?)/i.test(p.thumbnail.source)) {
+        return p.thumbnail.source;
+      }
     }
-  } catch (e) { /* ignora e cai no fallback */ }
-  return 'https://loremflickr.com/640/480/' + tags + '?lock=' + lockFor(name);
+  } catch (e) { /* ignora */ }
+  return null; // sinal: usar LoremFlickr por tipo
 }
 
 const EXT_BY_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
 
-// Baixa a imagem resolvida para /uploads e retorna o caminho local.
-// Em caso de falha, retorna a URL externa (só aparece com internet no browser).
+// Placeholder local (SVG) usado apenas se o download falhar -> garante que algo aparece.
+function makePlaceholder(name, cat, finalName) {
+  const colors = { 'notebooks-pcs': '#1e3a8a', 'celulares': '#0e7490', 'perifericos': '#7c2d12', 'memoria-ram': '#374151', 'ssds': '#065f46', 'hds': '#92400e' };
+  const bg = colors[cat] || '#111827';
+  const safe = (name || 'Produto').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="' + bg + '"/><text x="320" y="245" fill="#fff" font-family="Arial" font-size="26" text-anchor="middle">' + safe + '</text></svg>';
+  fs.writeFileSync(path.join(UPLOADS_DIR, finalName), svg);
+  return finalName;
+}
+
+// Baixa a imagem (Wikipedia especifica OU LoremFlickr por tipo) para /uploads.
 async function downloadLocal(name, cat, index) {
-  const url = await resolveImageUrl(name, cat);
+  let url = await resolveImageUrl(name);
+  let source = 'wiki';
+  if (!url) { source = 'lorem'; url = 'https://loremflickr.com/640/480/' + deriveTags(name) + '?lock=' + lockFor(name); }
   const base = 'seed-' + index + '-' + slugify(name);
   try {
     const resp = await fetch(url, {
@@ -60,16 +101,18 @@ async function downloadLocal(name, cat, index) {
       headers: { 'User-Agent': 'MarketplaceSeed/1.0 (https://example.com; seed@seratecnologia.com)' }
     });
     const ct = (resp.headers.get('content-type') || '').toLowerCase();
-    if (!resp.ok || !ct.startsWith('image/')) throw new Error('nao e imagem: ' + resp.status + ' ' + ct);
+    if (!resp.ok || !ct.startsWith('image/')) throw new Error('nao e imagem');
     const buf = Buffer.from(await resp.arrayBuffer());
     if (buf.length < 500) throw new Error('imagem muito pequena');
     const ext = EXT_BY_MIME[ct] || '.jpg';
     const finalName = base + ext;
     fs.writeFileSync(path.join(UPLOADS_DIR, finalName), buf);
     try { db.saveFileToStore(finalName, buf, ct || 'image/jpeg'); } catch (e) { /* file_store opcional */ }
-    return '/uploads/' + finalName;
+    return { path: '/uploads/' + finalName, source };
   } catch (e) {
-    return url;
+    const ph = makePlaceholder(name, cat, base + '.svg');
+    try { db.saveFileToStore(ph, fs.readFileSync(path.join(UPLOADS_DIR, ph)), 'image/svg+xml'); } catch (e) {}
+    return { path: '/uploads/' + ph, source: 'placeholder' };
   }
 }
 
@@ -181,23 +224,24 @@ const products = [
     });
     db.run('DELETE FROM products');
 
-    let inserted = 0;
+    let inserted = 0, wikiN = 0, loremN = 0, phN = 0;
     for (const p of products) {
       const cat = db.get('SELECT id FROM categories WHERE slug = ?', [p.cat]);
       if (!cat) throw new Error('Categoria não encontrada: ' + p.cat);
       await new Promise(r => setTimeout(r, 300));
-      const image = await downloadLocal(p.name, p.cat, inserted + 1);
+      const img = await downloadLocal(p.name, p.cat, inserted + 1);
       db.run(
         'INSERT INTO products (name, description, price, category_id, seller_id, image, status, featured, condition, location, quantity) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [p.name, p.desc, p.price, cat.id, null, image, 'active', p.featured ? 1 : 0, 'new', 'Brasil', p.qty]
+        [p.name, p.desc, p.price, cat.id, null, img.path, 'active', p.featured ? 1 : 0, 'new', 'Brasil', p.qty]
       );
+      if (img.source === 'wiki') wikiN++; else if (img.source === 'lorem') loremN++; else phN++;
       inserted++;
       if (inserted % 10 === 0) console.log('  inserido ' + inserted + '/40...');
     }
 
     const total = db.get('SELECT COUNT(*) as c FROM products');
     const local = db.get("SELECT COUNT(*) as c FROM products WHERE image LIKE '/uploads/%'");
-    console.log('OK: ' + inserted + ' produtos inseridos. Total: ' + total.c + ' | com foto local (/uploads): ' + local.c);
+    console.log('OK: ' + inserted + ' produtos. Total: ' + total.c + ' | locais: ' + local.c + ' | Wikipedia: ' + wikiN + ' | LoremFlickr(tipo): ' + loremN + ' | placeholder: ' + phN);
     process.exit(0);
   } catch (e) {
     console.error('ERRO no seed:', e.message);
