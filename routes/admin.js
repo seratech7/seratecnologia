@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const db = require('../database/db');
 const { backupDatabase, getBackups, restoreBackup, restoreFromFile } = require('../backup-db');
 const { requireAdmin, requireSuperAdmin } = require('../middleware/auth');
@@ -2123,6 +2124,111 @@ router.post('/noticias/agente-executar', async (req, res) => {
     res.redirect('/admin/noticias?msg=' + encodeURIComponent('Assistente gerou ' + result.created.length + ' rascunho(s).'));
   } catch (e) {
     res.redirect('/admin/noticias?err=' + encodeURIComponent('Erro: ' + e.message));
+  }
+});
+
+// ===== GALERIA LOCAL DE IMAGENS DO MARKETPLACE =====
+router.get('/galeria', (req, res) => {
+  try {
+    var mains = db.query("SELECT id as product_id, name as product_name, image, 1 as is_main FROM products WHERE image LIKE '/uploads/%'");
+    var extras = db.query("SELECT pi.id as img_id, pi.product_id, p.name as product_name, pi.image, 0 as is_main, pi.sort_order FROM product_images pi LEFT JOIN products p ON p.id = pi.product_id ORDER BY pi.product_id, pi.sort_order");
+    var images = mains.concat(extras).map(function (r) {
+      return { img_id: r.img_id || null, product_id: r.product_id, product_name: r.product_name || '(produto removido)', image: r.image, is_main: r.is_main };
+    });
+    var externos = db.query("SELECT id, name, image FROM products WHERE (image IS NULL OR image = '' OR image LIKE 'http%') AND status != 'inactive' ORDER BY name");
+    res.render('admin/galeria', { title: 'Galeria de Imagens', images: images, externos: externos, msg: req.query.msg, err: req.query.err });
+  } catch (e) {
+    res.render('admin/galeria', { title: 'Galeria de Imagens', images: [], externos: [], err: 'Erro: ' + e.message });
+  }
+});
+
+// Define uma imagem da galeria como principal do anúncio original
+router.post('/galeria/reaplicar', (req, res) => {
+  try {
+    var product_id = parseInt(req.body.product_id, 10);
+    var image = String(req.body.image || '');
+    if (!product_id || image.indexOf('/uploads/') !== 0) throw new Error('Dados inválidos.');
+    db.run("UPDATE products SET image = ? WHERE id = ?", [image, product_id]);
+    res.redirect('/admin/galeria?msg=' + encodeURIComponent('Imagem definida como principal do anúncio.'));
+  } catch (e) {
+    res.redirect('/admin/galeria?err=' + encodeURIComponent(e.message));
+  }
+});
+
+// Remove uma imagem da galeria (e do disco/banco)
+router.post('/galeria/excluir', (req, res) => {
+  try {
+    var product_id = parseInt(req.body.product_id, 10);
+    var image = String(req.body.image || '');
+    var img_id = req.body.img_id ? parseInt(req.body.img_id, 10) : null;
+    if (img_id) {
+      db.run("DELETE FROM product_images WHERE id = ? AND product_id = ?", [img_id, product_id]);
+    } else if (product_id && image) {
+      var p = db.get("SELECT image FROM products WHERE id = ?", [product_id]);
+      if (p && p.image === image) {
+        var first = db.get("SELECT image FROM product_images WHERE product_id = ? ORDER BY sort_order LIMIT 1", [product_id]);
+        db.run("UPDATE products SET image = ? WHERE id = ?", [first ? first.image : '', product_id]);
+      }
+    }
+    if (image.indexOf('/uploads/') === 0) {
+      var fn = path.basename(image);
+      try { fs.unlinkSync(path.join(__dirname, '..', 'public', 'uploads', fn)); } catch (e) {}
+      try { db.deleteFileFromStore(fn); } catch (e) {}
+    }
+    res.redirect('/admin/galeria?msg=' + encodeURIComponent('Imagem removida.'));
+  } catch (e) {
+    res.redirect('/admin/galeria?err=' + encodeURIComponent(e.message));
+  }
+});
+
+// Restaura a imagem principal de todos os anúncios a partir da galeria local
+router.post('/galeria/restaurar-todas', (req, res) => {
+  try {
+    var prods = db.query("SELECT id, image FROM products WHERE status != 'inactive'");
+    var count = 0;
+    prods.forEach(function (p) {
+      var ok = p.image && p.image.indexOf('/uploads/') === 0 && fs.existsSync(path.join(__dirname, '..', 'public', 'uploads', path.basename(p.image)));
+      if (!ok) {
+        var first = db.get("SELECT image FROM product_images WHERE product_id = ? AND image LIKE '/uploads/%' ORDER BY sort_order LIMIT 1", [p.id]);
+        if (first && first.image) { db.run("UPDATE products SET image = ? WHERE id = ?", [first.image, p.id]); count++; }
+      }
+    });
+    res.redirect('/admin/galeria?msg=' + encodeURIComponent(count + ' anúncio(s) teve(m) a imagem restaurada a partir da galeria local.'));
+  } catch (e) {
+    res.redirect('/admin/galeria?err=' + encodeURIComponent(e.message));
+  }
+});
+
+// Baixa as imagens externas (URLs http) para o armazenamento local do servidor
+router.post('/galeria/importar-externas', async (req, res) => {
+  try {
+    var externos = db.query("SELECT id, name, image FROM products WHERE image LIKE 'http%'");
+    var okCount = 0, failCount = 0;
+    for (var i = 0; i < externos.length; i++) {
+      var p = externos[i];
+      try {
+        var u = new URL(p.image);
+        var resp = await fetch(p.image, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var buf = Buffer.from(await resp.arrayBuffer());
+        var ct = resp.headers.get('content-type') || '';
+        var ext = '.jpg';
+        if (/\.(png|gif|webp)/i.test(u.pathname)) ext = path.extname(u.pathname).toLowerCase();
+        else if (ct.indexOf('png') >= 0) ext = '.png';
+        else if (ct.indexOf('gif') >= 0) ext = '.gif';
+        else if (ct.indexOf('webp') >= 0) ext = '.webp';
+        var filename = Date.now() + '-' + crypto.randomBytes(6).toString('hex') + ext;
+        fs.writeFileSync(path.join(__dirname, '..', 'public', 'uploads', filename), buf);
+        try { db.saveFileToStore(filename, buf, ct || 'image/jpeg'); } catch (e) {}
+        var localPath = '/uploads/' + filename;
+        db.run("UPDATE products SET image = ? WHERE id = ?", [localPath, p.id]);
+        db.run("INSERT INTO product_images (product_id, image) VALUES (?, ?)", [p.id, localPath]);
+        okCount++;
+      } catch (e) { failCount++; }
+    }
+    res.redirect('/admin/galeria?msg=' + encodeURIComponent(okCount + ' imagem(ns) baixada(s) para o servidor.' + (failCount ? ' ' + failCount + ' falharam (rede/URL inválida).' : '')));
+  } catch (e) {
+    res.redirect('/admin/galeria?err=' + encodeURIComponent(e.message));
   }
 });
 

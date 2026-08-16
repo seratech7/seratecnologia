@@ -1,0 +1,81 @@
+<%- include('../partials/admin-header') %>
+
+<div class="admin-content">
+  <div class="page-header">
+    <h1><i class="fas fa-photo-video"></i> Galeria de Imagens</h1>
+    <a href="/admin/products" class="btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+
+  <% if (msg) { %><div class="alert alert-success"><%= msg %></div><% } %>
+  <% if (err) { %><div class="alert alert-error"><%= err %></div><% } %>
+
+  <div class="form-card" style="margin-bottom:22px;">
+    <h3 style="margin:0 0 12px;font-size:16px;">Ações em massa</h3>
+    <p style="color:var(--hack-dim);font-size:13px;margin:0 0 14px;">
+      Use estas ferramentas para armazenar todas as fotos localmente e recuperá-las em caso de bug ou perda.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <form method="POST" action="/admin/galeria/importar-externas">
+        <button type="submit" class="btn-primary"><i class="fas fa-cloud-download-alt"></i> Baixar imagens externas para o servidor</button>
+      </form>
+      <form method="POST" action="/admin/galeria/restaurar-todas">
+        <button type="submit" class="btn-secondary"><i class="fas fa-magic"></i> Restaurar imagens de todos os anúncios</button>
+      </form>
+    </div>
+  </div>
+
+  <% if (externos && externos.length > 0) { %>
+    <div class="form-card" style="margin-bottom:22px;">
+      <h3 style="margin:0 0 12px;font-size:16px;"><i class="fas fa-exclamation-triangle" style="color:#ff9800;"></i> Anúncios com imagem externa/ausente (<%= externos.length %>)</h3>
+      <p style="color:var(--hack-dim);font-size:13px;margin:0 0 12px;">Essas fotos não estão no servidor e podem não aparecer. Clique em “Baixar imagens externas” acima para armazená-las localmente.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto;">
+        <% externos.forEach(function(p){ %>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;padding:6px 8px;background:var(--hack-panel);border-radius:6px;">
+            <span style="flex:1;"><%= p.name %></span>
+            <a href="/admin/products/edit/<%= p.id %>" style="color:var(--primary);">editar</a>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="alert alert-success" style="margin-bottom:22px;">Todas as imagens dos anúncios já estão armazenadas localmente. ✅</div>
+  <% } %>
+
+  <div class="form-card">
+    <h3 style="margin:0 0 12px;font-size:16px;">Imagens armazenadas localmente (<%= (images || []).length %>)</h3>
+    <% if (!images || images.length === 0) { %>
+      <p style="color:var(--hack-dim);">Nenhuma imagem local encontrada ainda.</p>
+    <% } else { %>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;">
+        <% images.forEach(function(img){ %>
+          <div style="border:1px solid var(--hack-border);border-radius:10px;overflow:hidden;background:var(--hack-panel);">
+            <div style="position:relative;height:140px;background:#0e0e16;">
+              <img src="<%= img.image %>" alt="<%= img.product_name %>" style="width:100%;height:100%;object-fit:cover;">
+              <% if (img.is_main) { %><span style="position:absolute;top:6px;left:6px;background:#4caf50;color:#fff;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;">PRINCIPAL</span><% } %>
+            </div>
+            <div style="padding:10px;">
+              <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <a href="/admin/products/edit/<%= img.product_id %>" style="color:inherit;text-decoration:none;"><%= img.product_name %></a>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <form method="POST" action="/admin/galeria/reaplicar">
+                  <input type="hidden" name="product_id" value="<%= img.product_id %>">
+                  <input type="hidden" name="image" value="<%= img.image %>">
+                  <button type="submit" class="btn-primary" style="padding:5px 9px;font-size:11px;" title="Definir como imagem principal do anúncio"><i class="fas fa-check"></i> Principal</button>
+                </form>
+                <form method="POST" action="/admin/galeria/excluir" onsubmit="return confirm('Remover esta imagem?');">
+                  <input type="hidden" name="product_id" value="<%= img.product_id %>">
+                  <input type="hidden" name="image" value="<%= img.image %>">
+                  <% if (img.img_id) { %><input type="hidden" name="img_id" value="<%= img.img_id %>"><% } %>
+                  <button type="submit" class="btn-secondary" style="padding:5px 9px;font-size:11px;"><i class="fas fa-trash"></i></button>
+                </form>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('../partials/admin-footer') %>
