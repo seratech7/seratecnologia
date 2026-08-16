@@ -269,6 +269,11 @@ if (SECRET_SELLER !== '/seller') app.use('/seller/login', loginLimiter);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Favicon (SVG)
+app.get('/favicon.ico', function (req, res) {
+  res.sendFile(path.join(__dirname, 'public', 'img', 'logo-icon.svg'), { headers: { 'Content-Type': 'image/svg+xml' } });
+});
+
 // Fallback para arquivos de upload: se o arquivo sumiu do disco (ex.: deploy no Render,
 // que usa disco efêmero), serve a cópia persistida no banco (file_store).
 app.use('/uploads', (req, res, next) => {

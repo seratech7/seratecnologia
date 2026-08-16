@@ -70,8 +70,7 @@ body.hacker-theme .wa-topbar-link:hover { background:rgba(0,0,0,.07); }
         <% if (typeof siteConfig !== 'undefined' && siteConfig.site_logo_url) { %>
           <img src="<%= siteConfig.site_logo_url %>" alt="<%= siteConfig.site_name || 'Logo' %>" style="max-height:40px;max-width:180px;object-fit:contain;">
         <% } else { %>
-          <i class="fas fa-microchip"></i>
-          <span><%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'SeraTecnologia' %></span>
+          <img src="/img/logo.svg" alt="<%= typeof siteConfig !== 'undefined' && siteConfig.site_name ? siteConfig.site_name : 'SeraTecnologia' %>" style="max-height:40px;max-width:190px;object-fit:contain;">
         <% } %>
       </a>
     </div>
@@ -151,7 +150,7 @@ body.hacker-theme .wa-topbar-link:hover { background:rgba(0,0,0,.07); }
 <div class="mobile-overlay" id="mobileOverlay"></div>
 <nav class="mobile-menu" id="mobileMenu">
   <div class="mobile-menu-header">
-    <a href="/" class="mobile-logo"><i class="fas fa-microchip"></i> SeraTecnologia</a>
+    <a href="/" class="mobile-logo"><img src="/img/logo-icon.svg" alt="SeraTecnologia" style="height:26px;width:26px;vertical-align:middle;"> SeraTecnologia</a>
     <button class="mobile-close" id="mobileClose">&times;</button>
   </div>
   <div class="mobile-menu-body">

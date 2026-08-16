@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 310 64" width="310" height="64" role="img" aria-label="SeraTecnologia">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Chip body -->
+  <rect x="6" y="6" width="52" height="52" rx="15" fill="url(#g)"/>
+  <rect x="6" y="6" width="52" height="52" rx="15" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+
+  <!-- Microchip legs -->
+  <g fill="#ffffff" fill-opacity="0.9">
+    <rect x="20" y="57" width="4" height="7" rx="1.5"/>
+    <rect x="30" y="57" width="4" height="7" rx="1.5"/>
+    <rect x="40" y="57" width="4" height="7" rx="1.5"/>
+  </g>
+
+  <!-- Circuit nodes -->
+  <g fill="#ffffff" fill-opacity="0.85">
+    <circle cx="15" cy="15" r="2.6"/>
+    <circle cx="49" cy="15" r="2.6"/>
+    <circle cx="15" cy="49" r="2.6"/>
+    <circle cx="49" cy="49" r="2.6"/>
+  </g>
+
+  <!-- S monogram -->
+  <text x="32" y="33" text-anchor="middle" dominant-baseline="central"
+        font-family="Segoe UI, Arial, Helvetica, sans-serif" font-size="40"
+        font-weight="800" fill="#ffffff" letter-spacing="-1">S</text>
+
+  <!-- Wordmark -->
+  <text x="74" y="41" font-family="Segoe UI, Arial, Helvetica, sans-serif"
+        font-size="28" font-weight="800" letter-spacing="-0.5">
+    <tspan fill="#ffffff">Sera</tspan><tspan fill="url(#g)">Tecnologia</tspan>
+  </text>
+</svg>
