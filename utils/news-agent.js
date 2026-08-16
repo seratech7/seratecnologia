@@ -13,7 +13,9 @@ function aiClient() {
 }
 
 // Gera UMA matéria original via IA. Retorna {title, excerpt, content} ou lança erro.
-async function generateOne(theme, briefing, hint, index) {
+// opts.timeout = ms máximos por chamada; opts.signal = AbortSignal de orçamento global.
+async function generateOne(theme, briefing, hint, index, opts) {
+  opts = opts || {};
   var c = aiClient();
   if (!c.apiKey) {
     return localFallback(theme, briefing, hint);
@@ -24,7 +26,12 @@ async function generateOne(theme, briefing, hint, index) {
   if (hint) user += ' Variação sugerida: ' + hint + '.';
   if (index) user += ' Evite repetir notícias anteriores (variação ' + index + ').';
   var controller = new AbortController();
-  var timer = setTimeout(function () { controller.abort(); }, 45000);
+  if (opts.signal) {
+    if (opts.signal.aborted) controller.abort();
+    else opts.signal.addEventListener('abort', function () { controller.abort(); }, { once: true });
+  }
+  var perCallMs = opts.timeout || 45000;
+  var timer = setTimeout(function () { controller.abort(); }, perCallMs);
   try {
     var resp = await fetch(c.baseUrl + '/chat/completions', {
       method: 'POST',
@@ -106,21 +113,33 @@ async function runAgent(params) {
   var errors = [];
   var angulos = ['lançamento de produto', 'vazamento/leak', 'vulnerabilidade de segurança', 'torneio/competição', 'análise/tutorial', 'movimento da comunidade', 'atualização de software', 'novo dispositivo', 'polêmica/contrato', 'pesquisa/estudo'];
 
+  // Orçamento de tempo total: evita que a requisição HTTP trave (navegador/proxy
+  // devolvem "Failed to fetch" se a geração demorar demais). Ao estourar o prazo,
+  // o agente para e retorna o que já foi criado.
+  var overallMs = params.timeout || 45000;
+  var overall = new AbortController();
+  var overallTimer = setTimeout(function () { overall.abort(); }, overallMs);
+  var startTs = Date.now();
+
   // Distribui 'count' notícias entre os temas
   for (var i = 0; i < count; i++) {
+    var remaining = overallMs - (Date.now() - startTs);
+    if (remaining < 3000) { errors.push('tempo_esgotado: orçamento de ' + Math.round(overallMs / 1000) + 's atingido'); break; }
     var theme = themes[i % themes.length];
     var hint = angulos[Math.floor(i / themes.length) % angulos.length];
     var hasVideo = addVideo && (i % 4 === 0);
     var video = hasVideo ? demoVideos[i % demoVideos.length] : '';
     try {
-      var art = await generateOne(theme, briefing, hint, i + 1);
+      var art = await generateOne(theme, briefing, hint, i + 1, { timeout: Math.min(remaining - 1000, 20000), signal: overall.signal });
       var id = createDraft(theme, art, video);
       created.push({ id: id, theme: theme, title: art.title, video: !!video });
     } catch (e) {
+      if (overall.signal.aborted) { errors.push('tempo_esgotado: ' + (e.message || 'abortado')); break; }
       errors.push(theme + ': ' + e.message);
     }
     await new Promise(function (r) { setTimeout(r, 500); });
   }
+  clearTimeout(overallTimer);
 
   try { db.saveDb(); } catch (e) {}
   var result = { ok: true, created: created, errors: errors, total: created.length };

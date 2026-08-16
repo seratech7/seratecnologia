@@ -96,14 +96,24 @@ router.post('/login', async (req, res) => {
   }
 
   let userAuth = db.getUserAuth(uid);
-  if (!userAuth) {
-    if (!bcrypt.compareSync(password, customer.password_hash)) {
-      db.logLoginAttempt(ip, email, 'customer', false);
-      return renderLogin(req, res, { error: 'Email ou senha inválidos', redirect: redirect || '/conta' });
-    }
+  // Contas antigas podem ter users_auth em argon2 (removido no deploy). O hash da
+  // tabela customers e bcrypt puro (sem pepper), entao preferimos ele e migramos
+  // o users_auth para bcrypt quando necessario.
+  const legacyOk = !!(customer.password_hash && bcrypt.compareSync(password, customer.password_hash));
+
+  if (legacyOk) {
     const newHash = await authHive.hashPassword(password);
-    db.createUserAuth(uid, 'customer', newHash, '', 1);
+    if (userAuth) {
+      if (userAuth.argon_hash.startsWith('$argon2')) {
+        db.updateUserAuthHash(uid, newHash, (userAuth.pepper_ver || 1) + 1);
+      }
+    } else {
+      db.createUserAuth(uid, 'customer', newHash, '', 1);
+    }
     userAuth = db.getUserAuth(uid);
+  } else if (!userAuth) {
+    db.logLoginAttempt(ip, email, 'customer', false);
+    return renderLogin(req, res, { error: 'Email ou senha inválidos', redirect: redirect || '/conta' });
   }
 
   const result = await authHive.loginUser(uid, 'customer', password, req, res);

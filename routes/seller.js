@@ -72,16 +72,25 @@ router.post('/login', async (req, res) => {
     }
   }
 
-  // Migração automática: se seller não tem users_auth (legado bcrypt), cria com auth-hive
+  // Login prefere o hash legado (tabela sellers, bcrypt puro, sem pepper) e migra o
+  // users_auth para bcrypt quando necessario. Contas antigas podem ter users_auth em
+  // argon2 (removido no deploy), o que impediria o login.
   let userAuth = db.getUserAuth(uid);
-  if (!userAuth) {
-    if (!bcrypt.compareSync(password, seller.password_hash)) {
-      db.logLoginAttempt(ip, email, 'seller', false);
-      return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken, showMfa: false });
-    }
+  const legacyOk = !!(seller.password_hash && bcrypt.compareSync(password, seller.password_hash));
+
+  if (legacyOk) {
     const newHash = await authHive.hashPassword(password);
-    db.createUserAuth(uid, 'seller', newHash, '', 1);
+    if (userAuth) {
+      if (userAuth.argon_hash.startsWith('$argon2')) {
+        db.updateUserAuthHash(uid, newHash, (userAuth.pepper_ver || 1) + 1);
+      }
+    } else {
+      db.createUserAuth(uid, 'seller', newHash, '', 1);
+    }
     userAuth = db.getUserAuth(uid);
+  } else if (!userAuth) {
+    db.logLoginAttempt(ip, email, 'seller', false);
+    return res.render('seller/login', { title: 'Login Vendedor', error: 'Email ou senha inválidos', csrfToken: req.session.csrfToken, showMfa: false });
   }
 
   const result = await authHive.loginUser(uid, 'seller', password, req, res);
