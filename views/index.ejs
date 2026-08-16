@@ -1,6 +1,43 @@
 <%- include('partials/header') %>
 
-<% if (banners && banners.length > 0) { %>
+<% function colorFor(cat){
+     var map={Hacking:'#ff4d4f',Games:'#7c3aed',Tecnologia:'#00b894','Seguranca':'#ff7849','Segurança':'#ff7849','Ciencia':'#0984e3','Ciência':'#0984e3',Hardware:'#e17055',Software:'#6c5ce7'};
+     if(map[cat]) return map[cat];
+     var h=0,s=String(cat||'Geral'); for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+     var pal=['#ff4d4f','#7c3aed','#00b894','#0984e3','#e17055','#fdcb6e','#00cec9','#e84393'];
+     return pal[h%pal.length];
+   }
+   var fnews = (typeof featuredNews !== 'undefined' && featuredNews && featuredNews.length) ? featuredNews : [];
+%>
+
+<% if (fnews.length > 0) { %>
+<section class="banner-carousel news-banner">
+  <div class="banner-track">
+    <% fnews.forEach(function(n, i) { %>
+    <div class="banner-slide" data-duration="7" style="--cc:<%= colorFor(n.category) %>">
+      <a href="/noticia/<%= n.slug %>">
+        <img src="/img/news-thumb?cat=<%= encodeURIComponent(n.category || 'Geral') %>&w=1200&h=500" alt="<%= n.title %>" loading="lazy">
+        <div class="banner-overlay">
+          <span class="banner-cat"><i class="fas fa-newspaper"></i> <%= n.category %></span>
+          <h2><%= n.title %></h2>
+          <p><%= (n.excerpt || '').slice(0,160) %></p>
+          <span class="banner-cta">Ler matéria <i class="fas fa-arrow-right"></i></span>
+        </div>
+      </a>
+    </div>
+    <% }) %>
+  </div>
+  <% if (fnews.length > 1) { %>
+  <button class="banner-arrow banner-arrow-left" data-dir="-1">&#10094;</button>
+  <button class="banner-arrow banner-arrow-right" data-dir="1">&#10095;</button>
+  <div class="banner-dots">
+    <% fnews.forEach(function(n, i) { %>
+    <span class="banner-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>"></span>
+    <% }) %>
+  </div>
+  <% } %>
+</section>
+<% } else if (banners && banners.length > 0) { %>
 <section class="banner-carousel">
   <div class="banner-track">
     <% banners.forEach(function(b, i) { %>
