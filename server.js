@@ -35,6 +35,20 @@ const { toggleMiddleware } = require('./middleware/toggles');
 const { csrfProtection, injectCsrfTokens } = require('./middleware/csrf');
 const { securityMiddleware } = require('./middleware/security');
 
+// Segredo de sessão ESTÁVEL: sem SESSION_SECRET definido, o padrão
+// (crypto.randomUUID) muda a cada reinício/deploy e invalida todas as sessões,
+// causando "Token CSRF inválido" e logout em massa. Persistimos um segredo em
+// arquivo local quando a env var não existe, para sobreviver a reinícios.
+function getSessionSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  var p = path.join(__dirname, '.session-secret');
+  try { if (fs.existsSync(p)) { var s = fs.readFileSync(p, 'utf8').trim(); if (s) return s; } } catch (e) {}
+  var secret = crypto.randomBytes(48).toString('hex');
+  try { fs.writeFileSync(p, secret); } catch (e) { console.warn('[session] não foi possível persistir SESSION_SECRET:', e.message); }
+  console.warn('[session] SESSION_SECRET não definido — gerado segredo persistente em .session-secret. Defina SESSION_SECRET no ambiente (ex.: Render) para persistir entre deploys.');
+  return secret;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -225,7 +239,7 @@ try {
 app.use(cookieParser());
 app.use(session({
   store: sessionStore,
-  secret: process.env.SESSION_SECRET || crypto.randomUUID(),
+  secret: getSessionSecret(),
   resave: false,
   saveUninitialized: false,
   rolling: true,
